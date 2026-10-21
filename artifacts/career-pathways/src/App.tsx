@@ -3,10 +3,18 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import {
+  CareerRolesPage as RolesPage,
+  CareerSkillsPage as SkillsPage,
+  type DatasetState,
+} from '@/components/career-data-pages';
+import { PageHeading } from '@/components/page-heading';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter';
-import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, BookOpen, BriefcaseBusiness, Check, ChevronRight, Compass, FileUser, Gauge, Lightbulb, Menu, Network, RotateCcw, Settings2, ShieldCheck, Sparkles, Target, Trash2, TrendingDown, TrendingUp, X } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from 'recharts';
+import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronRight, Compass, FileUser, Gauge, Menu, Network, RotateCcw, Settings2, ShieldCheck, Sparkles, Target, Trash2, X } from 'lucide-react';
+import {
+  parseCareerCsv,
+} from '@/lib/career-data';
 
 type Profile = { name: string; role: string; skills: string; experience: string; interests: string; background: string };
 const emptyProfile: Profile = { name: '', role: '', skills: '', experience: '', interests: '', background: '' };
@@ -26,19 +34,6 @@ const navGroups = [
     { href: '/impact', title: 'SDG Impact', icon: Network },
     { href: '/scenarios', title: 'Future Scenarios', icon: Gauge },
   ]},
-];
-const roleData = [
-  { title:'Learning Experience Designer', category:'People & learning', match:78, summary:'Shape practical learning experiences for teams and communities.', matching:['Communication','Facilitation','Content planning'], missing:['Learning design tools','Learning evaluation'] },
-  { title:'Sustainability Program Coordinator', category:'Purpose & operations', match:71, summary:'Coordinate initiatives that connect sustainability goals to daily work.', matching:['Project coordination','Research','Stakeholder support'], missing:['Impact measurement','Climate literacy'] },
-  { title:'Customer Insights Associate', category:'Research & service', match:64, summary:'Turn customer conversations and patterns into useful service improvements.', matching:['Listening','Writing','Pattern recognition'], missing:['Qualitative research methods','Data visualization'] },
-];
-const skillData = [
-  { skill:'Analytical thinking', direction:'Rising', value:83, color:'#5a8068', desc:'Making sense of evidence and asking useful questions.' },
-  { skill:'Adaptability', direction:'Rising', value:76, color:'#5a8068', desc:'Adjusting plans as tools, teams, and priorities change.' },
-  { skill:'AI & data literacy', direction:'Rising', value:71, color:'#5a8068', desc:'Understanding the limits and uses of data-driven tools.' },
-  { skill:'Creative problem solving', direction:'Rising', value:65, color:'#5a8068', desc:'Finding workable options when there is no obvious answer.' },
-  { skill:'Routine information processing', direction:'Declining', value:39, color:'#bd8064', desc:'A synthetic example of tasks that may be reshaped by automation.' },
-  { skill:'Manual record handling', direction:'Declining', value:31, color:'#bd8064', desc:'A synthetic example of repetitive paper-based task demand.' },
 ];
 const roadmap = [
   { title:'Explore the role family', duration:'1–2 weeks', detail:'Compare real job descriptions and note recurring responsibilities.', resource:'Resource placeholder · To be verified' },
@@ -98,11 +93,6 @@ function Shell({ children, title, hasProfile }: { children: ReactNode; title: st
   </div>;
 }
 
-function PageHeading({ kicker, title, description, children }: { kicker:string; title:string; description:string; children?:ReactNode }) {
-  return <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:22,flexWrap:'wrap',marginBottom:30}}>
-    <div><div className="eyebrow">{kicker}</div><h1 className="page-title">{title}</h1><p className="lead" style={{margin:0}}>{description}</p></div>{children}
-  </div>;
-}
 function Home({ profile }: {profile:Profile|null}) {
   const links = [
     {href:'/profile',n:'01',title:'Start with your story',text:'Add skills, experience, interests, and the context that matters to you.',icon:FileUser,cta:profile?'Edit your profile':'Create your profile'},
@@ -167,43 +157,19 @@ function ProfilePage({profile,onSave,onDelete}:{profile:Profile|null;onSave:(v:P
 function ProfileFields({form,update}:{form:Profile;update:(k:keyof Profile,v:string)=>void}) {
   const fields:[keyof Profile,string,string][]=[
     ['name','Name','A name you’d like to use'],['role','Current or recent role','For example: Community program coordinator'],
-    ['skills','Skills you use','Separate skills with commas'],['experience','Work experience','What have you done, and what are you proud of?'],
+    ['skills','Skills you use','For example: Research, Writing, Facilitation'],['experience','Work experience','What have you done, and what are you proud of?'],
     ['interests','Interests and curiosities','What kinds of problems or topics draw you in?'],['background','Career background','What context would be helpful as you explore?'],
   ];
   return <div className="profile-fields">{fields.map(([key,label,placeholder],i)=><div key={key} style={{gridColumn:i>2?'span 1':undefined}}>
     <label htmlFor={`profile-${key}`} className="label">{label}</label>
     {['experience','interests','background'].includes(key)?<textarea id={`profile-${key}`} rows={3} className="field" placeholder={placeholder} value={form[key]} onChange={e=>update(key,e.target.value)} data-testid={`input-profile-${key}`}/>:<input id={`profile-${key}`} className="field" placeholder={placeholder} value={form[key]} onChange={e=>update(key,e.target.value)} data-testid={`input-profile-${key}`}/>}
+    {key==='skills'&&<p style={{fontSize:10,color:'#858b80',lineHeight:1.5,margin:'5px 0 0'}}>Separate names with commas. Matching ignores capitalization; save your profile to refresh role scores.</p>}
   </div>)}
     <style>{`.profile-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}@media(max-width:560px){.profile-fields{grid-template-columns:1fr}}`}</style>
   </div>;
 }
 function ProfileForm({form,update,save,saved,profileExists}:{form:Profile;update:(k:keyof Profile,v:string)=>void;save:(e:React.FormEvent)=>void;saved:boolean;profileExists:boolean}) {
   return <form onSubmit={save} className="panel" style={{maxWidth:850,marginTop:20}}><div className="eyebrow" style={{marginBottom:16}}>{profileExists?'Edit your details':'Create a profile'}</div><ProfileFields form={form} update={update}/><button className="btn btn-primary" style={{marginTop:20}} type="submit" data-testid="button-save-profile">{profileExists?'Save profile':'Save my profile'} <Check size={15}/></button>{saved&&<span role="status" style={{fontSize:12,color:'#4a7055',marginLeft:12}} data-testid="status-profile-saved">Saved locally</span>}</form>;
-}
-function SkillsPage() {
- const chart=skillData.map(item=>({name:item.skill.replace('Routine information processing','Routine processing').replace('Manual record handling','Manual records'),value:item.value,direction:item.direction}));
- return <><PageHeading kicker="Explore changing work" title="Future Skills Radar" description="A conversation starter about capabilities that may matter in changing work. This is a synthetic illustration, not a forecast or live dataset."/>
-  <div className="panel" style={{marginBottom:17}}>
-   <div style={{display:'flex',justifyContent:'space-between',gap:14,alignItems:'start',flexWrap:'wrap'}}><div><div className="eyebrow">Illustrative synthetic index</div><h2 style={{font:'700 18px Manrope',margin:'6px 0',color:'#344a3c'}}>Example signals, not measured demand</h2><p style={{fontSize:12,color:'#778074',margin:0}}>Relative prominence in this fictional dataset · scale 0–100</p></div><div style={{display:'flex',gap:12,fontSize:11,color:'#677367'}}><span><i style={{display:'inline-block',width:9,height:9,borderRadius:3,background:'#5a8068',marginRight:5}}/>Rising example</span><span><i style={{display:'inline-block',width:9,height:9,borderRadius:3,background:'#bd8064',marginRight:5}}/>Declining example</span></div></div>
-   <div style={{height:310,marginTop:15}}><ResponsiveContainer width="100%" height="100%"><BarChart data={chart} margin={{top:10,right:8,bottom:10,left:0}} layout="vertical"><CartesianGrid strokeDasharray="3 5" horizontal={false} stroke="#e6e5db"/><XAxis type="number" domain={[0,100]} tick={{fontSize:10,fill:'#7d8278'}} axisLine={false} tickLine={false}/><YAxis type="category" dataKey="name" width={145} tick={{fontSize:11,fill:'#586357'}} axisLine={false} tickLine={false}/><ChartTooltip cursor={{fill:'#f1f0e8'}} contentStyle={{borderRadius:10,border:'1px solid #dedfd4',fontSize:12}} formatter={(v)=>[`${v} / 100 · illustrative`, 'Index']}/><Bar dataKey="value" radius={[0,6,6,0]} barSize={21}>{chart.map((entry,i)=><Cell key={i} fill={entry.direction==='Rising'?'#5a8068':'#bd8064'}/>)}</Bar></BarChart></ResponsiveContainer></div>
-  </div>
-  <div className="skills-list">{skillData.map((item,i)=><article className="panel" key={item.skill} data-testid={`card-skill-${i}`}><div style={{display:'flex',justifyContent:'space-between',alignItems:'start',gap:12}}><div><span className="eyebrow" style={{color:item.direction==='Rising'?'#55745c':'#a6644e'}}>{item.direction} example</span><h3 style={{font:'700 16px Manrope',margin:'8px 0 5px',color:'#344a3c'}}>{item.skill}</h3><p style={{fontSize:12,color:'#737a70',lineHeight:1.55,margin:0}}>{item.desc}</p></div>{item.direction==='Rising'?<TrendingUp size={17} color="#5a8068"/>:<TrendingDown size={17} color="#bd8064"/>}</div><div style={{marginTop:17,display:'flex',justifyContent:'space-between',font:'11px IBM Plex Mono',color:'#788076'}}><span>Synthetic index</span><span>{item.value} / 100</span></div><div className="bar-track" style={{marginTop:7}}><div className={`bar-fill ${item.direction==='Declining'?'down':''}`} style={{width:`${item.value}%`}}/></div></article>)}</div>
-  <style>{`.skills-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}@media(max-width:950px){.skills-list{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.skills-list{grid-template-columns:1fr}}`}</style>
- </>;
-}
-function RolesPage() {
- return <><PageHeading kicker="Compare possible directions" title="Future Role Matches" description="Sample roles for exploring transferable skills. Match scores are illustrative examples—not personalized predictions, hiring odds, or verified recommendations."/>
-  <div style={{display:'flex',alignItems:'center',gap:9,background:'#eceee4',padding:'12px 15px',borderRadius:11,fontSize:11,color:'#637064',marginBottom:17}}><Lightbulb size={16} color="#56745d"/> These examples are not based on live job postings or a profile. Add a profile to make your reflection your own.</div>
-  <div style={{display:'grid',gap:14}}>{roleData.map((role,i)=><article className="panel" key={role.title} data-testid={`card-role-${i}`} style={{padding:'23px 25px'}}>
-   <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:18,alignItems:'start'}}><div><div style={{display:'flex',alignItems:'center',gap:9,flexWrap:'wrap'}}><span className="eyebrow">EXAMPLE {String(i+1).padStart(2,'0')}</span><span className="tag">{role.category}</span></div><h2 style={{font:'700 21px Manrope',letterSpacing:'-.03em',margin:'10px 0 7px',color:'#30483b'}}>{role.title}</h2><p style={{fontSize:13,color:'#737a70',margin:0,lineHeight:1.6}}>{role.summary}</p></div>
-    <div style={{minWidth:94,textAlign:'center',background:'#eff1e8',borderRadius:13,padding:'12px 14px'}}><div className="stat-number" style={{fontSize:25}}>{role.match}%</div><div style={{fontSize:9,font:'500 9px IBM Plex Mono',color:'#778074',marginTop:5}}>ILLUSTRATIVE<br/>MATCH</div></div>
-   </div>
-   <div className="role-lists" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24,marginTop:22,paddingTop:17,borderTop:'1px solid #e7e6dc'}}>
-    <div><div style={{fontSize:11,fontWeight:700,color:'#4c7156',marginBottom:9,display:'flex',gap:6,alignItems:'center'}}><Check size={13}/> Skills this example connects</div><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{role.matching.map(x=><span key={x} className="tag">{x}</span>)}</div></div>
-    <div><div style={{fontSize:11,fontWeight:700,color:'#8b684b',marginBottom:9,display:'flex',gap:6,alignItems:'center'}}><ArrowUpRight size={13}/> Possible areas to explore</div><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{role.missing.map(x=><span key={x} className="tag" style={{background:'#f8f0e9',color:'#805f46',borderColor:'#e8d6c8'}}>{x}</span>)}</div></div>
-   </div>
-   </article>)}</div><style>{`@media(max-width:560px){.role-lists{grid-template-columns:1fr!important;gap:16px!important}}`}</style>
- </>;
 }
 function RoadmapPage() {
  return <><PageHeading kicker="Turn curiosity into action" title="Reskilling Roadmap" description="A flexible example sequence for exploring a new direction. Adjust the pace to fit your life; time estimates are illustrative only."/>
@@ -265,15 +231,31 @@ function SettingsPage({title,onTitleChange,onReset}:{title:string;onTitleChange:
 function Router() {
  const [title,setTitle]=useState(()=>localStorage.getItem(STORAGE_TITLE)||defaultTitle);
  const [profile,setProfile]=useState<Profile|null>(()=>readProfile());
+ const [dataset,setDataset]=useState<DatasetState>({records:[],errors:[],loading:true,loadError:''});
  useEffect(()=>localStorage.setItem(STORAGE_TITLE,title),[title]);
+ useEffect(()=>{
+  let cancelled=false;
+  const loadDataset=async()=>{
+   try{
+    const response=await fetch(`${import.meta.env.BASE_URL}data/skills-occupations.csv`);
+    if(!response.ok)throw new Error(`Request failed with status ${response.status}`);
+    const parsed=parseCareerCsv(await response.text());
+    if(!cancelled)setDataset({...parsed,loading:false,loadError:''});
+   }catch(error){
+    if(!cancelled)setDataset({records:[],errors:[],loading:false,loadError:error instanceof Error?error.message:'Unknown loading error'});
+   }
+  };
+  void loadDataset();
+  return()=>{cancelled=true};
+ },[]);
  const saveProfile=(next:Profile)=>{localStorage.setItem(STORAGE_PROFILE,JSON.stringify(next));setProfile(next);};
  const deleteProfile=()=>{localStorage.removeItem(STORAGE_PROFILE);setProfile(null);};
  const reset=()=>{localStorage.removeItem(STORAGE_PROFILE);localStorage.removeItem(STORAGE_TITLE);setProfile(null);setTitle(defaultTitle);};
  return <RoutedErrorBoundary><Shell title={title} hasProfile={Boolean(profile)}><Switch>
    <Route path="/"><Home profile={profile}/></Route>
    <Route path="/profile"><ProfilePage profile={profile} onSave={saveProfile} onDelete={deleteProfile}/></Route>
-   <Route path="/skills"><SkillsPage/></Route>
-   <Route path="/roles"><RolesPage/></Route>
+   <Route path="/skills"><SkillsPage dataset={dataset}/></Route>
+   <Route path="/roles"><RolesPage dataset={dataset} profileSkills={profile?.skills??''}/></Route>
    <Route path="/roadmap"><RoadmapPage/></Route>
    <Route path="/impact"><ImpactPage/></Route>
    <Route path="/scenarios"><ScenariosPage/></Route>
