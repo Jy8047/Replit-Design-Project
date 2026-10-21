@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background)); --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border)); --color-input: hsl(var(--input)); --color-ring: hsl(var(--ring));
+  --color-card: hsl(var(--card)); --color-card-foreground: hsl(var(--card-foreground));
+  --color-primary: hsl(var(--primary)); --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary)); --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted)); --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent)); --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive)); --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-popover: hsl(var(--popover)); --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-chart-1: hsl(var(--chart-1)); --color-chart-2: hsl(var(--chart-2)); --color-chart-3: hsl(var(--chart-3));
+  --font-sans: var(--app-font-sans); --font-mono: var(--app-font-mono); --radius-lg: var(--radius);
+}
+:root {
+  --background: 42 34% 96%; --foreground: 158 20% 17%; --border: 39 19% 86%; --input: 39 19% 86%; --ring: 158 25% 34%;
+  --card: 42 37% 99%; --card-foreground: 158 20% 17%; --primary: 158 25% 31%; --primary-foreground: 42 35% 97%;
+  --secondary: 39 29% 90%; --secondary-foreground: 158 20% 20%; --muted: 40 22% 92%; --muted-foreground: 158 8% 45%;
+  --accent: 35 66% 55%; --accent-foreground: 158 25% 15%; --destructive: 2 57% 49%; --destructive-foreground: 0 0% 100%;
+  --popover: 42 37% 99%; --popover-foreground: 158 20% 17%; --chart-1: 158 25% 31%; --chart-2: 35 66% 55%; --chart-3: 198 30% 54%;
+  --app-font-sans: 'DM Sans', sans-serif; --app-font-serif: 'Manrope', sans-serif; --app-font-mono: 'IBM Plex Mono', monospace;
+  --radius: 14px; --sidebar: 154 23% 19%; --sidebar-foreground: 42 32% 92%; --sidebar-border: 154 18% 29%;
+  --sidebar-primary: 38 72% 63%; --sidebar-primary-foreground: 158 20% 15%; --sidebar-accent: 154 19% 26%; --sidebar-accent-foreground: 42 32% 95%;
+  --sidebar-ring: 38 72% 63%; --card-border: 39 19% 86%;
+}
+.dark {
+  --background: 158 18% 12%; --foreground: 42 30% 92%; --border: 154 12% 28%; --input: 154 12% 28%;
+  --card: 158 16% 16%; --card-foreground: 42 30% 92%; --primary: 38 72% 63%; --primary-foreground: 158 20% 15%;
+  --secondary: 154 13% 24%; --secondary-foreground: 42 30% 92%; --muted: 154 13% 22%; --muted-foreground: 42 12% 65%;
+  --accent: 35 66% 55%; --accent-foreground: 158 25% 15%; --destructive: 2 57% 55%; --destructive-foreground: 0 0% 100%;
+  --popover: 158 16% 16%; --popover-foreground: 42 30% 92%; --chart-1: 38 72% 63%; --chart-2: 158 35% 54%; --chart-3: 198 30% 54%;
+}
+@layer base { * { @apply border-border; } body { @apply font-sans antialiased bg-background text-foreground; margin:0; } }
+* { box-sizing: border-box; }
+button, input, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid hsl(var(--accent)); outline-offset: 3px; }
+.app-shell { min-height:100dvh; display:flex; }
+.sidebar { width:254px; flex:0 0 254px; background:#253c33; color:#f3f0e7; min-height:100dvh; padding:25px 16px 20px; display:flex; flex-direction:column; position:sticky; top:0; height:100dvh; }
+.main-area { min-width:0; flex:1; }
+.topbar { height:76px; display:flex; align-items:center; justify-content:space-between; padding:0 5.2%; border-bottom:1px solid hsl(var(--border)); background:rgba(250,248,241,.76); }
+.content { max-width:1220px; padding:42px 5.2% 72px; margin:0 auto; }
+.brand-mark { width:34px;height:34px;border-radius:11px;background:#dfb66a;color:#283d34;display:grid;place-items:center; }
+.nav-link { display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#c8d0c8;text-decoration:none;font-size:13px;font-weight:500;transition:background .18s,color .18s; }
+.nav-link:hover,.nav-link.active { background:#354d42;color:#fff; }
+.nav-link.active { box-shadow:inset 3px 0 #dfb66a; }
+.eyebrow { color:#777e70;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase; }
+.page-title { font:700 clamp(29px,4vw,43px)/1.12 'Manrope',sans-serif; letter-spacing:-.045em; margin:10px 0 10px; color:#243b32; }
+.lead { max-width:670px;color:#6a7268;font-size:15px;line-height:1.7; }
+.panel { background:hsl(var(--card)); border:1px solid hsl(var(--border)); border-radius:16px; padding:23px; box-shadow:0 5px 20px rgba(54,58,42,.025); }
+.btn { border:1px solid hsl(var(--border)); border-radius:10px;background:hsl(var(--card));color:#34493e;padding:10px 14px;display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:transform .18s,background .18s; }
+.btn:hover { background:#f2eee3;transform:translateY(-1px); }
+.btn-primary { color:#f8f5ec;background:#2d4a3e;border-color:#2d4a3e; }
+.btn-primary:hover { background:#3b5d4d; }
+.btn-danger { color:#a43e35;background:#fff8f5;border-color:#e8c8c0; }
+.field { width:100%;border:1px solid hsl(var(--border));border-radius:9px;padding:11px 12px;background:#fffdf8;color:#273c33;font-size:14px; }
+.field:focus { outline:2px solid #78917f; outline-offset:1px; }
+.label { display:block;font-size:12px;font-weight:700;color:#435147;margin:0 0 7px; }
+.tag { display:inline-flex;align-items:center;border:1px solid #d9dfd4;background:#f4f5ed;color:#425b49;border-radius:99px;padding:5px 9px;font-size:11px;font-weight:600; }
+.stat-number { font:700 29px/1 'Manrope',sans-serif;letter-spacing:-.05em;color:#2d493d; }
+.divider { height:1px;background:hsl(var(--border)); }
+.mobile-menu { display:none; }
+.bar-row { display:grid;grid-template-columns:140px 1fr 50px;gap:14px;align-items:center;margin:17px 0; }
+.bar-track {height:10px;background:#eae9df;border-radius:99px;overflow:hidden}
+.bar-fill {height:100%;border-radius:99px;background:#5c826a}
+.bar-fill.down {background:#c17b61}
+.timeline-line {position:absolute;left:17px;top:28px;bottom:0;width:1px;background:#d8ddd2}
+.step-dot { position:relative;z-index:1;width:35px;height:35px;border:1px solid #cdd5ca;border-radius:50%;background:#f5f5ed;color:#45634e;display:grid;place-items:center;font:500 12px 'IBM Plex Mono',monospace; }
+.scenario-block { background:#f1f1e8;border-radius:12px;padding:17px; }
+@media(max-width:850px){.sidebar{width:218px;flex-basis:218px}.content{padding:32px 4% 55px}.topbar{padding:0 4%}}
+@media(max-width:680px){.app-shell{display:block}.sidebar{position:fixed;z-index:30;inset:0 auto 0 0;width:270px;height:100dvh;transform:translateX(-100%);transition:transform .22s;box-shadow:10px 0 30px #1c302b22}.sidebar.open{transform:translateX(0)}.mobile-menu{display:grid;place-items:center;width:38px;height:38px;border:1px solid hsl(var(--border));border-radius:10px;background:transparent;color:#35493d}.topbar{height:66px;padding:0 18px}.content{padding:28px 18px 54px}.panel{padding:18px}.page-title{font-size:32px}.bar-row{grid-template-columns:105px 1fr 42px;gap:9px}.top-title{font-size:13px}}

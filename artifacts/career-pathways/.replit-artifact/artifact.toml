@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Career Pathways"
+description = "An interactive career-planning workspace for exploring sample future skills, role matches, learning roadmaps, SDG connections, and illustrative AI disruption scenarios. Project title and profile information can be edited or removed."
+version = "1.0.0"
+id = "artifacts/career-pathways"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24958
+
+[services.development]
+run = "pnpm --filter @workspace/career-pathways run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/career-pathways", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/career-pathways/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24958"
+BASE_PATH = "/"
