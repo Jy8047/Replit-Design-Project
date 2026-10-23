@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Check, FileText, FileUser, ShieldCheck, Trash2, 
 import { PageHeading } from '@/components/page-heading';
 import { PdfExtractionPanel } from '@/components/pdf-extraction-panel';
 import { useI18n } from '@/lib/i18n';
+import { normalizeOnlineSkills } from '@/lib/online-skills';
 import {
   emptyProfile,
   hasPdfEndMarker,
@@ -37,7 +38,7 @@ const baseFields: { key: TextKey; label: string; hint: string; multiline?: boole
 ];
 
 const additionalFields: { key: TextKey; label: string; hint: string; multiline?: boolean }[] = [
-  { key: 'skills', label: 'Current Skills', hint: 'Separate skill names with commas. These are used for transparent role matching.' },
+  { key: 'skills', label: 'Current Skills', hint: 'Separate skills with commas (, ，), semicolons (; ；), or one skill per line. Optional list markers: - * •. Matching changes only after confirmation.', multiline: true },
   { key: 'role', label: 'Current or Recent Role', hint: 'For example: Community program coordinator.' },
   { key: 'name', label: 'Name (optional)', hint: 'A name you would like to use; a real name is not required.' },
   { key: 'background', label: 'Career Background', hint: 'Other context you want to retain from your existing profile.', multiline: true },
@@ -214,6 +215,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     }
     const confirmed: Profile = {
       ...form,
+      skills: normalizeOnlineSkills(form.skills),
       profile_type: profileType || 'fresh_graduate',
       confirmed_by_user: true,
     };
@@ -262,6 +264,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
       {field.multiline
         ? <textarea id={`profile-${field.key}`} rows={3} className="field" placeholder={t(field.hint)} value={value} onChange={event => update(field.key, event.target.value)} data-testid={`input-profile-${field.key}`}/>
         : <input id={`profile-${field.key}`} className="field" placeholder={t(field.hint)} value={value} onChange={event => update(field.key, event.target.value)} data-testid={`input-profile-${field.key}`}/>}
+      {field.key === 'skills' && <p className="profile-section-hint">{t(field.hint)}</p>}
     </div>;
   };
 
@@ -412,6 +415,10 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
       </div>
       <div className="profile-review-group"><h3>{t('Career details and matching')}</h3>
         {additionalFields.map(field => <ReviewRow key={field.key} label={field.label} value={form[field.key]} t={t}/>)}
+        <div data-testid="preview-normalized-skills">
+          <ReviewRow label="Skills after confirmation" value={normalizeOnlineSkills(form.skills)} t={t}/>
+          <p className="profile-section-hint">{t('Current Skills above preserves your original input. The list below is used for matching only after you confirm. Empty and duplicate items are removed; education and experience do not add skills.')}</p>
+        </div>
       </div>
       <div className="profile-confirm-note"><ShieldCheck size={17}/><p>{t('Your entries are personal information provided by you. Confirming records that you reviewed them; it does not independently verify the claims.')}</p></div>
       {saveError && <p className="profile-error" role="alert" data-testid="error-profile-save">{t('Your profile could not be saved. Your entries are still here and your last saved profile has not changed. Check browser storage permissions or available space, then try Confirm Profile again.')}</p>}
