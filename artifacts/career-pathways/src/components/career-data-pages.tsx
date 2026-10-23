@@ -7,6 +7,7 @@ import {
   type DatasetResult,
 } from '@/lib/career-data';
 import { PageHeading } from '@/components/page-heading';
+import { localizeContent, useI18n } from '@/lib/i18n';
 
 export type DatasetState = DatasetResult & {
   loading: boolean;
@@ -14,6 +15,7 @@ export type DatasetState = DatasetResult & {
 };
 
 export function DatasetFeedback({ dataset }: { dataset: DatasetState }) {
+  const { t, locale } = useI18n();
   if (dataset.loading) {
     return (
       <div
@@ -21,7 +23,7 @@ export function DatasetFeedback({ dataset }: { dataset: DatasetState }) {
         role="status"
         data-testid="status-dataset-loading"
       >
-        Loading the local demonstration dataset…
+        {t('Loading the local demonstration dataset…')}
       </div>
     );
   }
@@ -30,7 +32,7 @@ export function DatasetFeedback({ dataset }: { dataset: DatasetState }) {
     <>
       {dataset.loadError && (
         <div className="panel" role="alert" data-testid="error-dataset-load">
-          Dataset could not be loaded: {dataset.loadError}
+          {t('Dataset could not be loaded: {error}', { error: localizeContent(dataset.loadError, locale) })}
         </div>
       )}
       {dataset.errors.length > 0 && (
@@ -41,11 +43,10 @@ export function DatasetFeedback({ dataset }: { dataset: DatasetState }) {
           style={{ marginBottom: 14 }}
         >
           <strong>
-            {dataset.errors.length} dataset row or format issue
-            {dataset.errors.length === 1 ? '' : 's'} found.
+            {t('{n} dataset row or format issue(s) found.', { n: dataset.errors.length })}
           </strong>
           <p style={{ margin: '6px 0 0', fontSize: 12 }}>
-            Invalid rows were skipped; valid rows remain available.
+            {t('Invalid rows were skipped; valid rows remain available.')}
           </p>
           <ul
             style={{
@@ -61,7 +62,7 @@ export function DatasetFeedback({ dataset }: { dataset: DatasetState }) {
           </ul>
           {dataset.errors.length > 4 && (
             <p style={{ margin: '6px 0 0', fontSize: 11 }}>
-              Showing the first four issues.
+              {t('Showing the first four issues.')}
             </p>
           )}
         </div>
@@ -72,8 +73,7 @@ export function DatasetFeedback({ dataset }: { dataset: DatasetState }) {
           role="status"
           data-testid="status-dataset-empty"
         >
-          There are no valid records to display. Check the CSV columns and row
-          values.
+          {t('There are no valid records to display. Check the CSV columns and row values.')}
         </div>
       )}
     </>
@@ -81,9 +81,8 @@ export function DatasetFeedback({ dataset }: { dataset: DatasetState }) {
 }
 
 function RecordProvenance({ record }: { record: CareerRecord }) {
-  const directionLabel =
-    record.trendDirection.charAt(0).toUpperCase() +
-    record.trendDirection.slice(1);
+  const { t, locale, tag } = useI18n();
+  const directionLabel = t(record.trendDirection.charAt(0).toUpperCase() + record.trendDirection.slice(1));
   const citation = getVerifiedCitation(record);
 
   return (
@@ -103,7 +102,7 @@ function RecordProvenance({ record }: { record: CareerRecord }) {
           marginBottom: 7,
         }}
       >
-        <span className="tag">{record.occupation}</span>
+        <span className="tag">{localizeContent(record.occupation, locale)}</span>
         <span
           className={`tag ${
             record.trendDirection === 'declining' ? 'trend-down' : 'trend-up'
@@ -111,8 +110,8 @@ function RecordProvenance({ record }: { record: CareerRecord }) {
         >
           {directionLabel} ·{' '}
           {record.recordStatus === 'synthetic'
-            ? 'synthetic example'
-            : 'marked verified in dataset'}
+            ? t('synthetic example')
+            : t('marked verified in dataset')}
         </span>
       </div>
       <p
@@ -123,7 +122,7 @@ function RecordProvenance({ record }: { record: CareerRecord }) {
           margin: 0,
         }}
       >
-        {record.evidence}
+        {localizeContent(record.evidence, locale)}
       </p>
       {citation ? (
         <div
@@ -150,13 +149,12 @@ function RecordProvenance({ record }: { record: CareerRecord }) {
             data-testid={`date-source-${record.occupation}-${record.skill}`}
             style={{ color: '#788076' }}
           >
-            Published {citation.formattedPublicationDate}
+            {t('Published')} {new Intl.DateTimeFormat(tag, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${citation.publicationDate}T00:00:00.000Z`))}
           </time>
         </div>
       ) : (
         <p style={{ fontSize: 11, color: '#888d82', margin: '8px 0 0' }}>
-          No verified source or publication date is recorded for this synthetic
-          example.
+          {t('No verified source or publication date is recorded for this synthetic example.')}
         </p>
       )}
     </div>
@@ -168,6 +166,7 @@ export function CareerSkillsPage({
 }: {
   dataset: DatasetState;
 }) {
+  const { t, locale } = useI18n();
   const groups = new Map<string, { skill: string; records: CareerRecord[] }>();
   for (const record of dataset.records) {
     const key = record.skill.toLocaleLowerCase();
@@ -187,13 +186,13 @@ export function CareerSkillsPage({
   return (
     <>
       <PageHeading
-        kicker="Explore changing work"
-        title="Future Skills Radar"
-        description="Review the direction and evidence attached to each dataset record. The included records are synthetic examples, not a forecast or live labor-market data."
+        kicker={t('Explore changing work')}
+        title={t('Future Skills Radar')}
+        description={t('Review the direction and evidence attached to each dataset record. The included records are synthetic examples, not a forecast or live labor-market data.')}
       />
       <DatasetFeedback dataset={dataset} />
       <section className="panel" style={{ marginBottom: 17 }}>
-        <div className="eyebrow">Dataset status</div>
+        <div className="eyebrow">{t('Dataset status')}</div>
         <h2
           style={{
             font: '700 18px Manrope',
@@ -201,7 +200,7 @@ export function CareerSkillsPage({
             color: '#344a3c',
           }}
         >
-          Direction labels are not trend measurements
+          {t('Direction labels are not trend measurements')}
         </h2>
         <p
           style={{
@@ -211,23 +210,20 @@ export function CareerSkillsPage({
             margin: '0 0 13px',
           }}
         >
-          Counts below describe the rows in this file only. They do not measure
-          demand, growth, or decline in the real world.
+          {t('Counts below describe the rows in this file only. They do not measure demand, growth, or decline in the real world.')}
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <span className="tag trend-up">Rising examples · {counts.rising}</span>
+          <span className="tag trend-up">{t('Rising examples')} · {counts.rising}</span>
           <span className="tag trend-down">
-            Declining examples · {counts.declining}
+            {t('Declining examples')} · {counts.declining}
           </span>
-          <span className="tag">Stable examples · {counts.stable}</span>
+          <span className="tag">{t('Stable examples')} · {counts.stable}</span>
           <span className="tag">
-            {verifiedCount} rows marked verified in dataset
+            {t('{n} rows marked verified in dataset', { n: verifiedCount })}
           </span>
         </div>
         <p style={{ fontSize: 11, color: '#858b80', margin: '12px 0 0' }}>
-          Verification labels and citations come from the CSV. The app checks
-          citation fields and date format, but does not independently validate
-          the source or its claims.
+          {t('Verification labels and citations come from the CSV. The app checks citation fields and date format, but does not independently validate the source or its claims.')}
         </p>
       </section>
       {dataset.records.length > 0 && (
@@ -245,7 +241,7 @@ export function CareerSkillsPage({
                   color: '#344a3c',
                 }}
               >
-                {skill}
+                {localizeContent(skill, locale)}
               </h3>
               {records.map((record, recordIndex) => (
                 <RecordProvenance
@@ -271,6 +267,7 @@ export function CareerRolesPage({
   profileSkills: string;
   onChooseOccupation: (occupation: string) => void;
 }) {
+  const { t, locale } = useI18n();
   const matches = calculateCareerMatches(profileSkills, dataset.records);
   const hasProfileSkills = profileSkills
     .split(',')
@@ -279,9 +276,9 @@ export function CareerRolesPage({
   return (
     <>
       <PageHeading
-        kicker="Compare possible directions"
-        title="Future Role Matches"
-        description="Ranked examples use a direct count of skills you entered against each sample occupation's distinct skills. The score is not a hiring probability or a prediction."
+        kicker={t('Compare possible directions')}
+        title={t('Future Role Matches')}
+        description={t("Ranked examples use a direct count of skills you entered against each sample occupation's distinct skills. The score is not a hiring probability or a prediction.")}
       />
       <DatasetFeedback dataset={dataset} />
       <div
@@ -304,11 +301,7 @@ export function CareerRolesPage({
           style={{ flex: '0 0 auto', marginTop: 1 }}
         />
         <div>
-          <strong>Score formula:</strong> matched skills ÷ distinct skills
-          listed for the occupation × 100, rounded to the nearest whole
-          percent. Capitalization and duplicate profile entries are ignored.
-          Scores describe overlap only; 0% does not mean zero chance of being
-          hired.
+          <strong>{t('Score formula:')}</strong> {t('matched skills ÷ distinct skills listed for the occupation × 100, rounded to the nearest whole percent. Capitalization and duplicate profile entries are ignored. Scores describe overlap only; 0% does not mean zero chance of being hired.')}
         </div>
       </div>
       {!hasProfileSkills && (
@@ -331,11 +324,10 @@ export function CareerRolesPage({
             className="btn btn-secondary"
             data-testid="link-add-profile-skills"
           >
-            Add skills in My Profile <ArrowUpRight size={14} />
+            {t('Add skills in My Profile')} <ArrowUpRight size={14} />
           </Link>
           <span>
-            Results use your last saved skills list. Update My Profile and save
-            to refresh the rankings.
+            {t('Results use your last saved skills list. Update My Profile and save to refresh the rankings.')}
           </span>
         </div>
       )}
@@ -366,9 +358,9 @@ export function CareerRolesPage({
                     }}
                   >
                     <span className="eyebrow">
-                      RANK {String(index + 1).padStart(2, '0')}
+                      {t('RANK {n}', { n: String(index + 1).padStart(2, '0') })}
                     </span>
-                    <span className="tag">Synthetic role-skill mapping</span>
+                    <span className="tag">{t('Synthetic role-skill mapping')}</span>
                   </div>
                   <h2
                     style={{
@@ -378,7 +370,7 @@ export function CareerRolesPage({
                       color: '#30483b',
                     }}
                   >
-                    {match.occupation}
+                    {localizeContent(match.occupation, locale)}
                   </h2>
                   <p
                     style={{
@@ -388,8 +380,7 @@ export function CareerRolesPage({
                       lineHeight: 1.6,
                     }}
                   >
-                    Example occupation · not a live vacancy or labor-market
-                    assessment.
+                    {t('Example occupation · not a live vacancy or labor-market assessment.')}
                   </p>
                 </div>
                 <div
@@ -415,9 +406,7 @@ export function CareerRolesPage({
                       marginTop: 5,
                     }}
                   >
-                    SKILL
-                    <br />
-                    OVERLAP
+                    {t('SKILL OVERLAP')}
                   </div>
                 </div>
               </div>
@@ -444,19 +433,19 @@ export function CareerRolesPage({
                       alignItems: 'center',
                     }}
                   >
-                    <Check size={13} /> Matched skills (
+                    <Check size={13} /> {t('Matched skills')} (
                     {match.matchingSkills.length})
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {match.matchingSkills.length ? (
                       match.matchingSkills.map((skill) => (
                         <span key={skill} className="tag">
-                          {skill}
+                          {localizeContent(skill, locale)}
                         </span>
                       ))
                     ) : (
                       <span style={{ fontSize: 11, color: '#858b80' }}>
-                        No overlap yet
+                        {t('No overlap yet')}
                       </span>
                     )}
                   </div>
@@ -473,7 +462,7 @@ export function CareerRolesPage({
                       alignItems: 'center',
                     }}
                   >
-                    <ArrowUpRight size={13} /> Missing skills (
+                    <ArrowUpRight size={13} /> {t('Missing skills')} (
                     {match.missingSkills.length})
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -487,13 +476,13 @@ export function CareerRolesPage({
                           borderColor: '#e8d6c8',
                         }}
                       >
-                        {skill}
+                        {localizeContent(skill, locale)}
                       </span>
                     ))}
                   </div>
                 </div>
               </div>
-              <Link href="/roadmap" className="btn btn-primary" style={{marginTop:18}} onClick={() => onChooseOccupation(match.occupation)} data-testid={`link-plan-role-${index}`}>Build a learning plan <ArrowUpRight size={14}/></Link>
+              <Link href="/roadmap" className="btn btn-primary" style={{marginTop:18}} onClick={() => onChooseOccupation(match.occupation)} data-testid={`link-plan-role-${index}`}>{t('Build a learning plan')} <ArrowUpRight size={14}/></Link>
             </article>
           ))}
         </div>

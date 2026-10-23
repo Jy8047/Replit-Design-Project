@@ -26,6 +26,16 @@ describe('fictional career exploration journeys', () => {
     assert.equal(moderate[0].overlapScore, role.score);
   });
 
+  it('keeps the learning plan personalised when profile skills are entered in Chinese', () => {
+    const plan = buildLearningPlan('Learning Experience Designer', '沟通，引导', records);
+    assert.deepEqual(plan.map(step => step.skill), [
+      'Content planning',
+      'Learning design',
+      'Learning evaluation',
+    ]);
+    assert.deepEqual(plan.map(step => step.order), [1, 2, 3]);
+  });
+
   it('updates results when the fictional profile or selected occupation changes', () => {
     const skills = 'Listening, Research, Qualitative research methods, Writing, Data visualization';
     const role = calculateCareerMatches(skills, records)[0];

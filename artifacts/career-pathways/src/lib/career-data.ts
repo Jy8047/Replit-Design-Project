@@ -214,7 +214,48 @@ export function parseCareerCsv(text: string): DatasetResult {
 }
 
 function normalizeSkill(value: string): string {
-  return value.normalize('NFKC').trim().toLocaleLowerCase();
+  const normalized = value.normalize('NFKC').trim().toLocaleLowerCase();
+  const localizedAliases: Record<string, string> = {
+    '沟通': 'communication',
+    'komunikasi': 'communication',
+    '引导': 'facilitation',
+    'fasilitasi': 'facilitation',
+    '内容规划': 'content planning',
+    'perancangan kandungan': 'content planning',
+    '学习设计': 'learning design',
+    'reka bentuk pembelajaran': 'learning design',
+    '学习评估': 'learning evaluation',
+    'penilaian pembelajaran': 'learning evaluation',
+    '项目协调': 'project coordination',
+    'penyelarasan projek': 'project coordination',
+    '研究': 'research',
+    'penyelidikan': 'research',
+    '利益相关方支持': 'stakeholder support',
+    'sokongan pihak berkepentingan': 'stakeholder support',
+    '影响评估': 'impact measurement',
+    'pengukuran impak': 'impact measurement',
+    '气候素养': 'climate literacy',
+    'literasi iklim': 'climate literacy',
+    '倾听': 'listening',
+    'pendengaran aktif': 'listening',
+    '写作': 'writing',
+    'penulisan': 'writing',
+    '模式识别': 'pattern recognition',
+    'pengecaman corak': 'pattern recognition',
+    '定性研究方法': 'qualitative research methods',
+    'kaedah penyelidikan kualitatif': 'qualitative research methods',
+    '数据可视化': 'data visualization',
+    'visualisasi data': 'data visualization',
+    '手动记录处理': 'manual record handling',
+    'pengendalian rekod manual': 'manual record handling',
+    '常规信息处理': 'routine information processing',
+    'pemprosesan maklumat rutin': 'routine information processing',
+    '日程安排': 'scheduling',
+    'penjadualan': 'scheduling',
+    '文件整理': 'document organization',
+    'penyusunan dokumen': 'document organization',
+  };
+  return localizedAliases[normalized] ?? normalized;
 }
 
 export function calculateCareerMatches(
@@ -223,7 +264,7 @@ export function calculateCareerMatches(
 ): CareerMatch[] {
   const profileSkillList = Array.isArray(profileSkills)
     ? profileSkills
-    : profileSkills.split(',');
+    : profileSkills.split(/[,\uFF0C]/);
   const normalizedProfileSkills = new Set(
     profileSkillList.map(normalizeSkill).filter(Boolean),
   );

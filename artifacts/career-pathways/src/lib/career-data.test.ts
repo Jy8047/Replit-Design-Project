@@ -181,6 +181,15 @@ describe('calculateCareerMatches', () => {
     const unmatched = calculateCareerMatches('something not in this dataset', result.records);
     assert.ok(unmatched.every((match) => match.score === 0));
   });
+
+  it('matches Chinese and Bahasa Melayu skill names to the same canonical occupations', () => {
+    const chinese = calculateCareerMatches('沟通，引导', result.records);
+    const malay = calculateCareerMatches('Komunikasi, Fasilitasi', result.records);
+    assert.equal(chinese[0].occupation, 'Learning Experience Designer');
+    assert.equal(chinese[0].score, 40);
+    assert.equal(malay[0].occupation, 'Learning Experience Designer');
+    assert.equal(malay[0].score, 40);
+  });
 });
 
 describe('formatPublicationDate', () => {

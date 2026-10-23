@@ -1,0 +1,325 @@
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+
+export type Locale = 'en' | 'zh' | 'ms';
+const STORAGE_KEY = 'career-pathways-locale';
+const localeTag: Record<Locale, string> = { en: 'en', zh: 'zh-CN', ms: 'ms-MY' };
+
+const translations: Record<string, [string, string]> = {
+  'Main navigation': ['主导航', 'Navigasi utama'],
+  'Choose language': ['选择语言', 'Pilih bahasa'],
+  'Career Pathways': ['职业路径', 'Laluan Kerjaya'],
+  'Close menu': ['关闭菜单', 'Tutup menu'],
+  'Open menu': ['打开菜单', 'Buka menu'],
+  'Close navigation overlay': ['关闭导航遮罩', 'Tutup lapisan navigasi'],
+  'WORKSPACE': ['工作区', 'RUANG KERJA'],
+  'EXPLORE': ['探索', 'TEROKAI'],
+  'Home': ['首页', 'Laman Utama'],
+  'My Profile': ['我的资料', 'Profil Saya'],
+  'Future Skills Radar': ['未来技能雷达', 'Radar Kemahiran Masa Depan'],
+  'Future Role Matches': ['未来职业匹配', 'Padanan Kerjaya Masa Depan'],
+  'Reskilling Roadmap': ['技能提升路线图', 'Pelan Laluan Kemahiran Semula'],
+  'SDG Impact': ['可持续发展目标影响', 'Impak SDG'],
+  'Future Scenarios': ['未来情景', 'Senario Masa Depan'],
+  'Pathways': ['职业路径', 'Laluan Kerjaya'],
+  'CAREER WORKSPACE': ['职业工作区', 'RUANG KERJA KERJAYA'],
+  'Your workspace': ['您的工作区', 'Ruang kerja anda'],
+  'Saved on this device only. Examples are illustrative, not recommendations.': ['仅保存在此设备上。示例仅供说明，并非建议。', 'Disimpan pada peranti ini sahaja. Contoh adalah ilustrasi, bukan saranan.'],
+  'Workspace settings': ['工作区设置', 'Tetapan ruang kerja'],
+  'Private workspace': ['私人工作区', 'Ruang kerja peribadi'],
+  'A practical place to explore what’s next': ['探索下一步的实用空间', 'Ruang praktikal untuk meneroka langkah seterusnya'],
+  'Your experience can open more than one door.': ['您的经验可以开启不止一扇门。', 'Pengalaman anda boleh membuka lebih daripada satu peluang.'],
+  'Career Pathways helps you map what you already bring to work, explore adjacent roles, and decide what might be worth learning next. No predictions, just a clearer place to think.': ['职业路径帮助您梳理已有的工作技能、探索相关职位，并思考接下来值得学习的内容。这里不做预测，只为您提供更清晰的思考空间。', 'Laluan Kerjaya membantu anda mengenal pasti kemahiran sedia ada, meneroka peranan berkaitan dan mempertimbangkan perkara yang berbaloi untuk dipelajari seterusnya. Tiada ramalan—hanya ruang untuk berfikir dengan lebih jelas.'],
+  'Review your profile': ['查看您的资料', 'Semak profil anda'],
+  'Build your profile': ['建立您的资料', 'Bina profil anda'],
+  'Browse role examples': ['浏览职业示例', 'Lihat contoh peranan'],
+  'YOUR NEXT CHAPTER, AT YOUR PACE': ['按自己的节奏开启下一篇章', 'LANGKAH SETERUSNYA, MENGIKUT RENTAK ANDA'],
+  'A simple way through': ['简单的探索方式', 'Cara mudah untuk meneroka'],
+  'Explore at your own pace': ['按自己的节奏探索', 'Terokai mengikut rentak anda'],
+  '4 small steps': ['4 个小步骤', '4 langkah ringkas'],
+  '5 steps': ['5 个步骤', '5 langkah'],
+  'Start with your story': ['从您的经历开始', 'Mulakan dengan kisah anda'],
+  'Add skills, experience, interests, and the context that matters to you.': ['添加技能、经验、兴趣，以及对您重要的背景信息。', 'Tambah kemahiran, pengalaman, minat dan konteks yang penting bagi anda.'],
+  'Edit your profile': ['编辑您的资料', 'Edit profil anda'],
+  'Create your profile': ['创建您的资料', 'Cipta profil anda'],
+  'Notice what is changing': ['留意正在发生的变化', 'Perhatikan perubahan yang berlaku'],
+  'Explore a clearly synthetic view of skills that may grow or shift.': ['查看明确标注为合成示例的技能变化方向。', 'Terokai contoh kemahiran sintetik yang mungkin berkembang atau berubah.'],
+  'Explore skills': ['探索技能', 'Terokai kemahiran'],
+  'Compare possible directions': ['比较可能的发展方向', 'Bandingkan hala tuju yang mungkin'],
+  'Review sample role matches with visible strengths and learning gaps.': ['查看示例职业匹配，了解明显的优势和学习差距。', 'Semak contoh padanan peranan untuk melihat kekuatan dan jurang pembelajaran.'],
+  'View role examples': ['查看职业示例', 'Lihat contoh peranan'],
+  'Make a next-step plan': ['制定下一步计划', 'Rancang langkah seterusnya'],
+  'Turn an interesting direction into manageable learning steps.': ['将感兴趣的方向转化为可执行的学习步骤。', 'Tukarkan hala tuju yang menarik kepada langkah pembelajaran yang boleh diurus.'],
+  'Open roadmap': ['打开路线图', 'Buka pelan laluan'],
+  'Explore how explained SDG links relate to work, without presenting them as measured impact.': ['了解工作与 SDG 目标之间的说明性关联，但不将其描述为已测量的影响。', 'Terokai kaitan kerja dengan SDG yang diterangkan tanpa menganggapnya sebagai impak yang diukur.'],
+  'Explore SDG mapping': ['探索 SDG 对应关系', 'Terokai pemetaan SDG'],
+  'A note on examples': ['关于示例', 'Nota tentang contoh'],
+  'All skills, role scores, durations, and scenario values are illustrative synthetic examples. They are not live labor-market data, verified recommendations, or promises of outcomes.': ['所有技能、职业分数、时长和情景数值均为合成示例，仅供说明。它们不是实时劳动力市场数据、经核实的建议，也不保证任何结果。', 'Semua kemahiran, skor peranan, tempoh dan nilai senario ialah contoh sintetik untuk ilustrasi. Ia bukan data pasaran kerja semasa, saranan yang disahkan atau jaminan hasil.'],
+  'Settings': ['设置', 'Tetapan'],
+  'Your starting point': ['从这里开始', 'Titik permulaan anda'],
+  'A few details can help you reflect on what you bring and what you want to explore.': ['填写一些信息，帮助您梳理已有经验和想探索的方向。', 'Beberapa maklumat boleh membantu anda memahami kekuatan dan perkara yang ingin diterokai.'],
+  'Your profile starts with your perspective.': ['从您的视角开始建立资料。', 'Profil anda bermula dengan perspektif anda.'],
+  'Nothing is required to explore the examples. Add only what feels useful. Your profile stays in this browser.': ['探索示例无需填写任何信息。只添加您认为有用的内容。您的资料仅保存在此浏览器中。', 'Tiada maklumat wajib untuk meneroka contoh. Tambah hanya perkara yang berguna. Profil anda kekal dalam pelayar ini.'],
+  'Create your profile button': ['创建您的资料', 'Cipta profil anda'],
+  'Keep a working snapshot of what you bring, what you enjoy, and where you might go next.': ['记录您具备的能力、感兴趣的内容，以及可能的发展方向。', 'Simpan gambaran tentang kekuatan, minat dan hala tuju yang mungkin anda pilih.'],
+  'Delete your complete profile from this device? This cannot be undone.': ['确定要从此设备删除完整资料吗？此操作无法撤销。', 'Padam seluruh profil daripada peranti ini? Tindakan ini tidak boleh dibuat asal.'],
+  'Delete profile': ['删除资料', 'Padam profil'],
+  'Saved on this device': ['已保存在此设备', 'Disimpan pada peranti ini'],
+  'Edit any field and save when you’re ready.': ['您可以编辑任意字段，准备好后再保存。', 'Edit mana-mana ruangan dan simpan apabila bersedia.'],
+  'Profile saved': ['资料已保存', 'Profil disimpan'],
+  'Save profile': ['保存资料', 'Simpan profil'],
+  'Saved locally': ['已在本地保存', 'Disimpan secara setempat'],
+  'Profile details are stored in this browser’s local storage and are not sent to a service.': ['资料保存在此浏览器的本地存储中，不会发送至任何服务。', 'Butiran profil disimpan dalam storan setempat pelayar ini dan tidak dihantar ke mana-mana perkhidmatan.'],
+  'Name': ['姓名', 'Nama'],
+  'A name you’d like to use': ['您希望使用的称呼', 'Nama yang ingin anda gunakan'],
+  'Current or recent role': ['目前或最近的职位', 'Peranan semasa atau terkini'],
+  'For example: Community program coordinator': ['例如：社区项目协调员', 'Contoh: penyelaras program komuniti'],
+  'Skills you use': ['您使用的技能', 'Kemahiran yang anda gunakan'],
+  'For example: Research, Writing, Facilitation': ['例如：研究、写作、引导', 'Contoh: penyelidikan, penulisan, fasilitasi'],
+  'Work experience': ['工作经验', 'Pengalaman kerja'],
+  'What have you done, and what are you proud of?': ['您做过什么？哪些经历让您感到自豪？', 'Apakah yang pernah anda lakukan dan perkara yang anda banggakan?'],
+  'Interests and curiosities': ['兴趣与好奇心', 'Minat dan rasa ingin tahu'],
+  'What kinds of problems or topics draw you in?': ['哪些问题或主题会吸引您？', 'Apakah jenis masalah atau topik yang menarik minat anda?'],
+  'Career background': ['职业背景', 'Latar belakang kerjaya'],
+  'What context would be helpful as you explore?': ['哪些背景信息能帮助您探索？', 'Konteks apakah yang membantu semasa anda meneroka?'],
+  'Separate names with commas. Matching ignores capitalization; save your profile to refresh role scores.': ['请用逗号分隔技能名称。匹配时不区分大小写；保存资料后会更新职业分数。', 'Asingkan nama kemahiran dengan koma. Padanan tidak membezakan huruf besar dan kecil; simpan profil untuk mengemas kini skor peranan.'],
+  'Edit your details': ['编辑您的信息', 'Edit butiran anda'],
+  'Save my profile': ['保存我的资料', 'Simpan profil saya'],
+  'Turn gaps into next steps': ['将差距转化为下一步', 'Tukarkan jurang kepada langkah seterusnya'],
+  'Personalised Reskilling Pathway': ['个性化技能提升路径', 'Laluan Kemahiran Semula Peribadi'],
+  'An ordered starter plan containing only the skills missing from your saved profile for the selected occupation.': ['根据所选职业，按顺序列出资料中尚未具备的技能，作为入门学习计划。', 'Pelan permulaan berurutan yang hanya merangkumi kemahiran yang belum disenaraikan dalam profil anda bagi pekerjaan yang dipilih.'],
+  'Your selected occupation': ['您选择的职业', 'Pekerjaan pilihan anda'],
+  'No occupations available': ['暂无可用职业', 'Tiada pekerjaan tersedia'],
+  'Your selection is shared between the pathway and SDG pages. Choose a role from': ['您的选择会同步用于学习路径和 SDG 页面。您也可以从', 'Pilihan anda dikongsi antara halaman laluan dan SDG. Pilih peranan daripada'],
+  'or use this list.': ['中选择职业，或使用此列表。', 'atau gunakan senarai ini.'],
+  'Order and durations are planning estimates, not validated course requirements. Allow extra time for practice and feedback. Links marked checked were reviewed for page existence and relevance, not learning quality or outcomes.': ['顺序和时长仅为计划估算，并非经过验证的课程要求。请预留额外时间用于练习和反馈。标记为已检查的链接仅核实了页面是否存在及其相关性，不代表教学质量或学习效果经过验证。', 'Susunan dan tempoh ialah anggaran perancangan, bukan keperluan kursus yang disahkan. Peruntukkan masa tambahan untuk latihan dan maklum balas. Pautan bertanda telah disemak dari segi kewujudan halaman dan kerelevanan, bukan kualiti atau hasil pembelajaran.'],
+  'No saved skills yet: all example skills are shown.': ['尚未保存技能：目前显示所有示例技能。', 'Belum ada kemahiran disimpan: semua kemahiran contoh dipaparkan.'],
+  'Save your skills in My Profile': ['在“我的资料”中保存技能', 'Simpan kemahiran dalam Profil Saya'],
+  'to personalise this plan.': ['以生成个性化计划。', 'untuk memperibadikan pelan ini.'],
+  'No listed skill gaps remain for this occupation. This is not proof of job readiness; consider a practical work sample and feedback from someone in the field.': ['此职业没有剩余的已列技能差距。这并不代表您已具备就业准备；建议制作实际作品样本，并寻求业内人士反馈。', 'Tiada jurang kemahiran tersenarai yang tinggal bagi pekerjaan ini. Ini bukan bukti kesediaan bekerja; pertimbangkan untuk menyediakan contoh kerja praktikal dan mendapatkan maklum balas daripada seseorang dalam bidang tersebut.'],
+  'Study the skill, try a small example for this occupation, then ask for feedback before moving on.': ['学习这项技能，为该职业尝试一个小项目，然后在继续之前征求反馈。', 'Pelajari kemahiran ini, cuba contoh kecil untuk pekerjaan ini, kemudian minta maklum balas sebelum meneruskan.'],
+  'Link and relevance checked': ['链接及相关性已检查', 'Pautan dan kerelevanan disemak'],
+  'Access and content may change.': ['访问方式和内容可能会变更。', 'Akses dan kandungan mungkin berubah.'],
+  'Resource not verified.': ['资源尚未核实。', 'Sumber belum disahkan.'],
+  'Explore this occupation’s SDG alignment': ['查看此职业与 SDG 的关联', 'Terokai kaitan pekerjaan ini dengan SDG'],
+  'Connect work to wider goals': ['将工作与更广泛的目标联系起来', 'Hubungkan pekerjaan dengan matlamat yang lebih luas'],
+  'SDG Mapping': ['SDG 对应关系', 'Pemetaan SDG'],
+  'Explore how an occupation and its skills could support selected UN Sustainable Development Goals in an appropriate context.': ['了解在适当情境下，职业及其技能可能如何支持部分联合国可持续发展目标。', 'Terokai bagaimana pekerjaan dan kemahirannya boleh menyokong Matlamat Pembangunan Mampan PBB tertentu dalam konteks yang sesuai.'],
+  'Intended contribution is not measured impact.': ['预期贡献不等于已测量的影响。', 'Sumbangan yang diniatkan bukan impak yang diukur.'],
+  'These are app-authored explanations, not UN endorsements or assessments. No SDG indicators, employment outcomes, emissions, or social outcomes are measured here.': ['这些说明由应用编写，并非联合国背书或评估。本应用不测量 SDG 指标、就业结果、排放或社会成果。', 'Penjelasan ini ditulis oleh aplikasi, bukan pengiktirafan atau penilaian PBB. Tiada petunjuk SDG, hasil pekerjaan, pelepasan atau hasil sosial diukur di sini.'],
+  'No reviewed SDG explanation is available for this occupation yet. A goal label has not been assigned automatically.': ['此职业目前尚无经过审核的 SDG 说明，因此不会自动分配目标标签。', 'Penjelasan SDG yang disemak belum tersedia untuk pekerjaan ini. Label matlamat tidak diberikan secara automatik.'],
+  'potential alignment': ['潜在关联', 'keselarasan berpotensi'],
+  'conditional alignment': ['有条件的关联', 'keselarasan bersyarat'],
+  'Relevant skills': ['相关技能', 'Kemahiran berkaitan'],
+  'Read the official UN goal': ['阅读联合国官方目标说明', 'Baca matlamat rasmi PBB'],
+  'Compare future scenarios': ['比较未来情景', 'Bandingkan senario masa depan'],
+  'Test assumptions, not predictions': ['检验假设，而非预测', 'Uji andaian, bukan ramalan'],
+  'Choose a what-if lens and see how it changes the interpretation and ranking of your skill overlap. Your original overlap score is preserved.': ['选择一种假设情景，查看它如何改变技能重叠分数的解读和排名。原始重叠分数会保留。', 'Pilih sudut andaian dan lihat bagaimana ia mengubah tafsiran serta kedudukan pertindihan kemahiran. Skor pertindihan asal dikekalkan.'],
+  'Estimates only.': ['仅为估算。', 'Anggaran sahaja.'],
+  'These synthetic scenarios do not predict AI adoption, hiring odds, or employment outcomes. The included skill directions are synthetic too.': ['这些合成情景不预测 AI 采用情况、受聘概率或就业结果。所列技能趋势方向同样为合成示例。', 'Senario sintetik ini tidak meramalkan penggunaan AI, peluang diambil bekerja atau hasil pekerjaan. Arah kemahiran yang disertakan juga sintetik.'],
+  'Choose your AI disruption scenario': ['选择 AI 影响情景', 'Pilih senario gangguan AI'],
+  'Moderate AI disruption': ['中度 AI 影响', 'Gangguan AI sederhana'],
+  'Fast AI disruption': ['快速 AI 影响', 'Gangguan AI pantas'],
+  'Assumptions you can inspect': ['可查看的假设', 'Andaian yang boleh diteliti'],
+  'Moderate:': ['中度情景：', 'Sederhana:'],
+  'Fast:': ['快速情景：', 'Pantas:'],
+  'Formula:': ['计算公式：', 'Formula:'],
+  'weighted overlap = matched skill weights ÷ all occupation skill weights × 100, rounded. A rising skill receives more emphasis in the fast lens; a declining skill receives less. These are chosen weights, not market measurements. Ties are alphabetical.': ['加权重叠度 = 匹配技能权重 ÷ 职业全部技能权重 × 100，四舍五入。快速情景会提高上升趋势技能的权重，降低下降趋势技能的权重。这些权重是人为设定，并非市场测量值。若分数相同，则按字母顺序排列。', 'Pertindihan berwajaran = jumlah berat kemahiran sepadan ÷ jumlah berat semua kemahiran pekerjaan × 100, dibundarkan. Kemahiran meningkat diberi penekanan lebih dalam senario pantas; kemahiran menurun diberi kurang. Berat ini ditetapkan untuk ilustrasi, bukan ukuran pasaran. Kedudukan seri disusun mengikut abjad.'],
+  'All scores are zero because you have no saved skills.': ['由于您尚未保存技能，所有分数均为零。', 'Semua skor ialah sifar kerana anda belum menyimpan kemahiran.'],
+  'Add skills to compare the lenses.': ['添加技能以比较不同情景。', 'Tambah kemahiran untuk membandingkan senario.'],
+  'ESTIMATED RANK {n} · {scenario} LENS': ['估算排名 {n} · {scenario} 情景', 'KEDUDUKAN ANGGARAN {n} · SENARIO {scenario}'],
+  'scenario-weighted overlap estimate': ['情景加权重叠度估算', 'anggaran pertindihan berwajaran senario'],
+  'Original overlap': ['原始重叠度', 'Pertindihan asal'],
+  'Change': ['变化', 'Perubahan'],
+  'More-emphasised skills:': ['权重较高的技能：', 'Kemahiran diberi penekanan lebih:'],
+  'Baseline skills:': ['基准权重技能：', 'Kemahiran asas:'],
+  'Less-emphasised skills:': ['权重较低的技能：', 'Kemahiran diberi penekanan kurang:'],
+  'None listed': ['无', 'Tiada disenaraikan'],
+  'Return to original role matches': ['返回原始职业匹配结果', 'Kembali kepada padanan peranan asal'],
+  'Explore changing work': ['探索不断变化的工作', 'Terokai perubahan dalam pekerjaan'],
+  'Review the direction and evidence attached to each dataset record. The included records are synthetic examples, not a forecast or live labor-market data.': ['查看每条数据记录的趋势方向和证据。所含记录均为合成示例，不是预测或实时劳动力市场数据。', 'Semak arah dan bukti bagi setiap rekod set data. Rekod yang disertakan ialah contoh sintetik, bukan ramalan atau data pasaran kerja semasa.'],
+  'Dataset status': ['数据集状态', 'Status set data'],
+  'Direction labels are not trend measurements': ['方向标签并非趋势测量结果', 'Label arah bukan ukuran trend'],
+  'Counts below describe the rows in this file only. They do not measure demand, growth, or decline in the real world.': ['以下数量仅描述此文件中的记录行，不代表现实世界的需求、增长或下降。', 'Bilangan di bawah hanya menggambarkan baris dalam fail ini. Ia tidak mengukur permintaan, pertumbuhan atau kemerosotan di dunia sebenar.'],
+  'Rising examples': ['上升示例', 'Contoh meningkat'],
+  'Declining examples': ['下降示例', 'Contoh menurun'],
+  'Stable examples': ['稳定示例', 'Contoh stabil'],
+  'rows marked verified in dataset': ['条数据标记为已核实', 'rekod ditandakan disahkan dalam set data'],
+  'Verification labels and citations come from the CSV. The app checks citation fields and date format, but does not independently validate the source or its claims.': ['核实标签和引用信息来自 CSV。本应用会检查引用字段和日期格式，但不会独立验证来源或其主张。', 'Label pengesahan dan petikan berasal daripada CSV. Aplikasi menyemak medan petikan dan format tarikh, tetapi tidak mengesahkan sumber atau dakwaannya secara bebas.'],
+  'synthetic example': ['合成示例', 'contoh sintetik'],
+  'marked verified in dataset': ['在数据集中标记为已核实', 'ditandakan disahkan dalam set data'],
+  'Published': ['发布日期', 'Diterbitkan'],
+  'No verified source or publication date is recorded for this synthetic example.': ['此合成示例未记录经过核实的来源或发布日期。', 'Tiada sumber atau tarikh penerbitan yang disahkan direkodkan untuk contoh sintetik ini.'],
+  'Compare possible directions title': ['比较可能的发展方向', 'Bandingkan hala tuju yang mungkin'],
+  'Ranked examples use a direct count of skills you entered against each sample occupation’s distinct skills. The score is not a hiring probability or a prediction.': ['排名示例会直接比较您输入的技能与各示例职业所需的不同技能数量。该分数不是受聘概率或预测。', 'Contoh kedudukan membandingkan kemahiran yang anda masukkan dengan bilangan kemahiran unik bagi setiap pekerjaan contoh. Skor ini bukan kebarangkalian diambil bekerja atau ramalan.'],
+  "Ranked examples use a direct count of skills you entered against each sample occupation's distinct skills. The score is not a hiring probability or a prediction.": ['排名示例会直接比较您输入的技能与各示例职业所需的不同技能数量。该分数不是受聘概率或预测。', 'Contoh kedudukan membandingkan kemahiran yang anda masukkan dengan bilangan kemahiran unik bagi setiap pekerjaan contoh. Skor ini bukan kebarangkalian diambil bekerja atau ramalan.'],
+  'Score formula:': ['分数公式：', 'Formula skor:'],
+  'matched skills ÷ distinct skills listed for the occupation × 100, rounded to the nearest whole percent. Capitalization and duplicate profile entries are ignored. Scores describe overlap only; 0% does not mean zero chance of being hired.': ['匹配技能数 ÷ 该职业列出的不同技能数 × 100，并四舍五入为整数百分比。大小写和资料中的重复技能会被忽略。分数仅表示技能重叠程度；0% 不代表受聘机会为零。', 'kemahiran sepadan ÷ bilangan kemahiran unik yang disenaraikan untuk pekerjaan × 100, dibundarkan kepada peratus terdekat. Huruf besar/kecil dan kemahiran profil pendua diabaikan. Skor hanya menunjukkan pertindihan; 0% tidak bermaksud tiada peluang diambil bekerja.'],
+  'Add skills in My Profile': ['在“我的资料”中添加技能', 'Tambah kemahiran dalam Profil Saya'],
+  'Results use your last saved skills list. Update My Profile and save to refresh the rankings.': ['结果使用您上次保存的技能列表。更新并保存“我的资料”即可刷新排名。', 'Keputusan menggunakan senarai kemahiran terakhir yang disimpan. Kemas kini dan simpan Profil Saya untuk memuat semula kedudukan.'],
+  'RANK {n}': ['排名 {n}', 'KEDUDUKAN {n}'],
+  'Synthetic role-skill mapping': ['合成职业技能映射', 'Pemetaan peranan-kemahiran sintetik'],
+  'Example occupation · not a live vacancy or labor-market assessment.': ['职业示例 · 并非实时职位空缺或劳动力市场评估。', 'Pekerjaan contoh · bukan kekosongan semasa atau penilaian pasaran kerja.'],
+  'SKILL OVERLAP': ['技能重叠度', 'PERTINDIHAN KEMAHIRAN'],
+  'Matched skills': ['匹配技能', 'Kemahiran sepadan'],
+  'Missing skills': ['待补充技能', 'Kemahiran yang belum ada'],
+  'No overlap yet': ['暂未匹配', 'Belum ada pertindihan'],
+  'Build a learning plan': ['制定学习计划', 'Bina pelan pembelajaran'],
+  'Make this space yours': ['自定义此工作区', 'Sesuaikan ruang ini'],
+  'Workspace Settings': ['工作区设置', 'Tetapan Ruang Kerja'],
+  'Choose a name for this workspace and manage the information saved on this device.': ['为此工作区命名，并管理保存在此设备上的信息。', 'Namakan ruang kerja ini dan urus maklumat yang disimpan pada peranti ini.'],
+  'Workspace name': ['工作区名称', 'Nama ruang kerja'],
+  'Only visible in this browser.': ['仅在此浏览器中可见。', 'Hanya kelihatan dalam pelayar ini.'],
+  'Project title': ['项目名称', 'Tajuk projek'],
+  'Save title': ['保存名称', 'Simpan tajuk'],
+  'Workspace title saved on this device.': ['工作区名称已保存在此设备。', 'Tajuk ruang kerja disimpan pada peranti ini.'],
+  'This removes the saved profile and returns the title to “Career Pathways.” Your illustrative examples remain available. This action cannot be undone.': ['此操作会删除已保存的资料，并将名称恢复为“Career Pathways”。示例内容仍会保留。此操作无法撤销。', 'Tindakan ini memadam profil tersimpan dan mengembalikan tajuk kepada “Career Pathways.” Contoh ilustrasi akan kekal. Tindakan ini tidak boleh dibuat asal.'],
+  'Reset workspace data? Your saved profile and custom title will be permanently removed from this device.': ['确定要重置工作区数据吗？已保存的资料和自定义名称将从此设备永久删除。', 'Tetapkan semula data ruang kerja? Profil tersimpan dan tajuk tersuai akan dipadam secara kekal daripada peranti ini.'],
+  'Reset profile and title': ['重置资料和名称', 'Tetapkan semula profil dan tajuk'],
+  'Privacy note: profile and title are stored in your browser’s local storage. There is no account, backend, or cloud sync. Clearing browser storage will remove this information.': ['隐私说明：资料和名称保存在浏览器本地存储中。本应用没有账户、后端或云同步。清除浏览器存储会删除这些信息。', 'Nota privasi: profil dan tajuk disimpan dalam storan setempat pelayar anda. Tiada akaun, bahagian belakang atau penyegerakan awan. Mengosongkan storan pelayar akan memadam maklumat ini.'],
+  'Career exploration steps': ['职业探索步骤', 'Langkah penerokaan kerjaya'],
+  '1. Profile': ['1. 资料', '1. Profil'],
+  '2. Skills radar': ['2. 技能雷达', '2. Radar kemahiran'],
+  '3. Role matches': ['3. 职业匹配', '3. Padanan peranan'],
+  '4. Learning plan': ['4. 学习计划', '4. Pelan pembelajaran'],
+  '5. SDG mapping': ['5. SDG 对应', '5. Pemetaan SDG'],
+  '6. Scenarios': ['6. 情景', '6. Senario'],
+  'Loading the local demonstration dataset…': ['正在加载本地演示数据集…', 'Memuatkan set data demonstrasi setempat…'],
+  'Dataset could not be loaded: {error}': ['无法加载数据集：{error}', 'Set data tidak dapat dimuatkan: {error}'],
+  'dataset row or format issue': ['个数据行或格式问题', 'isu baris atau format set data'],
+  'dataset row or format issues': ['个数据行或格式问题', 'isu baris atau format set data'],
+  '{n} dataset row or format issue(s) found.': ['发现 {n} 个数据行或格式问题。', 'Sebanyak {n} isu baris atau format set data ditemui.'],
+  'Invalid rows were skipped; valid rows remain available.': ['已跳过无效行；有效记录仍可使用。', 'Baris tidak sah telah dilangkau; rekod sah masih tersedia.'],
+  'Showing the first four issues.': ['仅显示前四个问题。', 'Empat isu pertama dipaparkan.'],
+  'There are no valid records to display. Check the CSV columns and row values.': ['没有可显示的有效记录。请检查 CSV 列和行的值。', 'Tiada rekod sah untuk dipaparkan. Semak lajur dan nilai baris CSV.'],
+  '1 day': ['1 天', '1 hari'],
+  'estimate': ['估算', 'anggaran'],
+  'Rising': ['上升', 'Meningkat'],
+  'Declining': ['下降', 'Menurun'],
+  'Stable': ['稳定', 'Stabil'],
+  '{n} rows marked verified in dataset': ['数据集中有 {n} 行标记为已核实', '{n} rekod ditandakan disahkan dalam set data'],
+  'points': ['分', 'mata'],
+  'Something went wrong': ['出现问题', 'Sesuatu telah berlaku'],
+  'This part of the app hit an error. The rest of the app is still running.': ['应用的这一部分发生错误，其他部分仍可运行。', 'Bahagian aplikasi ini mengalami ralat. Bahagian lain masih berfungsi.'],
+  'Try again': ['重试', 'Cuba lagi'],
+  '404 Page Not Found': ['404 页面未找到', '404 Halaman Tidak Ditemui'],
+  'Did you forget to add the page to the router?': ['您是否忘记将此页面添加到路由中？', 'Adakah anda terlupa menambah halaman ini pada penghala?'],
+  'CSV contains an unclosed quoted field.': ['CSV 包含未闭合的引号字段。', 'CSV mengandungi medan petikan yang tidak ditutup.'],
+  'CSV could not be parsed.': ['无法解析 CSV。', 'CSV tidak dapat dihuraikan.'],
+  'CSV is empty.': ['CSV 为空。', 'CSV kosong.'],
+  'CSV has a header but no data rows.': ['CSV 有标题行，但没有数据行。', 'CSV mempunyai pengepala tetapi tiada baris data.'],
+  'occupation, skill, and evidence are required.': ['职业、技能和证据为必填项。', 'Pekerjaan, kemahiran dan bukti diperlukan.'],
+  'trend_direction must be rising, declining, or stable.': ['trend_direction 必须为 rising、declining 或 stable。', 'trend_direction mestilah rising, declining atau stable.'],
+  'record_status must be synthetic or verified.': ['record_status 必须为 synthetic 或 verified。', 'record_status mestilah synthetic atau verified.'],
+  'synthetic rows must not include source or publication-date fields.': ['合成数据行不得包含来源或发布日期字段。', 'Baris sintetik tidak boleh mengandungi medan sumber atau tarikh penerbitan.'],
+  'verified rows require source_name, source_url, and publication_date.': ['已核实的数据行必须包含 source_name、source_url 和 publication_date。', 'Baris disahkan memerlukan source_name, source_url dan publication_date.'],
+  'verified source_url must be a valid http or https URL.': ['已核实记录的 source_url 必须是有效的 HTTP 或 HTTPS URL。', 'source_url bagi rekod disahkan mestilah URL HTTP atau HTTPS yang sah.'],
+  'verified publication_date must be a real date in YYYY-MM-DD format.': ['已核实记录的 publication_date 必须是 YYYY-MM-DD 格式的有效日期。', 'publication_date bagi rekod disahkan mestilah tarikh sebenar dalam format YYYY-MM-DD.'],
+  'duplicate occupation and skill pair.': ['职业与技能组合重复。', 'Pasangan pekerjaan dan kemahiran pendua.'],
+  'Reset workspace data': ['重置工作区数据', 'Tetapkan semula data ruang kerja'],
+  'No verified resource link yet': ['尚无已核实的资源链接', 'Belum ada pautan sumber yang disahkan'],
+  'Not independently checked': ['未经独立核实', 'Belum disemak secara bebas'],
+  'A relevant resource page has not been verified. No course link is being suggested.': ['尚未核实相关资源页面，因此不会推荐课程链接。', 'Halaman sumber berkaitan belum disahkan. Tiada pautan kursus dicadangkan.'],
+  'Public framework explaining how to plan and use program evaluation.': ['介绍如何规划和使用项目评估的公开框架。', 'Rangka kerja awam yang menerangkan cara merancang dan menggunakan penilaian program.'],
+  'Public framework covering evaluation questions, evidence, and use of findings.': ['涵盖评估问题、证据和结果应用的公开框架。', 'Rangka kerja awam yang merangkumi soalan penilaian, bukti dan penggunaan dapatan.'],
+  'NASA educational material introducing climate science and its impacts.': ['NASA 介绍气候科学及其影响的教育材料。', 'Bahan pendidikan NASA yang memperkenalkan sains iklim dan kesannya.'],
+  'Public guide to researching people’s experiences of a service.': ['关于研究人们使用服务体验的公开指南。', 'Panduan awam untuk menyelidik pengalaman pengguna sesuatu perkhidmatan.'],
+  'Public collection of user-research methods and practical guides.': ['用户研究方法和实用指南的公开集合。', 'Koleksi awam kaedah penyelidikan pengguna dan panduan praktikal.'],
+  'Public tutorials about charts, maps, and tables.': ['关于图表、地图和表格的公开教程。', 'Tutorial awam tentang carta, peta dan jadual.'],
+  'Public guide to planning, organizing, drafting, and revising writing.': ['关于规划、组织、起草和修改写作内容的公开指南。', 'Panduan awam untuk merancang, menyusun, mendraf dan menyemak penulisan.'],
+};
+
+const contentTranslations: Record<string, [string, string]> = {
+  'Learning Experience Designer': ['学习体验设计师', 'Pereka Pengalaman Pembelajaran'],
+  'Sustainability Program Coordinator': ['可持续发展项目协调员', 'Penyelaras Program Kemampanan'],
+  'Customer Insights Associate': ['客户洞察专员', 'Eksekutif Wawasan Pelanggan'],
+  'Office Support Coordinator (illustrative)': ['办公室支持协调员（示例）', 'Penyelaras Sokongan Pejabat (ilustrasi)'],
+  Communication: ['沟通', 'Komunikasi'], Facilitation: ['引导', 'Fasilitasi'],
+  'Content planning': ['内容规划', 'Perancangan kandungan'], 'Learning design': ['学习设计', 'Reka bentuk pembelajaran'],
+  'Learning evaluation': ['学习评估', 'Penilaian pembelajaran'], 'Project coordination': ['项目协调', 'Penyelarasan projek'],
+  Research: ['研究', 'Penyelidikan'], 'Stakeholder support': ['利益相关方支持', 'Sokongan pihak berkepentingan'],
+  'Impact measurement': ['影响评估', 'Pengukuran impak'], 'Climate literacy': ['气候素养', 'Literasi iklim'],
+  Listening: ['倾听', 'Pendengaran aktif'], Writing: ['写作', 'Penulisan'],
+  'Pattern recognition': ['模式识别', 'Pengecaman corak'], 'Qualitative research methods': ['定性研究方法', 'Kaedah penyelidikan kualitatif'],
+  'Data visualization': ['数据可视化', 'Visualisasi data'], 'Manual record handling': ['手动记录处理', 'Pengendalian rekod manual'],
+  'Routine information processing': ['常规信息处理', 'Pemprosesan maklumat rutin'], Scheduling: ['日程安排', 'Penjadualan'],
+  'Document organization': ['文件整理', 'Penyusunan dokumen'],
+  'Synthetic demonstration record only; no public source has been independently verified.': ['仅为合成演示记录；尚无经过独立核实的公开来源。', 'Rekod demonstrasi sintetik sahaja; tiada sumber awam disahkan secara bebas.'],
+  'Quality Education': ['优质教育', 'Pendidikan Berkualiti'],
+  'Responsible Consumption and Production': ['负责任消费和生产', 'Penggunaan dan Pengeluaran Bertanggungjawab'],
+  'Climate Action': ['气候行动', 'Tindakan Iklim'],
+  'Industry, Innovation and Infrastructure': ['产业、创新和基础设施', 'Industri, Inovasi dan Infrastruktur'],
+  'Peace, Justice and Strong Institutions': ['和平、正义与强大机构', 'Keamanan, Keadilan dan Institusi Kukuh'],
+  'When the work creates accessible learning opportunities and checks whether they help, it may align with Goal 4’s lifelong-learning aim. The occupation label alone does not demonstrate a contribution.': ['如果工作创造了易于参与的学习机会，并评估其效果，可能与目标 4 的终身学习宗旨相关。仅有职业名称并不能证明作出了贡献。', 'Jika pekerjaan menyediakan peluang pembelajaran yang mudah diakses dan menilai keberkesanannya, ia mungkin selari dengan matlamat pembelajaran sepanjang hayat SDG 4. Nama pekerjaan sahaja tidak membuktikan sumbangan.'],
+  'If the role supports more responsible resource use, coordinating evidence and stakeholders can be relevant to Goal 12. This is an intended alignment, not evidence of changed consumption or production.': ['如果该职位支持更负责任地使用资源，协调证据和利益相关方可能与目标 12 相关。这是预期的关联，并非消费或生产方式发生变化的证据。', 'Jika peranan ini menyokong penggunaan sumber yang lebih bertanggungjawab, penyelarasan bukti dan pihak berkepentingan mungkin berkaitan dengan SDG 12. Ini ialah keselarasan yang diniatkan, bukan bukti perubahan penggunaan atau pengeluaran.'],
+  'In work that supports climate initiatives, climate literacy and measurement may help teams plan and review activities. No climate outcome is measured by this app.': ['在支持气候行动的工作中，气候素养和测量能力可能帮助团队规划和审视活动。本应用不会测量任何气候成果。', 'Dalam kerja yang menyokong inisiatif iklim, literasi dan pengukuran iklim boleh membantu pasukan merancang serta menilai aktiviti. Aplikasi ini tidak mengukur sebarang hasil iklim.'],
+  'If findings are used to improve services or products responsibly, research and clear data presentation can inform innovation. The mapping does not show that any innovation or public benefit occurred.': ['如果研究发现被负责任地用于改进服务或产品，研究和清晰的数据呈现可以为创新提供参考。此对应关系并不表明创新或公共利益已经实现。', 'Jika dapatan digunakan secara bertanggungjawab untuk menambah baik perkhidmatan atau produk, penyelidikan dan persembahan data yang jelas boleh memaklumkan inovasi. Pemetaan ini tidak membuktikan inovasi atau manfaat awam telah berlaku.'],
+  'In a public or community institution, well-organized records and scheduling may support accessible, accountable processes. This is context-dependent and is not a measured institutional outcome.': ['在公共或社区机构中，整理完善的记录和日程安排可能有助于建立易于使用且负责任的流程。此关联取决于具体情境，并非经过测量的机构成果。', 'Dalam institusi awam atau komuniti, rekod dan jadual yang tersusun boleh menyokong proses yang mudah diakses dan bertanggungjawab. Hubungan ini bergantung pada konteks dan bukan hasil institusi yang diukur.'],
+  'How the scenario treats dataset directions': ['情景如何处理数据集中的趋势方向', 'Cara senario mengendalikan arah dalam set data'],
+  'Rising 1.1× · stable 1× · declining 0.9×': ['上升 1.1× · 稳定 1× · 下降 0.9×', 'Meningkat 1.1× · stabil 1× · menurun 0.9×'],
+  'Rising 1.4× · stable 1× · declining 0.6×': ['上升 1.4× · 稳定 1× · 下降 0.6×', 'Meningkat 1.4× · stabil 1× · menurun 0.6×'],
+  'These are chosen what-if weights, not observed AI effects. They use the CSV direction labels, which are synthetic in the included file.': ['这些是人为设定的假设权重，并非观察到的 AI 影响。权重使用 CSV 中的趋势方向标签；当前文件中的标签均为合成示例。', 'Ini ialah pemberat andaian untuk senario “bagaimana jika”, bukan kesan AI yang diperhatikan. Ia menggunakan label arah CSV yang bersifat sintetik dalam fail ini.'],
+  'Adoption assumption': ['采用速度假设', 'Andaian kadar penggunaan'],
+  'Uneven and gradual': ['不均衡且渐进', 'Tidak sekata dan beransur-ansur'],
+  'Quicker and broader': ['更快且更广泛', 'Lebih pantas dan meluas'],
+  'The scenarios describe contrasting discussion assumptions; they are not forecasts, probabilities, or guaranteed outcomes.': ['这些情景描述了不同的讨论假设，并非预测、概率或保证的结果。', 'Senario ini menerangkan andaian perbincangan yang berbeza; ia bukan ramalan, kebarangkalian atau hasil yang dijamin.'],
+};
+
+export function translate(source: string, locale: Locale, values?: Record<string, string | number>): string {
+  const entry = translations[source] ?? contentTranslations[source];
+  let result = locale === 'en' || !entry ? source : entry[locale === 'zh' ? 0 : 1];
+  if (values) for (const [key, value] of Object.entries(values)) result = result.replaceAll(`{${key}}`, String(value));
+  return result;
+}
+
+export function localizeContent(source: string, locale: Locale): string {
+  const duration = source.match(/^(\d+–\d+) (hours|weeks) · estimate$/);
+  if (duration && locale !== 'en') {
+    const unit = duration[2] === 'hours' ? (locale === 'zh' ? '小时' : 'jam') : (locale === 'zh' ? '周' : 'minggu');
+    const estimate = locale === 'zh' ? '估算' : 'anggaran';
+    return `${duration[1]} ${unit} · ${estimate}`;
+  }
+  const singleDuration = source.match(/^(\d+) week · estimate$/);
+  if (singleDuration && locale !== 'en') {
+    return `${singleDuration[1]} ${locale === 'zh' ? '周 · 估算' : 'minggu · anggaran'}`;
+  }
+  if (source.startsWith('CSV is missing required columns: ')) {
+    const columns = source.slice('CSV is missing required columns: '.length).replace(/\.$/, '');
+    const translatedColumns = columns.split(', ').map(column => translate(column, locale)).join('、');
+    return locale === 'zh' ? `CSV 缺少必需列：${translatedColumns}。` : locale === 'ms' ? `CSV tiada lajur wajib: ${translatedColumns}.` : source;
+  }
+  const rowPrefix = source.match(/^Row (\d+): (.*)$/);
+  if (rowPrefix && locale !== 'en') {
+    const body = translate(rowPrefix[2], locale);
+    return `${locale === 'zh' ? '第' + rowPrefix[1] + '行' : 'Baris ' + rowPrefix[1]}: ${body}`;
+  }
+  const requestFailure = source.match(/^Request failed with status (\d+)$/);
+  if (requestFailure && locale !== 'en') return locale === 'zh' ? `请求失败，状态码 ${requestFailure[1]}` : `Permintaan gagal dengan status ${requestFailure[1]}`;
+  const columnMismatch = source.match(/^Row (\d+): expected (\d+) columns, found (\d+)\.$/);
+  if (columnMismatch && locale !== 'en') return locale === 'zh'
+    ? `第${columnMismatch[1]}行：应有 ${columnMismatch[2]} 列，实际为 ${columnMismatch[3]} 列。`
+    : `Baris ${columnMismatch[1]}: dijangka ${columnMismatch[2]} lajur, tetapi ditemui ${columnMismatch[3]}.`;
+  return translate(source, locale);
+}
+
+type I18nContextValue = { locale: Locale; setLocale: (locale: Locale) => void; t: (source: string, values?: Record<string, string | number>) => string; tag: string };
+const I18nContext = createContext<I18nContextValue | null>(null);
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved === 'zh' || saved === 'ms' ? saved : 'en';
+  });
+  const setLocale = (next: Locale) => {
+    localStorage.setItem(STORAGE_KEY, next);
+    setLocaleState(next);
+  };
+  useEffect(() => { document.documentElement.lang = localeTag[locale]; }, [locale]);
+  const value = useMemo(() => ({ locale, setLocale, t: (source: string, values?: Record<string, string | number>) => translate(source, locale, values), tag: localeTag[locale] }), [locale]);
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+export function useI18n() {
+  const value = useContext(I18nContext);
+  if (!value) throw new Error('useI18n must be used within I18nProvider');
+  return value;
+}
