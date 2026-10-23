@@ -395,7 +395,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
 
     {step === 'review' && <section className="panel profile-step" aria-labelledby="profile-review-heading">
       <div className="profile-step-heading"><span className="profile-step-number">04</span><div><h2 id="profile-review-heading">{t('Review your profile')}</h2><p>{t('Check the details below. Use Edit to make changes before confirming.')}</p></div></div>
-      <div className="profile-review-meta"><span className="tag">{t(profileType === 'career_switcher' ? 'Career Switcher' : 'Fresh Graduate')}</span><span className="tag">{t('Online form')}</span></div>
+      <div className="profile-review-meta"><span className="tag">{t(profileType === 'career_switcher' ? 'Career Switcher' : 'Fresh Graduate')}</span><span className="tag" data-testid="text-profile-input-method">{t(form.input_method === 'pdf_upload' ? 'PDF upload' : 'Online form')}</span></div>
       <div className="profile-review-group"><h3>{t('Education')}</h3>
         {([
           ['School / University', form.education.school], ['Degree', form.education.degree],

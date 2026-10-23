@@ -84,7 +84,7 @@ test('storage quota or access errors return failure without throwing or changing
     setItem: () => { throw new Error('Synthetic quota failure'); },
     removeItem: () => { throw new Error('Synthetic access failure'); },
   };
-  assert.deepEqual(persistConfirmedProfile(storage, { ...emptyProfile, skills: 'Writing' }), { ok: false });
+  assert.deepEqual(persistConfirmedProfile(storage, { ...emptyProfile, skills: 'Writing', confirmed_by_user: true }), { ok: false });
   assert.equal(storage.getItem(), saved);
   assert.deepEqual(persistProfileDraft(storage, draft), { ok: false });
   assert.deepEqual(removeProfileDraft(storage), { ok: false });
@@ -97,4 +97,16 @@ test('invalid draft data is ignored and successful confirmation writes the expec
   assert.equal(readProfileDraft(storage, null), null);
   assert.deepEqual(persistConfirmedProfile(storage, { ...emptyProfile, confirmed_by_user: true }), { ok: true });
   assert.equal(JSON.parse(storage.getItem(PROFILE_STORAGE_KEY)!).confirmed_by_user, true);
+});
+
+test('shared save boundary rejects unconfirmed and non-boolean confirmation without replacing saved data', () => {
+  const storage = memoryStorage();
+  const confirmed = { ...emptyProfile, skills: 'Research', confirmed_by_user: true };
+  assert.deepEqual(persistConfirmedProfile(storage, confirmed), { ok: true });
+  const saved = storage.getItem(PROFILE_STORAGE_KEY);
+  for (const value of [false, undefined, null, 'true', 1]) {
+    const candidate = { ...confirmed, skills: 'Writing', confirmed_by_user: value } as unknown as typeof confirmed;
+    assert.deepEqual(persistConfirmedProfile(storage, candidate), { ok: false });
+    assert.equal(storage.getItem(PROFILE_STORAGE_KEY), saved);
+  }
 });

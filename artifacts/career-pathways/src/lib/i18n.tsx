@@ -5,6 +5,7 @@ const STORAGE_KEY = 'career-pathways-locale';
 const localeTag: Record<Locale, string> = { en: 'en', zh: 'zh-CN', ms: 'ms-MY' };
 
 const translations: Record<string, [string, string]> = {
+  'PDF upload': ['PDF 上传', 'Muat naik PDF'],
   'Public demo: real GLM-5.3 calls are blocked. No login is required. Local extraction and simulated mapping do not contact RunPod.': ['公开演示：已阻止真实 GLM-5.3 调用，无需登录。本地提取和模拟映射不会连接 RunPod。', 'Demo awam: panggilan GLM-5.3 sebenar disekat. Log masuk tidak diperlukan. Pengekstrakan setempat dan pemetaan simulasi tidak menghubungi RunPod.'],
   'Real GLM-5.3 mapping is blocked in this public demo. Use local extraction or simulated mapping.': ['此公开演示已阻止真实 GLM-5.3 映射。请使用本地提取或模拟映射。', 'Pemetaan GLM-5.3 sebenar disekat dalam demo awam ini. Gunakan pengekstrakan setempat atau pemetaan simulasi.'],
   'Enable simulated mapping (rules only, not AI). Copy explicitly labelled PDF lines into an editable draft; no RunPod request is made.': ['启用模拟映射（仅规则，不是 AI）：将 PDF 中有明确标签的行复制到可编辑草稿，不会请求 RunPod。', 'Aktifkan pemetaan simulasi (peraturan sahaja, bukan AI). Salin baris PDF berlabel jelas ke draf boleh sunting; tiada permintaan RunPod dibuat.'],

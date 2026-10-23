@@ -90,3 +90,40 @@ test('invalid non-object profile data is rejected safely', () => {
   assert.equal(normalizeProfile([]), null);
   assert.equal(normalizeProfile('not a profile'), null);
 });
+
+test('missing, null, array and numeric text values normalize to empty strings, never skill arrays', () => {
+  const profile = normalizeProfile({
+    education: { school: null, degree: ['BA'], major: 123 },
+    skills: ['Research'], internship_experience: null, academic_experience: 5,
+    interests_and_hobbies: [], confirmed_by_user: 'true',
+  })!;
+  assert.deepEqual(profile.education, { school: '', degree: '', major: '', key_courses: '' });
+  assert.equal(profile.skills, '');
+  assert.equal(profile.internship_experience, '');
+  assert.equal(profile.academic_experience, '');
+  assert.equal(profile.interests_and_hobbies, '');
+  assert.equal(profile.confirmed_by_user, false);
+  const explicit = normalizeProfile({ skills: '无', education: { school: 'None', degree: '无', major: 'Tiada' } })!;
+  assert.equal(explicit.skills, '无');
+  assert.equal(explicit.education.degree, '无');
+  assert.deepEqual(validateProfile(explicit), []);
+});
+
+test('simulated provenance survives normalization and confirmation for both identities and input methods', () => {
+  for (const type of ['fresh_graduate', 'career_switcher'] as const) {
+    for (const method of ['pdf_upload', 'online_form'] as const) {
+      const profile = normalizeProfile({
+        ...emptyProfile, profile_type: type, input_method: method,
+        employment_experience: 'Fictional work', mapping_provenance: 'simulated',
+        confirmed_by_user: true,
+      })!;
+      assert.equal(profile.mapping_provenance, 'simulated');
+      assert.equal(profile.confirmed_by_user, true);
+      assert.equal(profile.employment_experience, 'Fictional work');
+      assert.equal(profile.input_method, method);
+      assert.equal(profile.profile_type, type);
+    }
+  }
+  assert.equal(normalizeProfile({ mapping_provenance: 'real-ai' })!.mapping_provenance, undefined);
+  assert.equal(normalizeProfile(emptyProfile)!.mapping_provenance, undefined);
+});

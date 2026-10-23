@@ -8,7 +8,9 @@ or career explanations. Do not expose secrets or provision paid resources.
 The current product scope is a no-login public demonstration: actual local PDF
 text extraction and explicitly labelled, rule-based simulated mapping.
 The user explicitly prohibited Replit Auth, Clerk, login pages, user tables and
-session tables. Keep the prepared GLM-5.3 client disconnected from public requests.
+session tables. Profile/matching handoff work must not add databases or other
+infrastructure, or modify other teams' module business logic.
+Keep the prepared GLM-5.3 client disconnected from public requests.
 No live calls, secret inspection or inference costs are authorized during coding.
 
 **Why:** The user rejected the proposed login/allowlist approach and required a
