@@ -31,7 +31,7 @@ export function persistProfileDraft(storage: WritableStorage, draft: ProfileDraf
   try {
     storage.setItem(PROFILE_DRAFT_KEY, JSON.stringify({
       ...draft,
-      form: { ...draft.form, input_method: 'online_form', confirmed_by_user: false },
+      form: { ...draft.form, confirmed_by_user: false },
     }));
     return { ok: true };
   } catch {
@@ -52,7 +52,7 @@ export function readProfileDraft(storage: ReadableStorage, savedProfile: Profile
     return {
       version: 1,
       baseProfile: draft.baseProfile,
-      form: { ...form, input_method: 'online_form', confirmed_by_user: false },
+      form: { ...form, confirmed_by_user: false },
       profileType,
       step: !profileType || employmentNeedsResolution(profileType, form.employment_experience)
         ? 'type'

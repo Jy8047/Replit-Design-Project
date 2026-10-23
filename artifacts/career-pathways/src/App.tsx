@@ -52,7 +52,8 @@ function readProfile(): Profile | null {
     const raw=localStorage.getItem(STORAGE_PROFILE);
     if(!raw)return null;
     const parsed=JSON.parse(raw);
-    return normalizeProfile(parsed);
+    const normalized=normalizeProfile(parsed);
+    return normalized?.confirmed_by_user ? normalized : null;
   } catch { return null; }
 }
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {

@@ -1,0 +1,94 @@
+import { useEffect, useRef, useState } from 'react';
+import { extractCvPdf, setBaseUrl, type CvExtractionResult } from '@workspace/api-client-react';
+import { useI18n } from '@/lib/i18n';
+import type { Profile, ProfileType } from '@/lib/profile';
+
+const messages: Record<string, string> = {
+  OCR_REQUIRED: 'No extractable text was found. OCR is required but is not implemented. Use the online form.',
+  LIVE_DISABLED: 'PDF text extraction succeeded. Live RunPod mapping is disabled; no text was sent to RunPod.',
+  KEY_MISSING: 'PDF text extraction succeeded, but the server has no RunPod key configured.',
+  AUTH_ERROR: 'RunPod authentication failed. Ask the project owner to check the server configuration.',
+  RATE_LIMITED: 'The request limit was reached. Do not retry repeatedly; try the online form.',
+  UPSTREAM_TIMEOUT: 'RunPod timed out. A request may already have been billed. It was not retried automatically.',
+  UPSTREAM_ERROR: 'RunPod could not complete the request. No profile was changed.',
+  MALFORMED_RESPONSE: 'RunPod returned an unusable response. No profile was changed.',
+  INVALID_PROFILE: 'The extracted profile failed schema or text-evidence checks. No profile was changed.',
+  TEXT_TOO_LARGE: 'The extracted text exceeds the processing limit. Use a shorter CV or the online form.',
+  ENCRYPTED_PDF: 'Encrypted or password-protected PDFs are not supported. Use an unencrypted PDF.',
+  CORRUPT_PDF: 'This PDF could not be parsed. It may be damaged or unsupported.',
+  PDF_TIMEOUT: 'PDF processing exceeded the time limit. Use a simpler PDF or the online form.',
+  PAGE_LIMIT: 'PDFs must contain between 1 and 30 pages.',
+  FILE_TOO_LARGE: 'The file is larger than the 10 MB limit. Choose a smaller PDF.',
+  PDF_ONLY: 'Only PDF files are accepted.',
+  EMPTY_FILE: 'This PDF is empty. Choose a non-empty PDF or fill in the profile online.',
+  BUSY: 'The server is busy or the request limit was reached. Try the online form.',
+  CONSENT_REQUIRED: 'Please confirm the data-processing consent before continuing.',
+};
+export function PdfExtractionPanel({ file, onUseDraft, onOnline }: {
+  file: File | null;
+  onUseDraft: (profile: Profile) => void;
+  onOnline: () => void;
+}) {
+  const { t } = useI18n();
+  const [type, setType] = useState<ProfileType>('fresh_graduate');
+  const [consent, setConsent] = useState(false);
+  const [map, setMap] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<CvExtractionResult | null>(null);
+  const [error, setError] = useState('');
+  const request = useRef<AbortController | null>(null);
+  useEffect(() => {
+    request.current?.abort();
+    request.current = null;
+    setResult(null); setError(''); setBusy(false); setConsent(false); setMap(false);
+    return () => { request.current?.abort(); request.current = null; };
+  }, [file]);
+  const parse = async () => {
+    if (!file || !consent || busy) return;
+    setBusy(true); setError(''); setResult(null);
+    const controller = new AbortController();
+    request.current = controller;
+    const timer = setTimeout(() => controller.abort(), 55_000);
+    try {
+      setBaseUrl(import.meta.env.BASE_URL.replace(/\/$/, ''));
+      const value = await extractCvPdf(file, { profile_type: type, map_profile: map ? 'true' : 'false' }, {
+        headers: { 'X-CV-Consent': map ? 'runpod-text' : 'local-extraction' },
+        signal: controller.signal,
+      });
+      if (request.current === controller) setResult(value);
+    } catch (failure) {
+      if (request.current !== controller) return;
+      const code = (failure as { data?: { code?: string } })?.data?.code;
+      setError(code && messages[code] ? messages[code] : 'The upload could not be completed. Your confirmed profile and draft are unchanged.');
+    } finally {
+      clearTimeout(timer);
+      if (request.current === controller) { request.current = null; setBusy(false); }
+    }
+  };
+  return <div className="profile-pdf-flow" data-testid="pdf-extraction-panel">
+    <div className="profile-parser-note"><p>{t('PDF bytes are sent to this app server for text extraction only. Files and raw text are not saved on the server. OCR is not implemented. Nothing changes your confirmed profile until you confirm.')}</p></div>
+    <label className="profile-form-field">{t('Profile Type')}
+      <select value={type} disabled={busy} onChange={event => { setType(event.target.value as ProfileType); setResult(null); }} data-testid="select-pdf-profile-type">
+        <option value="fresh_graduate">{t('Fresh Graduate')}</option>
+        <option value="career_switcher">{t('Career Switcher')}</option>
+      </select>
+    </label>
+    <p><label><input type="checkbox" checked={consent} disabled={busy} onChange={event => setConsent(event.target.checked)} data-testid="checkbox-pdf-consent"/> {t('I agree to send this PDF to the app server for text extraction. Use a fictional CV for testing.')}</label></p>
+    <p><label><input type="checkbox" checked={map} disabled={busy} onChange={event => setMap(event.target.checked)} data-testid="checkbox-runpod-consent"/> {t('Also send extracted text to RunPod for an editable profile draft, if the owner has enabled it. This may incur costs and shares CV text with RunPod. Disabled by default.')}</label></p>
+    <div className="profile-actions">
+      <button type="button" className="btn btn-primary" disabled={!file || !consent || busy} onClick={() => void parse()} data-testid="button-parse-pdf">{t(busy ? 'Extracting…' : 'Continue / Parse CV')}</button>
+      <button type="button" className="btn" disabled={busy} onClick={onOnline} data-testid="button-switch-to-online">{t('Switch to Fill in Online')}</button>
+    </div>
+    {error && <p role="alert" className="profile-error" data-testid="error-pdf-extraction">{t(error)}</p>}
+    {result && <div className="profile-inline-notice" data-testid="pdf-extraction-result">
+      <p role="status">{t(result.status === 'OCR_REQUIRED' ? messages.OCR_REQUIRED : 'Actual PDF text extracted. Check it against your CV; reading order and characters may be imperfect.')}</p>
+      {messages[result.mapping] && result.status !== 'OCR_REQUIRED' && <p>{t(messages[result.mapping])}</p>}
+      {result.text && <details open><summary>{t('Extracted PDF text (not saved)')}</summary><pre className="profile-json" data-testid="pdf-extracted-text">{result.text}</pre></details>}
+      {result.profile && <>
+        <p>{t('AI-extracted draft: unverified and not confirmed. Missing facts remain empty. Review and edit every field before confirmation.')}</p>
+        <pre className="profile-json" data-testid="pdf-draft-json">{JSON.stringify(result.profile, null, 2)}</pre>
+        <button type="button" className="btn btn-primary" onClick={() => onUseDraft(result.profile!)} data-testid="button-use-pdf-draft">{t('Review and edit extracted draft')}</button>
+      </>}
+    </div>}
+  </div>;
+}

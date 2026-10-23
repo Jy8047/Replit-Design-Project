@@ -11,6 +11,55 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /profile/extract-pdf:
+    post:
+      operationId: extractCvPdf
+      summary: Extract actual PDF text; optionally request an unconfirmed profile draft
+      parameters:
+        - in: query
+          name: profile_type
+          required: true
+          schema:
+            type: string
+            enum: [fresh_graduate, career_switcher]
+        - in: query
+          name: map_profile
+          schema:
+            type: string
+            enum: ["true", "false"]
+        - in: header
+          name: X-CV-Consent
+          required: true
+          schema:
+            type: string
+            enum: [local-extraction, runpod-text]
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema:
+              $ref: "#/components/schemas/CvPdfInput"
+      responses:
+        "200":
+          description: Local text and optional unconfirmed draft; mapping may be disabled or fail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CvExtractionResult"
+        "400":
+          $ref: "#/components/responses/CvError"
+        "403":
+          $ref: "#/components/responses/CvError"
+        "413":
+          $ref: "#/components/responses/CvError"
+        "415":
+          $ref: "#/components/responses/CvError"
+        "422":
+          $ref: "#/components/responses/CvError"
+        "429":
+          $ref: "#/components/responses/CvError"
+        "503":
+          $ref: "#/components/responses/CvError"
   /healthz:
     get:
       operationId: healthCheck
@@ -25,7 +74,69 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 components:
+  responses:
+    CvError:
+      description: Safe error code; no submitted data or upstream response echoed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CvError"
   schemas:
+    CvPdfInput:
+      type: string
+      format: binary
+      description: Raw PDF bytes, not JSON or multipart; maximum 10 MiB
+    CvError:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code:
+          type: string
+    CvEducation:
+      type: object
+      additionalProperties: false
+      required: [school, degree, major, key_courses]
+      properties:
+        school: { type: string, maxLength: 8000 }
+        degree: { type: string, maxLength: 8000 }
+        major: { type: string, maxLength: 8000 }
+        key_courses: { type: string, maxLength: 8000 }
+    CvProfile:
+      type: object
+      additionalProperties: false
+      required: [profile_type, input_method, education, internship_experience, academic_experience, professional_certificates, personal_experience, interests_and_hobbies, employment_experience, other_experience, skills, name, role, background, confirmed_by_user]
+      properties:
+        profile_type: { type: string, enum: [fresh_graduate, career_switcher] }
+        input_method: { type: string, enum: [pdf_upload] }
+        education: { $ref: "#/components/schemas/CvEducation" }
+        internship_experience: { type: string, maxLength: 8000 }
+        academic_experience: { type: string, maxLength: 8000 }
+        professional_certificates: { type: string, maxLength: 8000 }
+        personal_experience: { type: string, maxLength: 8000 }
+        interests_and_hobbies: { type: string, maxLength: 8000 }
+        employment_experience: { type: string, maxLength: 8000 }
+        other_experience: { type: string, maxLength: 8000 }
+        skills: { type: string, maxLength: 8000 }
+        name: { type: string, maxLength: 8000 }
+        role: { type: string, maxLength: 8000 }
+        background: { type: string, maxLength: 8000 }
+        confirmed_by_user: { type: boolean, enum: [false] }
+    CvExtractionResult:
+      type: object
+      additionalProperties: false
+      required: [status, text, pages, profile, mapping]
+      properties:
+        status: { type: string, enum: [TEXT_EXTRACTED, OCR_REQUIRED] }
+        text: { type: string }
+        pages: { type: integer }
+        profile:
+          oneOf:
+            - $ref: "#/components/schemas/CvProfile"
+            - type: "null"
+        mapping:
+          type: string
+          enum: [NOT_REQUESTED, LIVE_DISABLED, KEY_MISSING, READY, OCR_REQUIRED, AUTH_ERROR, RATE_LIMITED, UPSTREAM_TIMEOUT, UPSTREAM_ERROR, MALFORMED_RESPONSE, INVALID_PROFILE, TEXT_TOO_LARGE]
     HealthStatus:
       type: object
       properties:

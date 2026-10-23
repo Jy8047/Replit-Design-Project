@@ -3,19 +3,23 @@ name: Runpod integration scope
 description: Selected Runpod workload and the limits of the user's authorization
 ---
 
-Runpod's intended workload in FuturePath AI is CV text extraction/OCR, not career
-matching or career explanations. Do not expose secrets or provision paid resources.
-The user explicitly chose an offline adapter only, with no live calls.
+Runpod's intended workload in FuturePath AI is CV processing, not career matching
+or career explanations. Do not expose secrets or provision paid resources.
+The initial authorization was an offline adapter. The user subsequently authorized
+actual local PDF text extraction and preparation of a default-disabled GLM-5.3
+Chat Completions mapper using the organizer's supplied endpoint.
+This does not authorize live calls, secret inspection or costs during coding.
 
-**Why:** The user explicitly selected CV text extraction/OCR, prohibited paid
-resource creation, and chose offline preparation rather than connecting a live
-endpoint. Installing the SDK must not implicitly authorize billable execution.
+**Why:** The user's later integration brief explicitly separates implementation
+from a user-run live test and requires a server-side flag plus configured key.
+Adding credentials must not implicitly authorize billable execution.
 
 **How to apply:** Keep the existing profile review and confirmation boundary.
-Establish the existing worker's input/output contract before implementing live
-calls. Choosing the workload is not permission to create an endpoint, submit
-billable test jobs, or upload personal CV data. Use offline tests until live
-execution and data transfer are explicitly authorized.
-Future credentials or endpoint configuration must not silently change that
-authorization. Synthetic fixtures must never be presented as extracted CV data
-or treated as a verified real worker contract.
+Use actual PDF bytes for local extraction and explicitly report OCR_REQUIRED for
+no-text PDFs. GLM receives text only; multimodal/OCR support is not established.
+Keep network tests mocked, never probe the organizer's endpoint during coding,
+and describe endpoint/model compatibility as unverified until a user-run test
+confirms it. The user must manually enable the live flag and consent to external
+text transfer/costs. Credentials alone cannot enable it. Preserve the original
+offline adapter; its synthetic fixtures are never real CV output or a verified
+OCR worker contract. Missing facts remain empty, and confirmation remains explicit.

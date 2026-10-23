@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { ArrowLeft, ArrowRight, Check, FileText, FileUser, ShieldCheck, Trash2, Upload, X } from 'lucide-react';
 import { PageHeading } from '@/components/page-heading';
+import { PdfExtractionPanel } from '@/components/pdf-extraction-panel';
 import { useI18n } from '@/lib/i18n';
 import {
   emptyProfile,
@@ -71,7 +72,6 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
   const draftBase = useRef(restoredDraft?.baseProfile ?? JSON.stringify(profile));
   const [pdf, setPdf] = useState<File | null>(null);
   const [pdfError, setPdfError] = useState('');
-  const [parseNotice, setParseNotice] = useState(false);
   const [validationError, setValidationError] = useState('');
   const [saved, setSaved] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -131,7 +131,6 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     if (next === 'online_form') {
       setProfileType(profileType || profile?.profile_type || '');
       setStep('type');
-      setParseNotice(false);
     } else {
       setStep('method');
     }
@@ -155,7 +154,6 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
   const handleFile = async (file?: File) => {
     setPdfError('');
     setPdf(null);
-    setParseNotice(false);
     if (!file) return;
     const result = validatePdfMetadata(file);
     if (!result.valid) {
@@ -191,13 +189,12 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     setMethod('online_form');
     setProfileType(profileType || profile?.profile_type || '');
     setStep('type');
-    setParseNotice(false);
   };
 
   const submitForm = (event: React.FormEvent) => {
     event.preventDefault();
     if (unresolvedEmployment) { setStep('type'); return; }
-    const draft: Profile = { ...form, profile_type: profileType || 'fresh_graduate', input_method: 'online_form', confirmed_by_user: false };
+    const draft: Profile = { ...form, profile_type: profileType || 'fresh_graduate', confirmed_by_user: false };
     const missing = validateProfile(draft);
     if (missing.length) {
       setValidationError(t('Please enter School / University, Degree, and Major. You may enter “None” or “无” when a field does not apply.'));
@@ -210,10 +207,14 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
 
   const confirmProfile = () => {
     if (unresolvedEmployment) { setStep('type'); return; }
+    if (validateProfile(form).length) {
+      setValidationError(t('Please enter School / University, Degree, and Major. You may enter “None” or “无” when a field does not apply.'));
+      setStep('form');
+      return;
+    }
     const confirmed: Profile = {
       ...form,
       profile_type: profileType || 'fresh_graduate',
-      input_method: 'online_form',
       confirmed_by_user: true,
     };
     let result: ProfileSaveResult;
@@ -284,7 +285,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     </div>}
 
     {step === 'method' && <section className="panel profile-step" aria-labelledby="profile-method-heading">
-      <div className="profile-step-heading"><span className="profile-step-number">01</span><div><h2 id="profile-method-heading">{t('Choose how to add your profile')}</h2><p>{t('Select one method to continue. Your information stays in this browser.')}</p></div></div>
+      <div className="profile-step-heading"><span className="profile-step-number">01</span><div><h2 id="profile-method-heading">{t('Choose how to add your profile')}</h2><p>{t('Choose an input method. PDF processing requires separate consent before any upload.')}</p></div></div>
       <div className="profile-choice-grid">
         <button type="button" className="profile-choice" onClick={() => chooseMethod('pdf_upload')} aria-pressed={method === 'pdf_upload'} data-testid="button-profile-method-pdf">
           <span className="profile-choice-icon"><Upload size={19}/></span><span><strong>{t('Upload CV')}</strong><small>{t('Select one PDF file. Maximum size: 10 MB.')}</small></span><ArrowRight size={17}/>
@@ -308,17 +309,19 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
         </div>
         {pdf && <div className="profile-file-row" data-testid="status-pdf-selected">
           <FileText size={18}/><div><strong>{pdf.name}</strong><small>{(pdf.size / 1024).toFixed(1)} KB · {t('PDF format checked locally')}</small></div>
-          <button type="button" className="profile-icon-button" aria-label={t('Remove selected file')} onClick={() => { setPdf(null); setParseNotice(false); if (fileInput.current) fileInput.current.value = ''; }} data-testid="button-remove-pdf"><X size={17}/></button>
+          <button type="button" className="profile-icon-button" aria-label={t('Remove selected file')} onClick={() => { setPdf(null); if (fileInput.current) fileInput.current.value = ''; }} data-testid="button-remove-pdf"><X size={17}/></button>
         </div>}
         {pdfError && <p className="profile-error" role="alert" data-testid="error-pdf-validation">{pdfError}</p>}
-        <div className="profile-parser-note"><ShieldCheck size={17}/><p>{t('PDF text extraction is not configured in this app. The file is checked locally only and is not uploaded or parsed. No profile details will be guessed from its filename. Scanned, encrypted, or text-empty PDFs cannot be assessed here; use the online form if extraction is unavailable.')}</p></div>
-        <div className="profile-actions">
-          <button type="button" className="btn btn-primary" disabled={!pdf} onClick={() => setParseNotice(true)} data-testid="button-parse-pdf">{t('Continue / Parse CV')}</button>
-        </div>
-        {parseNotice && <div className="profile-inline-notice" role="status" data-testid="status-pdf-parser-unavailable">
-          <p>{t('PDF validation passed, but text extraction is not configured. No profile was created. Continue with the online form instead.')}</p>
-          <button type="button" className="btn btn-primary" onClick={openOnlineForm} data-testid="button-switch-to-online">{t('Switch to Fill in Online')} <ArrowRight size={14}/></button>
-        </div>}
+        <PdfExtractionPanel file={pdf} onOnline={openOnlineForm} onUseDraft={next => {
+          if (dirty && !window.confirm(t('Replace the current unconfirmed draft with these extracted fields? Your confirmed profile will not change.'))) return;
+          setForm({ ...next, confirmed_by_user: false });
+          setProfileType(next.profile_type);
+          setDirty(true);
+          setSaved(false);
+          setSaveError(false);
+          setValidationError('');
+          setStep(employmentNeedsResolution(next.profile_type, next.employment_experience) ? 'type' : 'form');
+        }}/>
       </div>}
     </section>}
 
@@ -428,7 +431,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
       </div>
     </section>}
 
-    <p className="profile-privacy-note">{t('Profile details are stored in this browser’s local storage and are not sent to a service. Do not include sensitive information that is not needed for career reflection.')}</p>
+    <p className="profile-privacy-note">{t('Confirmed profiles are saved on this device. PDF extraction sends the file to this app server; optional AI mapping sends its text to RunPod only with consent and server activation. Avoid unnecessary sensitive details.')}</p>
     {saved && <span className="sr-only" data-testid="status-profile-saved">{t('Saved locally')}</span>}
     <style>{`
       .profile-page{max-width:920px}.profile-saved-strip{display:flex;align-items:center;gap:9px;padding:11px 14px;border:1px solid #dce5d9;background:#f1f5ec;color:#4b6651;border-radius:11px;margin:-8px 0 18px;font-size:12px}.profile-saved-strip .tag{margin-left:auto;gap:5px}

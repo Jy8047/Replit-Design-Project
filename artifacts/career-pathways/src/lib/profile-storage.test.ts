@@ -48,6 +48,19 @@ test('a tab draft round-trips as unconfirmed without modifying the confirmed pro
   assert.equal(readProfileDraft(storage, null), null);
 });
 
+test('an extracted PDF draft preserves its input provenance and employment without confirming it', () => {
+  const storage = memoryStorage();
+  persistProfileDraft(storage, {
+    ...draft, profileType: 'career_switcher',
+    form: { ...draft.form, profile_type: 'career_switcher', input_method: 'pdf_upload', employment_experience: 'Fictional work', confirmed_by_user: true },
+  });
+  const restored = readProfileDraft(storage, null);
+  assert.equal(restored?.form.input_method, 'pdf_upload');
+  assert.equal(restored?.form.employment_experience, 'Fictional work');
+  assert.equal(restored?.form.confirmed_by_user, false);
+  assert.equal(storage.getItem(PROFILE_STORAGE_KEY), null);
+});
+
 test('draft restoration requires resolving retained employment before preview', () => {
   const storage = memoryStorage();
   persistProfileDraft(storage, { ...draft, form: { ...draft.form, employment_experience: 'Fictional work' }, step: 'review' });

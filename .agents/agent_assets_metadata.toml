@@ -1,16 +1,3 @@
 uploads = []
 generated = []
-
-[[outputs]]
-id = "B6xzAPHLnzKZEzcF00WzU"
-uri = "file://docs/my-profile-interface-handoff.html"
-type = "html"
-title = "My Profile 数据接口交接说明"
-description = "可直接发给第二位组员：完整字段表、两份从实际确认流程取得的虚拟档案 JSON、真实数据流与代码入口、13 项测试结果及待确认的接口问题。仅新增文档，未修改应用功能。"
-logical_id = "90899bc9-23e6-41d2-b451-b0537104fff6"
-content_hash = "sha256:3a1047ae2b7e29eac4cb743309f2b18151759e67953a9c1afd400f99c17ac5fe"
-size = 22108
-mtime_ms = 1792730192097
-storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:cc9ce6e7-7579-47a0-aa79-d06b2fbfed3a/90899bc9-23e6-41d2-b451-b0537104fff6/3a33cf2c-5698-41ee-a943-c99dce745ba0"
-storage_version_token = "1792730223394679"
-content_type = "text/html"
+outputs = []

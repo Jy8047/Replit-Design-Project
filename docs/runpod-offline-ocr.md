@@ -2,17 +2,18 @@
 
 ## Current scope
 
-This is **offline preparation**, not a connected OCR service. The user approved
-synthetic tests only, with no live calls or paid-resource creation.
+This document describes the **unchanged offline adapter**, not a connected OCR
+service. Its synthetic tests never make live calls or create paid resources.
+The separate real-PDF text extractor and default-disabled GLM client are documented
+in [CV PDF / GLM integration](cv-pdf-glm-integration.md). They do not use these fixtures.
 
 - Official JavaScript package: `runpod-sdk` (installed version pinned by the lockfile).
 - Backend module: `artifacts/api-server/src/lib/runpod-cv-ocr.ts`.
 - The module imports **types only** from the SDK. It never creates a real client.
 - It never reads credentials or environment variables, sends requests, creates
   resources, or examines PDF bytes.
-- It exposes no HTTP route and is not connected to the profile UI, matching pages,
-  database, or browser storage. Existing features and PDF-unavailable notices stay
-  unchanged.
+- This offline adapter exposes no HTTP route and is not connected to the profile
+  UI, matching pages, database, or browser storage.
 
 Installing the SDK does not create a Runpod endpoint or make OCR available.
 
@@ -85,7 +86,7 @@ status transitions, idempotent terminal reads, invalid inputs, foreign IDs,
 bounded queue size, real-extraction refusal, and unconfirmed provenance.
 These are adapter tests, not proof of OCR accuracy or real SDK connectivity.
 
-## What remains before real integration
+## What remains before real OCR integration
 
 1. Identify an **existing** Runpod queue-based Serverless OCR endpoint and its
    documented input/output contract. Do not provision one under current approval.
@@ -107,7 +108,7 @@ These are adapter tests, not proof of OCR accuracy or real SDK connectivity.
    automatically confirm extracted claims. Preserve the existing explicit
    review/confirmation and draft/privacy boundaries.
 
-No environment toggle enables live calls in this implementation. Adding real
+No environment toggle enables live calls **in this offline adapter**. Adding real
 credentials later will not activate it.
 
 ## Official documentation used
