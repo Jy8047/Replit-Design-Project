@@ -6,9 +6,12 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   CareerRolesPage as RolesPage,
   CareerSkillsPage as SkillsPage,
+  DatasetFeedback,
   type DatasetState,
 } from '@/components/career-data-pages';
 import { PageHeading } from '@/components/page-heading';
+import { PersonalisedRoadmapPage, OccupationImpactPage, FutureScenarioPage, PlanningStyles } from '@/components/career-planning-pages';
+import type { ScenarioId } from '@/lib/career-planning';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter';
 import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronRight, Compass, FileUser, Gauge, Menu, Network, RotateCcw, Settings2, ShieldCheck, Sparkles, Target, Trash2, X } from 'lucide-react';
@@ -43,7 +46,13 @@ const roadmap = [
 ];
 
 function readProfile(): Profile | null {
-  try { const raw = localStorage.getItem(STORAGE_PROFILE); return raw ? { ...emptyProfile, ...JSON.parse(raw) } : null; } catch { return null; }
+  try {
+    const raw=localStorage.getItem(STORAGE_PROFILE);
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return null;
+    return Object.fromEntries(Object.keys(emptyProfile).map(key=>[key,typeof parsed[key]==='string'?parsed[key]:''])) as Profile;
+  } catch { return null; }
 }
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -171,7 +180,7 @@ function ProfileFields({form,update}:{form:Profile;update:(k:keyof Profile,v:str
 function ProfileForm({form,update,save,saved,profileExists}:{form:Profile;update:(k:keyof Profile,v:string)=>void;save:(e:React.FormEvent)=>void;saved:boolean;profileExists:boolean}) {
   return <form onSubmit={save} className="panel" style={{maxWidth:850,marginTop:20}}><div className="eyebrow" style={{marginBottom:16}}>{profileExists?'Edit your details':'Create a profile'}</div><ProfileFields form={form} update={update}/><button className="btn btn-primary" style={{marginTop:20}} type="submit" data-testid="button-save-profile">{profileExists?'Save profile':'Save my profile'} <Check size={15}/></button>{saved&&<span role="status" style={{fontSize:12,color:'#4a7055',marginLeft:12}} data-testid="status-profile-saved">Saved locally</span>}</form>;
 }
-function RoadmapPage() {
+export function LegacyRoadmapPage() {
  return <><PageHeading kicker="Turn curiosity into action" title="Reskilling Roadmap" description="A flexible example sequence for exploring a new direction. Adjust the pace to fit your life; time estimates are illustrative only."/>
   <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:20}}><span className="tag"><Activity size={12} style={{marginRight:5}}/> Illustrative durations</span><span className="tag">Learning resources are placeholders</span></div>
   <div style={{position:'relative',display:'grid',gap:14,maxWidth:850}}>{roadmap.map((step,i)=><article key={step.title} className="panel" style={{display:'grid',gridTemplateColumns:'38px 1fr auto',gap:15,alignItems:'start',padding:'20px 22px'}} data-testid={`step-roadmap-${i}`}>
@@ -182,7 +191,7 @@ function RoadmapPage() {
   <div className="panel" style={{maxWidth:850,marginTop:17,background:'#edf0e7'}}><div style={{display:'flex',gap:12}}><ShieldCheck size={18} color="#57745f"/><div><strong style={{fontSize:13,color:'#3b5543'}}>Keep it grounded</strong><p style={{fontSize:12,color:'#6c776a',lineHeight:1.6,margin:'4px 0 0'}}>Learning pathways depend on your circumstances and local opportunities. Check course details, cost, accessibility, and relevance before committing.</p></div></div></div>
  </>;
 }
-function ImpactPage() {
+export function LegacyImpactPage() {
  const sdgs=[
   {n:'04',title:'Quality Education',tone:'#b75b4c',text:'Learning and reskilling can support lifelong learning. A career pathway can help someone notice what they want to learn next; this workspace does not deliver education itself.'},
   {n:'08',title:'Decent Work and Economic Growth',tone:'#9a7453',text:'Exploring work transitions may support informed career choices. The examples here do not guarantee job access, decent work, or economic outcomes.'},
@@ -198,7 +207,7 @@ function ImpactPage() {
   <style>{`@media(max-width:470px){.sdg-row{grid-template-columns:56px 1fr!important;gap:13px!important;padding:15px!important}.sdg-row>div:first-child{width:54px!important;height:58px!important;padding-left:9px!important}}`}</style>
  </>;
 }
-function ScenariosPage() {
+export function LegacyScenariosPage() {
  const scenarios=[
   {name:'Moderate disruption',pace:'Gradual shifts',accent:'#66856c',assumptions:[['Routine task exposure','Some tasks shift'],['Work redesign','Steady adaptation'],['New skill demand','Incremental change']],body:'An illustrative case where adoption is uneven, and work changes through a series of smaller adjustments.'},
   {name:'Fast disruption',pace:'Quicker shifts',accent:'#b88458',assumptions:[['Routine task exposure','More tasks shift'],['Work redesign','Rapid adaptation'],['New skill demand','Faster change']],body:'An illustrative case where tools are adopted more quickly and teams revisit responsibilities sooner.'},
@@ -232,6 +241,13 @@ function Router() {
  const [title,setTitle]=useState(()=>localStorage.getItem(STORAGE_TITLE)||defaultTitle);
  const [profile,setProfile]=useState<Profile|null>(()=>readProfile());
  const [dataset,setDataset]=useState<DatasetState>({records:[],errors:[],loading:true,loadError:''});
+ const [selected,setSelected]=useState(()=>localStorage.getItem('career-pathways-occupation')||'');
+ const [scenario,setScenario]=useState<ScenarioId>(()=>localStorage.getItem('career-pathways-scenario')==='fast'?'fast':'moderate');
+ const occupations=Array.from(new Set(dataset.records.map(record=>record.occupation)));
+ const selectedOccupation=occupations.includes(selected)?selected:occupations[0]||'';
+ const chooseOccupation=(occupation:string)=>{setSelected(occupation);localStorage.setItem('career-pathways-occupation',occupation);};
+ const chooseScenario=(next:ScenarioId)=>{setScenario(next);localStorage.setItem('career-pathways-scenario',next);};
+ const selectionProps={occupations,selectedOccupation,onSelectOccupation:chooseOccupation};
  useEffect(()=>localStorage.setItem(STORAGE_TITLE,title),[title]);
  useEffect(()=>{
   let cancelled=false;
@@ -251,14 +267,14 @@ function Router() {
  const saveProfile=(next:Profile)=>{localStorage.setItem(STORAGE_PROFILE,JSON.stringify(next));setProfile(next);};
  const deleteProfile=()=>{localStorage.removeItem(STORAGE_PROFILE);setProfile(null);};
  const reset=()=>{localStorage.removeItem(STORAGE_PROFILE);localStorage.removeItem(STORAGE_TITLE);setProfile(null);setTitle(defaultTitle);};
- return <RoutedErrorBoundary><Shell title={title} hasProfile={Boolean(profile)}><Switch>
+  return <RoutedErrorBoundary><Shell title={title} hasProfile={Boolean(profile)}><PlanningStyles/><nav aria-label="Career exploration steps" style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:11,marginBottom:24}}>{[['/profile','1. Profile'],['/skills','2. Skills radar'],['/roles','3. Role matches'],['/roadmap','4. Learning plan'],['/impact','5. SDG mapping'],['/scenarios','6. Scenarios']].map(([href,label])=><Link href={href} key={href} data-testid={`link-journey-${href.slice(1)}`}>{label}</Link>)}</nav><Switch>
    <Route path="/"><Home profile={profile}/></Route>
    <Route path="/profile"><ProfilePage profile={profile} onSave={saveProfile} onDelete={deleteProfile}/></Route>
    <Route path="/skills"><SkillsPage dataset={dataset}/></Route>
-   <Route path="/roles"><RolesPage dataset={dataset} profileSkills={profile?.skills??''}/></Route>
-   <Route path="/roadmap"><RoadmapPage/></Route>
-   <Route path="/impact"><ImpactPage/></Route>
-   <Route path="/scenarios"><ScenariosPage/></Route>
+   <Route path="/roles"><RolesPage dataset={dataset} profileSkills={profile?.skills??''} onChooseOccupation={chooseOccupation}/></Route>
+   <Route path="/roadmap"><DatasetFeedback dataset={dataset}/><PersonalisedRoadmapPage {...selectionProps} records={dataset.records} profileSkills={profile?.skills??''}/></Route>
+   <Route path="/impact"><DatasetFeedback dataset={dataset}/><OccupationImpactPage {...selectionProps}/></Route>
+   <Route path="/scenarios"><DatasetFeedback dataset={dataset}/><FutureScenarioPage scenario={scenario} onScenarioChange={chooseScenario} records={dataset.records} profileSkills={profile?.skills??''}/></Route>
    <Route path="/settings"><SettingsPage title={title} onTitleChange={setTitle} onReset={reset}/></Route>
    <Route component={NotFound}/>
   </Switch></Shell></RoutedErrorBoundary>;

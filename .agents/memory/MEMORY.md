@@ -1,1 +1,2 @@
 - [Provisional project name](provisional-project-name.md) — The project name is undecided; keep the title editable and removable.
+- [Evidence and consent](domain-evidence-constraints.md) — Keep synthetic data explicit, check learning links, separate intended impact from outcomes, and ask before paid services or keys.

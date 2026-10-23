@@ -265,9 +265,11 @@ export function CareerSkillsPage({
 export function CareerRolesPage({
   dataset,
   profileSkills,
+  onChooseOccupation,
 }: {
   dataset: DatasetState;
   profileSkills: string;
+  onChooseOccupation: (occupation: string) => void;
 }) {
   const matches = calculateCareerMatches(profileSkills, dataset.records);
   const hasProfileSkills = profileSkills
@@ -491,6 +493,7 @@ export function CareerRolesPage({
                   </div>
                 </div>
               </div>
+              <Link href="/roadmap" className="btn btn-primary" style={{marginTop:18}} onClick={() => onChooseOccupation(match.occupation)} data-testid={`link-plan-role-${index}`}>Build a learning plan <ArrowUpRight size={14}/></Link>
             </article>
           ))}
         </div>

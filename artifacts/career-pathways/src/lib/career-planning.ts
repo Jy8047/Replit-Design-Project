@@ -1,7 +1,7 @@
 import {
   calculateCareerMatches,
   type CareerRecord,
-} from '@/lib/career-data';
+} from './career-data.ts';
 
 export interface LearningResource {
   status: 'verified' | 'unverified';
@@ -91,9 +91,9 @@ const resourcesBySkill: Record<string, LearningResource> = {
   },
   'qualitative research methods': {
     status: 'verified',
-    title: 'User research methods',
+    title: 'Researching user experiences',
     provider: 'GOV.UK Service Manual',
-    url: 'https://www.gov.uk/service-manual/user-research',
+    url: 'https://www.gov.uk/service-manual/user-research/researching-user-experiences',
     checkedOn: RESOURCE_CHECK_DATE,
     note: 'Public collection of user-research methods and practical guides.',
   },
