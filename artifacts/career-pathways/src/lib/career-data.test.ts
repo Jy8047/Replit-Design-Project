@@ -167,7 +167,8 @@ describe('calculateCareerMatches', () => {
       result.records,
     );
     assert.equal(customerResearchMatches[0].occupation, 'Customer Insights Associate');
-    assert.equal(customerResearchMatches[0].score, 83);
+    // 加权匹配：命中权重 20 / 岗位总权重 23 ≈ 87%（旧算法 5/6 = 83%）
+    assert.equal(customerResearchMatches[0].score, 87);
     assert.notEqual(
       facilitationMatches[0].occupation,
       customerResearchMatches[0].occupation,
@@ -189,7 +190,8 @@ describe('calculateCareerMatches', () => {
     assert.equal(chinese[0].occupation, 'Learning Experience Designer');
     assert.equal(chinese[0].score, 42);
     assert.equal(malay[0].occupation, 'Learning Experience Designer');
-    assert.equal(malay[0].score, 40);
+    // 三语一致：Komunikasi/Fasilitasi 与中文"沟通/引导"命中同一技能集，权重 8 / 19 ≈ 42%
+    assert.equal(malay[0].score, 42);
   });
 });
 

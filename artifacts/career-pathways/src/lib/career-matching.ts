@@ -14,6 +14,14 @@ export type FitLevel = 'strong' | 'partial' | 'exploratory';
 export type TrendDirection = 'rising' | 'stable' | 'declining';
 export type MatchStatus = 'ok' | 'no_skills' | 'no_data';
 
+/**
+ * 引擎版本标记。
+ * 上传到 Replit 后，在文件里搜 ENGINE_VERSION 就能确认不是旧版本：
+ * - 2026-10-23-v1：初版（无马来文别名）
+ * - 2026-10-23-v2：补了 45 条马来文别名（Komunikasi / Fasilitasi / Pengecaman corak …）
+ */
+export const ENGINE_VERSION = '2026-10-23-v2';
+
 export type SkillInsight = { weight: number; hours: number };
 
 export type OccupationInsight = {
@@ -125,13 +133,61 @@ function normalizeRaw(raw: unknown): string {
   return text.replace(/\s+/g, ' ').trim();
 }
 
+/** 马来文别名（应用支持 BM 界面，技能输入也必须是马来文可用） */
+export const SKILL_ALIASES_BM: Record<string, string[]> = {
+  sql: ['sql'],
+  excel: ['excel'],
+  python: ['python'],
+  statistics: ['statistik', 'analisis statistik'],
+  'data visualization': ['visualisasi data', 'visualisasi'],
+  'data cleaning': ['pembersihan data'],
+  javascript: ['javascript'],
+  typescript: ['typescript'],
+  react: ['react'],
+  'html css': ['html', 'css'],
+  git: ['git'],
+  'network security': ['keselamatan rangkaian', 'keselamatan siber'],
+  'security monitoring': ['pemantauan keselamatan'],
+  'incident response': ['tindak balas insiden'],
+  'risk assessment': ['penilaian risiko'],
+  linux: ['linux'],
+  scripting: ['penulisan skrip', 'skrip'],
+  seo: ['pengoptimuman enjin carian', 'seo'],
+  copywriting: ['penulisan iklan', 'penulisan salinan iklan'],
+  'content marketing': ['pemasaran kandungan'],
+  analytics: ['analitis', 'analitik'],
+  'social media': ['media sosial'],
+  'campaign planning': ['perancangan kempen'],
+  communication: ['komunikasi', 'komunikasi berkesan'],
+  facilitation: ['fasilitasi'],
+  'content planning': ['perancangan kandungan'],
+  'learning design': ['reka bentuk pembelajaran'],
+  'learning evaluation': ['penilaian pembelajaran'],
+  'project coordination': ['penyelarasan projek'],
+  'stakeholder support': ['sokongan pihak berkepentingan', 'sokongan pemegang taruh'],
+  'impact measurement': ['pengukuran impak'],
+  research: ['penyelidikan'],
+  'climate literacy': ['literasi iklim'],
+  'pattern recognition': ['pengecaman corak'],
+  'qualitative research methods': ['kaedah penyelidikan kualitatif'],
+  listening: ['mendengar', 'kemahiran mendengar'],
+  writing: ['penulisan'],
+  'manual record handling': ['pengendalian rekod manual'],
+  'routine information processing': ['pemprosesan maklumat rutin'],
+  scheduling: ['penjadualan', 'penjadualan masa'],
+  'document organization': ['pengurusan dokumen', 'organisasi dokumen'],
+  accessibility: ['kebolehcapaian'],
+};
+
 const ALIAS_LOOKUP: Map<string, string> = (() => {
   const map = new Map<string, string>();
-  for (const [canonical, variants] of Object.entries(SKILL_ALIASES)) {
-    map.set(canonical, canonical);
-    for (const variant of variants) {
-      const normalized = normalizeRaw(variant);
-      if (normalized) map.set(normalized, canonical);
+  for (const table of [SKILL_ALIASES, SKILL_ALIASES_BM]) {
+    for (const [canonical, variants] of Object.entries(table)) {
+      map.set(canonical, canonical);
+      for (const variant of variants) {
+        const normalized = normalizeRaw(variant);
+        if (normalized) map.set(normalized, canonical);
+      }
     }
   }
   return map;
