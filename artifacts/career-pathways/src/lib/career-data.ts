@@ -1,4 +1,4 @@
-import { matchCareersForProfile } from './career-matching';
+import { matchCareersForProfile } from './career-matching.ts';
 
 export const REQUIRED_CSV_HEADERS = [
   'occupation',
