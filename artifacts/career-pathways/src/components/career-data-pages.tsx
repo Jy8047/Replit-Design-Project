@@ -278,7 +278,7 @@ export function CareerRolesPage({
       <PageHeading
         kicker={t('Compare possible directions')}
         title={t('Future Role Matches')}
-        description={t("Ranked examples use a direct count of skills you entered against each sample occupation's distinct skills. The score is not a hiring probability or a prediction.")}
+        description={t('Scores use skill-weighted matches. They are not a hiring probability or a prediction.')}
       />
       <DatasetFeedback dataset={dataset} />
       <div
@@ -301,7 +301,7 @@ export function CareerRolesPage({
           style={{ flex: '0 0 auto', marginTop: 1 }}
         />
         <div>
-          <strong>{t('Score formula:')}</strong> {t('matched skills ÷ distinct skills listed for the occupation × 100, rounded to the nearest whole percent. Capitalization and duplicate profile entries are ignored. Scores describe overlap only; 0% does not mean zero chance of being hired.')}
+          <strong>{t('Score formula:')}</strong> {t('Weighted score = total weight of skills you already have ÷ total weight of skills required by the occupation.')}
         </div>
       </div>
       {!hasProfileSkills && (

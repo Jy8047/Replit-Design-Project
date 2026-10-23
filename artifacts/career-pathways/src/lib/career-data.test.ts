@@ -150,7 +150,8 @@ describe('calculateCareerMatches', () => {
       result.records,
     );
     assert.equal(facilitationMatches[0].occupation, 'Learning Experience Designer');
-    assert.equal(facilitationMatches[0].score, 40);
+    // 加权匹配：命中技能权重 8 / 岗位总权重 19 ≈ 42%（旧算法为 2/5 = 40%）
+    assert.equal(facilitationMatches[0].score, 42);
     assert.deepEqual(facilitationMatches[0].matchingSkills, [
       'Communication',
       'Facilitation',
@@ -186,7 +187,7 @@ describe('calculateCareerMatches', () => {
     const chinese = calculateCareerMatches('沟通，引导', result.records);
     const malay = calculateCareerMatches('Komunikasi, Fasilitasi', result.records);
     assert.equal(chinese[0].occupation, 'Learning Experience Designer');
-    assert.equal(chinese[0].score, 40);
+    assert.equal(chinese[0].score, 42);
     assert.equal(malay[0].occupation, 'Learning Experience Designer');
     assert.equal(malay[0].score, 40);
   });
