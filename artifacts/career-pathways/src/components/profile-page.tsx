@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { ArrowLeft, ArrowRight, Check, FileText, FileUser, ShieldCheck, Trash2, Upload, X } from 'lucide-react';
 import { PageHeading } from '@/components/page-heading';
 import { useI18n } from '@/lib/i18n';
@@ -11,9 +11,17 @@ import {
   type Profile,
   type ProfileType,
 } from '@/lib/profile';
+import {
+  employmentNeedsResolution,
+  persistProfileDraft,
+  readProfileDraft,
+  removeProfileDraft,
+  type ProfileDraft,
+  type ProfileSaveResult,
+} from '@/lib/profile-storage';
 
 type Step = 'method' | 'type' | 'form' | 'review' | 'success';
-type Props = { profile: Profile | null; onSave: (profile: Profile) => void; onDelete: () => void };
+type Props = { profile: Profile | null; onSave: (profile: Profile) => ProfileSaveResult; onDelete: () => void };
 type TextKey =
   | 'name' | 'role' | 'skills' | 'background' | 'other_experience'
   | 'internship_experience' | 'academic_experience' | 'professional_certificates'
@@ -49,16 +57,74 @@ function errorForPdf(reason: string, t: (value: string) => string): string {
 
 export function ProfilePage({ profile, onSave, onDelete }: Props) {
   const { t } = useI18n();
-  const [step, setStep] = useState<Step>('method');
-  const [method, setMethod] = useState<'pdf_upload' | 'online_form' | ''>('');
-  const [profileType, setProfileType] = useState<ProfileType | ''>('');
-  const [form, setForm] = useState<Profile>(() => profile ?? emptyProfile);
+  const [restoredDraft] = useState<ProfileDraft | null>(() => {
+    try { return readProfileDraft(sessionStorage, profile); } catch { return null; }
+  });
+  const [step, setStep] = useState<Step>(restoredDraft?.step ?? 'method');
+  const [method, setMethod] = useState<'pdf_upload' | 'online_form' | ''>(restoredDraft ? 'online_form' : '');
+  const [profileType, setProfileType] = useState<ProfileType | ''>(restoredDraft?.profileType ?? '');
+  const [form, setForm] = useState<Profile>(() => restoredDraft?.form ?? profile ?? emptyProfile);
+  const [dirty, setDirty] = useState(Boolean(restoredDraft));
+  const [draftStatus, setDraftStatus] = useState<'idle' | 'saved' | 'error'>(restoredDraft ? 'saved' : 'idle');
+  const [draftCleanupError, setDraftCleanupError] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const draftBase = useRef(restoredDraft?.baseProfile ?? JSON.stringify(profile));
   const [pdf, setPdf] = useState<File | null>(null);
   const [pdfError, setPdfError] = useState('');
   const [parseNotice, setParseNotice] = useState(false);
   const [validationError, setValidationError] = useState('');
   const [saved, setSaved] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const unresolvedEmployment = employmentNeedsResolution(profileType, form.employment_experience);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const draft: ProfileDraft = {
+      version: 1,
+      baseProfile: draftBase.current,
+      form: { ...form, profile_type: profileType || form.profile_type, confirmed_by_user: false },
+      profileType,
+      step: unresolvedEmployment ? 'type' : step === 'review' ? 'review' : step === 'form' ? 'form' : 'type',
+    };
+    try {
+      setDraftStatus(persistProfileDraft(sessionStorage, draft).ok ? 'saved' : 'error');
+    } catch {
+      setDraftStatus('error');
+    }
+  }, [dirty, form, profileType, step, unresolvedEmployment]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeLeaving);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+  }, [dirty]);
+
+  const clearTemporaryDraft = (): boolean => {
+    try { return removeProfileDraft(sessionStorage).ok; } catch { return false; }
+  };
+
+  const discardDraft = () => {
+    if (!window.confirm(t('Discard this unconfirmed draft? Your last confirmed profile will not be changed.'))) return;
+    if (!clearTemporaryDraft()) {
+      setDraftCleanupError(true);
+      return;
+    }
+    setDirty(false);
+    setDraftStatus('idle');
+    setDraftCleanupError(false);
+    setSaveError(false);
+    setValidationError('');
+    setForm(profile ?? emptyProfile);
+    setProfileType('');
+    setMethod('');
+    setStep('method');
+    setSaved(false);
+    draftBase.current = JSON.stringify(profile);
+  };
 
   const chooseMethod = (next: 'pdf_upload' | 'online_form') => {
     setMethod(next);
@@ -73,11 +139,15 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
 
   const update = (key: TextKey, value: string) => {
     setForm(current => ({ ...current, [key]: value }));
+    setDirty(true);
+    setSaveError(false);
     setSaved(false);
     setValidationError('');
   };
   const updateEducation = (key: keyof Profile['education'], value: string) => {
     setForm(current => ({ ...current, education: { ...current.education, [key]: value } }));
+    setDirty(true);
+    setSaveError(false);
     setSaved(false);
     setValidationError('');
   };
@@ -126,6 +196,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
 
   const submitForm = (event: React.FormEvent) => {
     event.preventDefault();
+    if (unresolvedEmployment) { setStep('type'); return; }
     const draft: Profile = { ...form, profile_type: profileType || 'fresh_graduate', input_method: 'online_form', confirmed_by_user: false };
     const missing = validateProfile(draft);
     if (missing.length) {
@@ -138,13 +209,24 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
   };
 
   const confirmProfile = () => {
+    if (unresolvedEmployment) { setStep('type'); return; }
     const confirmed: Profile = {
       ...form,
       profile_type: profileType || 'fresh_graduate',
       input_method: 'online_form',
       confirmed_by_user: true,
     };
-    onSave(confirmed);
+    let result: ProfileSaveResult;
+    try { result = onSave(confirmed); } catch { result = { ok: false }; }
+    if (!result.ok) {
+      setSaveError(true);
+      return;
+    }
+    setSaveError(false);
+    setDirty(false);
+    setDraftStatus('idle');
+    setDraftCleanupError(!clearTemporaryDraft());
+    draftBase.current = JSON.stringify(confirmed);
     setForm(confirmed);
     setSaved(true);
     setStep('success');
@@ -158,11 +240,16 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     {profile && <button className="btn btn-danger" onClick={() => {
       if (window.confirm(t('Delete your complete profile from this device? This cannot be undone.'))) {
         onDelete();
+        setDraftCleanupError(!clearTemporaryDraft());
+        setDirty(false);
+        setDraftStatus('idle');
+        draftBase.current = JSON.stringify(null);
         setForm(emptyProfile);
         setStep('method');
         setProfileType('');
         setMethod('');
         setSaved(false);
+        setSaveError(false);
       }
     }} data-testid="button-delete-profile"><Trash2 size={15}/>{t('Delete profile')}</button>}
   </PageHeading>;
@@ -179,6 +266,18 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
 
   return <div className="profile-page">
     {heading}
+    {dirty && <div className="profile-inline-notice" data-testid="status-profile-draft">
+      <p role={draftStatus === 'error' ? 'alert' : 'status'}>
+        {t(draftStatus === 'error'
+          ? 'Temporary draft storage is unavailable. Keep this page open and copy your entries before leaving. Closing or refreshing may lose your changes.'
+          : draftStatus === 'saved'
+            ? 'Unconfirmed draft saved in this browser tab. Refreshing or changing pages restores it. It is not used for matching until confirmed. PDF files are not saved.'
+            : 'You have unconfirmed changes. Keep this page open until the draft is saved or the profile is confirmed.')}
+        {restoredDraft && draftStatus === 'saved' && <> {t('Your unconfirmed draft has been restored.')}</>}
+      </p>
+      <button type="button" className="btn" onClick={discardDraft} data-testid="button-discard-profile-draft">{t('Discard draft')}</button>
+    </div>}
+    {draftCleanupError && <p className="profile-error" role="alert" data-testid="error-profile-draft-cleanup">{t('The temporary draft could not be removed. Your entries have been kept. Check browser storage permissions before trying again.')}</p>}
     {profile && <div className="profile-saved-strip" data-testid="status-profile-saved-summary">
       <ShieldCheck size={17}/><span>{t(profile.confirmed_by_user ? 'A confirmed profile is saved in this browser only. You can edit it at any time.' : 'This profile was saved earlier. Review and confirm it to mark the details as checked by you.')}</span>
       {profile.confirmed_by_user && <span className="tag"><Check size={12}/>{t('Profile saved')}</span>}
@@ -232,13 +331,31 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
         ] as const).map(([value, label, detail]) => <button key={value} type="button" className="profile-choice" onClick={() => {
           setProfileType(value);
           setForm(current => ({ ...current, profile_type: value }));
+          setDirty(true);
+          setSaveError(false);
         }} aria-pressed={profileType === value} data-testid={`button-profile-type-${value}`}>
           <span className="profile-choice-icon"><FileUser size={19}/></span><span><strong>{t(label)}</strong><small>{t(detail)}</small></span>{profileType === value && <Check size={17}/>}
         </button>)}
       </div>
+      {unresolvedEmployment && <div className="profile-inline-notice" data-testid="profile-employment-resolution">
+        <p>{t('Employment Experience is still present from a Career Switcher profile. It cannot be hidden and saved as Fresh Graduate. Choose whether to keep it as Career Switcher or remove it from this draft.')}</p>
+        <ReviewRow label="Employment Experience" value={form.employment_experience} t={t}/>
+        <div className="profile-actions">
+          <button type="button" className="btn" onClick={() => {
+            setProfileType('career_switcher');
+            setForm(current => ({ ...current, profile_type: 'career_switcher' }));
+            setDirty(true);
+          }} data-testid="button-keep-employment">{t('Keep as Career Switcher')}</button>
+          <button type="button" className="btn btn-danger" onClick={() => {
+            if (window.confirm(t('Remove Employment Experience from this draft? Your saved profile is unchanged until you confirm.'))) {
+              update('employment_experience', '');
+            }
+          }} data-testid="button-clear-employment">{t('Remove Employment Experience')}</button>
+        </div>
+      </div>}
       <div className="profile-actions">
         <button type="button" className="btn" onClick={() => setStep('method')}><ArrowLeft size={14}/>{t('Back')}</button>
-        <button type="button" className="btn btn-primary" disabled={!profileType} onClick={() => setStep('form')} data-testid="button-profile-type-continue">{t('Continue')}<ArrowRight size={14}/></button>
+        <button type="button" className="btn btn-primary" disabled={!profileType || unresolvedEmployment} onClick={() => setStep('form')} data-testid="button-profile-type-continue">{t('Continue')}<ArrowRight size={14}/></button>
       </div>
     </section>}
 
@@ -293,6 +410,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
         {additionalFields.map(field => <ReviewRow key={field.key} label={field.label} value={form[field.key]} t={t}/>)}
       </div>
       <div className="profile-confirm-note"><ShieldCheck size={17}/><p>{t('Your entries are personal information provided by you. Confirming records that you reviewed them; it does not independently verify the claims.')}</p></div>
+      {saveError && <p className="profile-error" role="alert" data-testid="error-profile-save">{t('Your profile could not be saved. Your entries are still here and your last saved profile has not changed. Check browser storage permissions or available space, then try Confirm Profile again.')}</p>}
       <div className="profile-actions">
         <button type="button" className="btn" onClick={() => setStep('form')}><ArrowLeft size={14}/>{t('Edit')}</button>
         <button type="button" className="btn btn-primary" onClick={confirmProfile} data-testid="button-confirm-profile">{t('Confirm Profile')}<Check size={15}/></button>

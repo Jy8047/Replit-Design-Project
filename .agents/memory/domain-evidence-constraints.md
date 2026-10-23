@@ -15,3 +15,17 @@ SDC Hackathon Domain 1 application.
 
 **How to apply:** Apply these constraints whenever extending trend data,
 recommendations, learning resources, SDG mapping, scenarios, or integrations.
+
+## Profile confirmation and draft privacy
+
+Unconfirmed edits must not change the profile used by downstream modules.
+Changing profile identity must not silently delete or hide employment information.
+Draft recovery should remain temporary and local, without retaining PDF files.
+
+**Why:** The user requires explicit review and confirmation, protection from lost
+input, and no unnecessary exposure of personal information. Temporary tab-level
+recovery was chosen rather than a new cloud service or a permanent draft archive.
+
+**How to apply:** Preserve the last confirmed profile until a new confirmation
+succeeds. Explain draft storage and provide discard controls. Require an explicit
+choice when changing identity would exclude employment information.

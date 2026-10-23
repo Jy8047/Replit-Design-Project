@@ -14,6 +14,7 @@ import { ProfilePage } from '@/components/profile-page';
 import { PersonalisedRoadmapPage, OccupationImpactPage, FutureScenarioPage, PlanningStyles } from '@/components/career-planning-pages';
 import type { ScenarioId } from '@/lib/career-planning';
 import { normalizeProfile, type Profile } from '@/lib/profile';
+import { persistConfirmedProfile, removeProfileDraft, PROFILE_STORAGE_KEY, type ProfileSaveResult } from '@/lib/profile-storage';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter';
 import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronRight, Compass, FileUser, Gauge, Menu, Network, RotateCcw, Settings2, ShieldCheck, Sparkles, Target, Trash2, X } from 'lucide-react';
@@ -25,7 +26,7 @@ import {
 const defaultTitle = 'Career Pathways';
 const queryClient = new QueryClient();
 const STORAGE_TITLE = 'career-pathways-title';
-const STORAGE_PROFILE = 'career-pathways-profile';
+const STORAGE_PROFILE = PROFILE_STORAGE_KEY;
 const navGroups = [
   { label: 'WORKSPACE', links: [
     { href: '/', title: 'Home', icon: Compass },
@@ -236,9 +237,16 @@ function Router() {
   void loadDataset();
   return()=>{cancelled=true};
  },[]);
- const saveProfile=(next:Profile)=>{localStorage.setItem(STORAGE_PROFILE,JSON.stringify(next));setProfile(next);};
- const deleteProfile=()=>{localStorage.removeItem(STORAGE_PROFILE);setProfile(null);};
- const reset=()=>{localStorage.removeItem(STORAGE_PROFILE);localStorage.removeItem(STORAGE_TITLE);setProfile(null);setTitle(defaultTitle);};
+ const saveProfile=(next:Profile):ProfileSaveResult=>{
+  try{
+   const result=persistConfirmedProfile(localStorage,next);
+   if(result.ok)setProfile(next);
+   return result;
+  }catch{return {ok:false};}
+ };
+ const clearDraft=()=>{try{removeProfileDraft(sessionStorage);}catch{/* Storage access may be blocked. */}};
+ const deleteProfile=()=>{localStorage.removeItem(STORAGE_PROFILE);clearDraft();setProfile(null);};
+ const reset=()=>{localStorage.removeItem(STORAGE_PROFILE);localStorage.removeItem(STORAGE_TITLE);clearDraft();setProfile(null);setTitle(defaultTitle);};
    return <RoutedErrorBoundary><Shell title={title===defaultTitle?t('Career Pathways'):title} hasProfile={Boolean(profile)}><PlanningStyles/><nav aria-label={t('Career exploration steps')} className="journey-nav" style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:11,marginBottom:24}}>{[['/profile','1. Profile'],['/skills','2. Skills radar'],['/roles','3. Role matches'],['/roadmap','4. Learning plan'],['/impact','5. SDG mapping']].map(([href,label])=><Link href={href} key={href} data-testid={`link-journey-${href.slice(1)}`}>{t(label)}</Link>)}</nav><Switch>
    <Route path="/"><Home profile={profile}/></Route>
    <Route path="/profile"><ProfilePage profile={profile} onSave={saveProfile} onDelete={deleteProfile}/></Route>

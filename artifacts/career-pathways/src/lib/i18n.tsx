@@ -5,6 +5,18 @@ const STORAGE_KEY = 'career-pathways-locale';
 const localeTag: Record<Locale, string> = { en: 'en', zh: 'zh-CN', ms: 'ms-MY' };
 
 const translations: Record<string, [string, string]> = {
+  'Discard draft': ['丢弃草稿', 'Buang draf'],
+  'Discard this unconfirmed draft? Your last confirmed profile will not be changed.': ['确定丢弃这份未确认草稿吗？上次确认的资料不会改变。', 'Buang draf yang belum disahkan ini? Profil terakhir yang disahkan tidak akan berubah.'],
+  'Temporary draft storage is unavailable. Keep this page open and copy your entries before leaving. Closing or refreshing may lose your changes.': ['无法暂存草稿。请保持此页面打开，并在离开前复制填写内容。关闭或刷新可能导致未保存内容丢失。', 'Storan draf sementara tidak tersedia. Kekalkan halaman ini terbuka dan salin maklumat sebelum meninggalkannya. Menutup atau memuat semula halaman mungkin menyebabkan perubahan hilang.'],
+  'Unconfirmed draft saved in this browser tab. Refreshing or changing pages restores it. It is not used for matching until confirmed. PDF files are not saved.': ['未确认草稿已暂存在当前浏览器标签页，刷新或切换页面后可恢复。确认前不会用于职业匹配。PDF 文件不会暂存。', 'Draf yang belum disahkan disimpan sementara dalam tab pelayar ini dan dipulihkan selepas memuat semula atau menukar halaman. Draf tidak digunakan untuk padanan sehingga disahkan. Fail PDF tidak disimpan.'],
+  'You have unconfirmed changes. Keep this page open until the draft is saved or the profile is confirmed.': ['您有未确认的修改。请保持此页面打开，直到草稿暂存完成或资料确认成功。', 'Anda mempunyai perubahan yang belum disahkan. Kekalkan halaman ini terbuka sehingga draf disimpan atau profil disahkan.'],
+  'Your unconfirmed draft has been restored.': ['已恢复您的未确认草稿。', 'Draf anda yang belum disahkan telah dipulihkan.'],
+  'The temporary draft could not be removed. Your entries have been kept. Check browser storage permissions before trying again.': ['无法清除临时草稿，内容已保留。请检查浏览器存储权限后重试。', 'Draf sementara tidak dapat dibuang. Maklumat anda dikekalkan. Semak kebenaran storan pelayar sebelum mencuba lagi.'],
+  'Employment Experience is still present from a Career Switcher profile. It cannot be hidden and saved as Fresh Graduate. Choose whether to keep it as Career Switcher or remove it from this draft.': ['资料中仍有转行人士的就业经历，不能隐藏后保存为应届毕业生。请选择保留为转行人士，或从此草稿中移除就业经历。', 'Pengalaman Pekerjaan daripada profil Penukar Kerjaya masih ada. Maklumat ini tidak boleh disembunyikan dan disimpan sebagai Graduan Baharu. Pilih untuk mengekalkannya sebagai Penukar Kerjaya atau membuangnya daripada draf ini.'],
+  'Keep as Career Switcher': ['保留为转行人士', 'Kekalkan sebagai Penukar Kerjaya'],
+  'Remove Employment Experience': ['移除就业经历', 'Buang Pengalaman Pekerjaan'],
+  'Remove Employment Experience from this draft? Your saved profile is unchanged until you confirm.': ['确定从此草稿中移除就业经历吗？确认整份资料前，已保存的档案不会改变。', 'Buang Pengalaman Pekerjaan daripada draf ini? Profil tersimpan tidak akan berubah sehingga anda mengesahkannya.'],
+  'Your profile could not be saved. Your entries are still here and your last saved profile has not changed. Check browser storage permissions or available space, then try Confirm Profile again.': ['资料保存失败。填写内容仍在此页，上次保存的档案未改变。请检查浏览器存储权限或可用空间，然后再次点击“确认资料”。', 'Profil anda tidak dapat disimpan. Maklumat masih ada di sini dan profil terakhir yang disimpan tidak berubah. Semak kebenaran storan pelayar atau ruang yang tersedia, kemudian cuba Sahkan Profil sekali lagi.'],
   'Main navigation': ['主导航', 'Navigasi utama'],
   'Choose language': ['选择语言', 'Pilih bahasa'],
   'Career Pathways': ['职业路径', 'Laluan Kerjaya'],
