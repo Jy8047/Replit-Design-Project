@@ -10,8 +10,10 @@ import {
   type DatasetState,
 } from '@/components/career-data-pages';
 import { PageHeading } from '@/components/page-heading';
+import { ProfilePage } from '@/components/profile-page';
 import { PersonalisedRoadmapPage, OccupationImpactPage, FutureScenarioPage, PlanningStyles } from '@/components/career-planning-pages';
 import type { ScenarioId } from '@/lib/career-planning';
+import { normalizeProfile, type Profile } from '@/lib/profile';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter';
 import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronRight, Compass, FileUser, Gauge, Menu, Network, RotateCcw, Settings2, ShieldCheck, Sparkles, Target, Trash2, X } from 'lucide-react';
@@ -20,8 +22,6 @@ import {
   parseCareerCsv,
 } from '@/lib/career-data';
 
-type Profile = { name: string; role: string; skills: string; experience: string; interests: string; background: string };
-const emptyProfile: Profile = { name: '', role: '', skills: '', experience: '', interests: '', background: '' };
 const defaultTitle = 'Career Pathways';
 const queryClient = new QueryClient();
 const STORAGE_TITLE = 'career-pathways-title';
@@ -51,8 +51,7 @@ function readProfile(): Profile | null {
     const raw=localStorage.getItem(STORAGE_PROFILE);
     if(!raw)return null;
     const parsed=JSON.parse(raw);
-    if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))return null;
-    return Object.fromEntries(Object.keys(emptyProfile).map(key=>[key,typeof parsed[key]==='string'?parsed[key]:''])) as Profile;
+    return normalizeProfile(parsed);
   } catch { return null; }
 }
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
@@ -150,52 +149,6 @@ function Home({ profile }: {profile:Profile|null}) {
     </div>
      <style>{`.home-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.home-card{padding:18px;text-decoration:none;transition:transform .2s,box-shadow .2s}.home-card:hover{transform:translateY(-3px);box-shadow:0 12px 25px #35463712}@media(max-width:1100px){.home-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:720px){.home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:470px){.home-grid{grid-template-columns:1fr}.hero-note{display:none!important}}`}</style>
   </>;
-}
-function ProfilePage({profile,onSave,onDelete}:{profile:Profile|null;onSave:(v:Profile)=>void;onDelete:()=>void}) {
-  const { t } = useI18n();
-  const [form,setForm]=useState<Profile>(profile||emptyProfile);
-  const [saved,setSaved]=useState(false);
-  useEffect(()=>setForm(profile||emptyProfile),[profile]);
-  const update=(key:keyof Profile,value:string)=>{setForm(current=>({...current,[key]:value}));setSaved(false);};
-  const save=(e:React.FormEvent)=>{e.preventDefault();onSave(form);setSaved(true);};
-  if(!profile) return <><PageHeading kicker={t('Your starting point')} title={t('My Profile')} description={t('A few details can help you reflect on what you bring and what you want to explore.')}/>
-    <div className="panel" style={{maxWidth:760,padding:'clamp(22px,5vw,44px)'}}>
-      <div style={{width:52,height:52,borderRadius:16,background:'#edf0e6',display:'grid',placeItems:'center',color:'#50705a'}}><FileUser size={24}/></div>
-      <h2 style={{font:'700 23px Manrope',margin:'18px 0 8px',color:'#30483b'}}>{t('Your profile starts with your perspective.')}</h2><p className="lead" style={{fontSize:14,margin:'0 0 22px'}}>{t('Nothing is required to explore the examples. Add only what feels useful. Your profile stays in this browser.')}</p>
-      <button className="btn btn-primary" onClick={()=>document.getElementById('profile-name')?.focus()} data-testid="button-create-profile">{t('Create your profile button')} <ArrowRight size={15}/></button>
-    </div>
-    <ProfileForm form={form} update={update} save={save} saved={saved} profileExists={false}/>
-  </>;
-  return <><PageHeading kicker={t('Your starting point')} title={t('My Profile')} description={t('Keep a working snapshot of what you bring, what you enjoy, and where you might go next.')}>
-    <button className="btn btn-danger" onClick={()=>{if(window.confirm(t('Delete your complete profile from this device? This cannot be undone.')))onDelete();}} data-testid="button-delete-profile"><Trash2 size={15}/> {t('Delete profile')}</button>
-  </PageHeading>
-    <form onSubmit={save} className="panel" style={{maxWidth:850}}>
-      <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',marginBottom:20}}><div><div className="eyebrow">{t('Saved on this device')}</div><div style={{fontSize:13,color:'#6d766b',marginTop:5}}>{t('Edit any field and save when you’re ready.')}</div></div><span className="tag"><Check size={12} style={{marginRight:5}}/> {t('Profile saved')}</span></div>
-      <ProfileFields form={form} update={update}/>
-      <div className="divider" style={{margin:'22px 0 18px'}}/>
-      <div style={{display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}><button className="btn btn-primary" type="submit" data-testid="button-save-profile">{t('Save profile')} <Check size={15}/></button>{saved&&<span role="status" style={{fontSize:12,color:'#4a7055'}} data-testid="status-profile-saved">{t('Saved locally')}</span>}</div>
-    </form>
-    <p style={{fontSize:11,color:'#81877b',marginTop:14,lineHeight:1.6}}>{t('Profile details are stored in this browser’s local storage and are not sent to a service.')}</p>
-  </>;
-}
-function ProfileFields({form,update}:{form:Profile;update:(k:keyof Profile,v:string)=>void}) {
-  const { t } = useI18n();
-  const fields:[keyof Profile,string,string][]=[
-    ['name','Name','A name you’d like to use'],['role','Current or recent role','For example: Community program coordinator'],
-    ['skills','Skills you use','For example: Research, Writing, Facilitation'],['experience','Work experience','What have you done, and what are you proud of?'],
-    ['interests','Interests and curiosities','What kinds of problems or topics draw you in?'],['background','Career background','What context would be helpful as you explore?'],
-  ];
-  return <div className="profile-fields">{fields.map(([key,label,placeholder],i)=><div key={key} style={{gridColumn:i>2?'span 1':undefined}}>
-    <label htmlFor={`profile-${key}`} className="label">{t(label)}</label>
-    {['experience','interests','background'].includes(key)?<textarea id={`profile-${key}`} rows={3} className="field" placeholder={t(placeholder)} value={form[key]} onChange={e=>update(key,e.target.value)} data-testid={`input-profile-${key}`}/>:<input id={`profile-${key}`} className="field" placeholder={t(placeholder)} value={form[key]} onChange={e=>update(key,e.target.value)} data-testid={`input-profile-${key}`}/>}
-    {key==='skills'&&<p style={{fontSize:10,color:'#858b80',lineHeight:1.5,margin:'5px 0 0'}}>{t('Separate names with commas. Matching ignores capitalization; save your profile to refresh role scores.')}</p>}
-  </div>)}
-    <style>{`.profile-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}@media(max-width:560px){.profile-fields{grid-template-columns:1fr}}`}</style>
-  </div>;
-}
-function ProfileForm({form,update,save,saved,profileExists}:{form:Profile;update:(k:keyof Profile,v:string)=>void;save:(e:React.FormEvent)=>void;saved:boolean;profileExists:boolean}) {
-  const { t } = useI18n();
-  return <form onSubmit={save} className="panel" style={{maxWidth:850,marginTop:20}}><div className="eyebrow" style={{marginBottom:16}}>{t(profileExists?'Edit your details':'Create a profile')}</div><ProfileFields form={form} update={update}/><button className="btn btn-primary" style={{marginTop:20}} type="submit" data-testid="button-save-profile">{t(profileExists?'Save profile':'Save my profile')} <Check size={15}/></button>{saved&&<span role="status" style={{fontSize:12,color:'#4a7055',marginLeft:12}} data-testid="status-profile-saved">{t('Saved locally')}</span>}</form>;
 }
 export function LegacyRoadmapPage() {
  return <><PageHeading kicker="Turn curiosity into action" title="Reskilling Roadmap" description="A flexible example sequence for exploring a new direction. Adjust the pace to fit your life; time estimates are illustrative only."/>
