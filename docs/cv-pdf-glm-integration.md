@@ -1,142 +1,181 @@
-# Real PDF text extraction and prepared RunPod GLM-5.3 mapping
+# FuturePath AI: public PDF demo and disconnected GLM-5.3 client
 
-## Status and consent
+## Current safety boundary
 
-- Local backend extraction reads **actual uploaded PDF bytes**, using `pdf-parse`.
-- No fixture adapter or filename is used to produce real extraction output.
-- Blank/image-only PDFs return **`OCR_REQUIRED`**. This is not OCR, and does not
-  diagnose whether every scanned page is legible. Mixed PDFs may yield only their
-  text-layer pages. Missing/garbled text must be reviewed.
-- The GLM Chat Completions client is implemented but **disabled by default**.
-  Its tests use mocked HTTP responses. **The supplied endpoint/model has not
-  been contacted or verified.** No secret was read or live inference performed
-  during development.
-- The original offline Runpod adapter and its tests remain separate and unchanged.
-- No paid resources are created. Enabling inference can still incur costs on
-  the organizer's existing endpoint.
+The public application deliberately has **no login or caller authentication**.
+It does not assume Replit's platform protection covers API paths.
+Consent headers, CORS, cross-site checks and rate limits are not authentication.
 
-## Actual flow
+**There is no live RunPod mapping path in the public router.**
+`map_profile=true` is rejected with HTTP 403 / `LIVE_MAPPING_BLOCKED` before
+PDF parsing. The route has no injectable live mapper. `serverGlmSettings()`
+always returns `{enabled:false}` without reading any environment variable or
+credential. Adding a key or changing `RUNPOD_LIVE_ENABLED` cannot reconnect it.
+The live flag must remain unset/false; it is not a sufficient safety boundary
+and is no longer an enabling mechanism.
 
-1. My Profile → Upload CV: one PDF, at most 10 MiB. Local metadata/header/EOF
-   checks still run. No document is sent until the user consents and clicks Parse.
-2. `PdfExtractionPanel` calls generated `extractCvPdf` with the **File as the raw
-   application/pdf body**, a chosen profile type, and `X-CV-Consent`.
-   Filenames are not sent to the API or model.
-3. `POST /api/profile/extract-pdf` validates consent/type/size/query and parses in
-   an isolated worker with an empty environment (no inherited secrets), 256 MiB
-   JS heap cap, 15-second timeout, at most 30 pages and 60,000 extracted characters.
-   Embedded JS is not evaluated. Raw parser output/errors are not logged.
-4. Without `map_profile=true`, only local text is returned. With explicit
-   RunPod consent, the mapper checks the exact server flag, then the key.
-   Disabled or failed mapping returns local text with `profile:null` and an error
-   code, never a fabricated draft.
-5. If enabled, the client POSTs **text only**, never PDF/image input, to
-   `https://api.runpod.ai/v2/b1dd8hy2hqo1nb/openai/v1/chat/completions`
-   with `model:glm-5.3`, `temperature:0`, `max_tokens:2500`, no streaming,
-   a 30-second timeout, redirects rejected, response capped at 100,000 bytes,
-   and **no automatic retries**. The model's context/tokenizer limits remain
-   unverified; 60,000 characters is an application cap, not a token guarantee.
-6. Prompt treats CV content as untrusted data. Missing facts must be `""`;
-   keys/types are exactly the existing Profile schema. Server rejects missing/
-   extra keys, arrays in text fields, oversized values, wrong metadata, automatic
-   confirmation, and nonempty fields not found as literal spans in source text.
-   Skills may be comma-separated spans. This strict check can reject legitimate
-   paraphrases and is intentionally conservative.
-7. User inspects the returned raw text and JSON. “Review and edit extracted draft”
-   requires confirmation before replacing an existing dirty draft. It opens the
-   existing editable form; it does **not** save a confirmed profile.
-8. Existing education validation, employment-resolution guard, preview, and
-   Confirm Profile must succeed before `onSave` updates storage and Router state.
-   `readProfile` ignores unconfirmed legacy stored objects. Matching still
-   receives only the confirmed `skills` string; no matcher logic was changed.
-   Both online and PDF-derived drafts retain `input_method` across tab recovery.
+No Replit Auth, Clerk integration, login page, user/session tables, new service,
+new credential requirement or paid resource was introduced.
+
+## Working features
+
+1. **Real local PDF text extraction:** the browser sends raw PDF bytes to this
+   application's server after consent. `pdf-parse` extracts actual text; no
+   filename or bundled fixture produces extraction output.
+2. **Optional simulated mapping:** a deterministic, offline label copier maps
+   explicitly labelled PDF lines into an editable profile. This is **not AI**,
+   not a GLM response, not OCR and not a natural-language CV parser.
+3. **Existing online form / review / confirmation:** unchanged apart from
+   persistent simulation notices. Failed requests do not replace current drafts
+   or confirmed profiles. Replacing a dirty draft requires an explicit choice.
+4. **Existing matching and planning:** the same confirmed skills string is used;
+   no matching, roadmap, SDG or scenario algorithm was rewritten.
+5. The original synthetic queue/OCR adapter remains separate and unchanged.
+
+## Demonstrate without login, credentials or RunPod calls
+
+1. My Profile → Upload CV → choose a fictional, text-based PDF under 10 MiB.
+2. Consent to sending the file to the **app server**, not RunPod.
+3. Leave simulated mapping unchecked to inspect actual extracted text only.
+4. For an editable simulated draft, check simulated mapping and use a PDF with
+   one explicit English label per line, for example:
+
+```text
+Name: Fictional Student
+School: Fictional University
+Degree: Bachelor of Science
+Major: Computing
+Key Courses: Databases
+Skills: Python, SQL
+Internship Experience: Fictional research internship
+Employment Experience: Fictional part-time assistant
+```
+
+Other supported labels correspond to existing fields: Academic Experience,
+Professional Certificates, Personal Experience, Interests & Hobbies,
+Other Experience, Role and Background. Underscored field labels also work.
+First occurrence wins for repeated labels. Unknown narrative is ignored.
+Missing facts remain empty strings, never guessed. This limited English-label
+format is intentional; UI instructions/notices support English, Chinese and Malay.
+
+5. Check the extracted text and visibly marked **SIMULATED MAPPING** result.
+6. Choose Review and edit extracted draft. If Fresh Graduate retains an explicit
+   employment line, the existing type-resolution guard still requires a choice.
+7. Edit missing education fields (or explicitly enter None where appropriate),
+   review, then Confirm Profile. Confirmation records user review; it does not
+   convert a simulation into a real or independently verified AI result.
+
+`mapping_provenance:"simulated"` is optional metadata on the existing Profile.
+Ordinary online/older profiles retain their existing structure without that key.
+The marker persists through tab-draft recovery, confirmation and reload.
+The existing education/experience/skills values remain strings.
 
 ## API contract
 
-Single source: `lib/api-spec/openapi.yaml`; generated React helpers and Zod
-response validators are regenerated with:
+`POST /api/profile/extract-pdf`
+
+- Raw `application/pdf` body, not multipart or JSON.
+- Required `profile_type=fresh_graduate|career_switcher`.
+- Optional `mapping_mode=none|demo`; default none.
+- Legacy `map_profile=false` accepted; **true always rejected**.
+- Required `X-CV-Consent: local-extraction`; this is consent, not authentication.
+
+Local-only result:
+
+```json
+{
+  "status": "TEXT_EXTRACTED",
+  "text": "Actual text from supplied bytes",
+  "pages": 1,
+  "profile": null,
+  "mapping": "NOT_REQUESTED",
+  "mapping_provenance": "none"
+}
+```
+
+Simulated result uses `mapping:"SIMULATED"`,
+`mapping_provenance:"simulated"`, and an unconfirmed `profile` with its own
+`mapping_provenance:"simulated"`, `input_method:"pdf_upload"`,
+`confirmed_by_user:false`. It never reports `READY` or real AI success.
+If an API response includes a profile without the simulation markers, the UI
+rejects it rather than showing it as a successful draft.
+
+Blank/image-only PDF: `status:"OCR_REQUIRED"`, `text:""`, `profile:null`,
+`mapping:"OCR_REQUIRED"`, `mapping_provenance:"none"`. **OCR is not implemented.**
+Mixed PDFs may yield only their text layer; partial extraction is not OCR.
+
+Error codes are safe fixed strings, with no raw CV/upstream data:
+empty/invalid/consent 400, blocked live mode 403, size 413, media type 415,
+corrupt/encrypted/page/text/parser-timeout 422, concurrency/rate 429.
+
+Source of truth: `lib/api-spec/openapi.yaml`. Regenerate clients/schemas with:
 
 ```sh
 pnpm --filter @workspace/api-spec run codegen
 ```
 
-Parameters:
-- `profile_type=fresh_graduate|career_switcher` (required; selected by the user).
-- `map_profile=false|true` (default omitted/false).
-- `X-CV-Consent: local-extraction` for local only, or `runpod-text` for mapping.
-- `Content-Type: application/pdf`; raw bytes, **not multipart or base64 JSON**.
+## Extraction safety and remaining public-service risk
 
-Success response:
+Bytes are processed in an isolated worker with an empty environment (no inherited
+secrets), 256 MiB JS heap cap, 15-second timeout, at most 30 pages and 60,000
+extracted characters. Embedded JS is not evaluated. Encrypted/password-protected
+documents are rejected, including those with an empty user password.
+Parser warnings/raw errors are not piped into logs. Files/raw text are memory-only.
 
-```json
-{
-  "status": "TEXT_EXTRACTED",
-  "text": "Actual text from the supplied PDF",
-  "pages": 1,
-  "profile": null,
-  "mapping": "NOT_REQUESTED"
-}
-```
+Public local processing still consumes this application's compute. Two active
+requests and ten requests/minute are per-process backstops, not authentication,
+distributed protection or a monetary budget. They reset on restart. Public
+availability and provider-infrastructure billing are separate from RunPod
+inference costs; this change does not claim all server operation is cost-free.
+Platform preview protection and the authorized-user list remain **unverified**.
 
-Empty/image-only: `status:"OCR_REQUIRED"`, `text:""`, `profile:null`,
-`mapping:"OCR_REQUIRED"`. Successful mapping: `mapping:"READY"` and the existing
-Profile object with `input_method:"pdf_upload"`, `confirmed_by_user:false`.
-Education fields, experience, interests, skills, name, role, background and notes
-remain **strings**, not arrays. A fresh graduate's explicitly stated employment
-is retained and routed to the existing type-resolution screen.
+Unconfirmed profile fields use existing temporary sessionStorage; confirmed
+profiles use device localStorage. Do not upload unnecessary personal details.
+No CV is written to DB/App Storage, and no CV text is sent to RunPod in this demo.
 
-File failures return safe `{code}` responses:
-400 empty/invalid/consent; 413 size; 415 media type; 422 corruption, encryption,
-page/text limits or parser timeout; 429 concurrency/rate backstop.
-Mapping failures are reported alongside successfully extracted local text:
-`LIVE_DISABLED`, `KEY_MISSING`, `AUTH_ERROR`, `RATE_LIMITED`,
-`UPSTREAM_TIMEOUT`, `UPSTREAM_ERROR`, `MALFORMED_RESPONSE`, `INVALID_PROFILE`,
-`TEXT_TOO_LARGE`. Neither raw upstream errors nor CV content appear in errors.
+## Prepared GLM-5.3 client audit (not connected to the public route)
 
-## Required Secrets and manual flags (not set by development)
+`src/lib/runpod-glm-profile.ts` retains the client for future separately reviewed
+work, and its tests inject mock settings/transports using fictional credentials.
 
-- Secret: **`RUNPOD_API_KEY`**. Backend only; never use `VITE_` or paste into
-  chat, code, URLs, test fixtures, logs or screenshots.
-- Nonsecret server flag: **`RUNPOD_LIVE_ENABLED=true`**, exact lowercase string.
-  Anything else keeps inference off, without reading the key.
-- Optional flag **`RUNPOD_LOW_REASONING_SUPPORTED=true`** adds
-  `reasoning_effort:"low"`. Leave it unset until the organizer confirms support
-  for this endpoint. No fallback retry is performed if unsupported.
-- Base URL/model are fixed in backend code, not browser/user-supplied URLs.
+| Setting | Code |
+| --- | --- |
+| URL | `https://api.runpod.ai/v2/b1dd8hy2hqo1nb/openai/v1/chat/completions` |
+| Model | `glm-5.3` |
+| Parameters | temperature 0, max_tokens 2500, stream false |
+| Reasoning | omitted by default; low only when explicitly supported in injected settings |
+| Timeout | 30 seconds; AbortController plus timeout race |
+| Response cap | 100,000 bytes |
+| Retries / redirects | no automatic retries; redirects rejected |
+| Errors | safe auth/rate/timeout/upstream/malformed/profile error codes |
+| Validation | exact keys/types, bounded strings, unconfirmed metadata, literal source spans |
 
-Use the project's Replit Secrets interface for the key and nonsecret environment
-configuration for flags. Configure development/production separately as needed.
-Restart the API workflow after manual configuration. **No configuration or
-secret request was made as part of this coding task.**
+Prompt treats CV text as untrusted; missing facts stay empty, no tools or
+recommendations. Literal evidence checks cannot prove field assignment or truth.
+Response truncation, tool calls and invalid content are rejected. A future
+timeout could still leave a billed request; no automatic retry is safe.
+The endpoint's model availability, reasoning support, context/token limits,
+pricing, data retention and compatibility remain **unverified**.
+PDF/image/multimodal submission is not implemented.
 
-## Manual live-test procedure — user-run only, can incur costs
+## Conditions for any future real test
 
-1. Ask the organizer to confirm endpoint/model availability, access permissions,
-   data-retention policy, pricing and supported reasoning parameter. Do not
-   provision a new endpoint. The generic RunPod docs do not establish this
-   particular endpoint's capabilities.
-2. Restrict app access to authorized testers before enabling the flag. This app's
-   current API has **no account authentication**. A consent header is not auth.
-   Never enable this as a public paid inference proxy.
-3. Put the key in backend Secrets and manually set the live flag. Leave low
-   reasoning off unless confirmed supported. Restart the API.
-4. Create a **fictional**, text-based student PDF with explicit school/degree/
-   major and comma-separated skills; omit personal contact/ID details.
-5. Keep a known confirmed profile and an unsaved draft. Upload the PDF, select
-   type, read both consent statements, enable optional RunPod mapping, Parse
-   **once**. It may take a cold start longer than the timeout.
-6. Only `mapping:READY` with fields matching the PDF counts as a successful live
-   mapping test. Check names, empty missing fields, skill strings, retained work,
-   then use the draft, edit, preview and explicitly confirm. Matching must not
-   change beforehand. Do not call mocked tests “live verified”.
-7. On timeout, inspect the organizer's job/usage records before another attempt:
-   it may already be running/billed. The app never automatically re-submits.
-8. Disable the live flag after testing and restart. If it fails, share only safe
-   error codes, never CV text, API keys or raw request/response logs.
+Do not enable the flag to test this public demo: **it will not enable mapping**.
+No real test was performed in this change.
 
-No “list models” probe or other real request is required by the app.
+A future approved change must first establish:
+1. Reliable server-side caller authorization (or a separately isolated,
+   access-controlled operator-only runner) without exposing a paid public proxy.
+2. Durable usage/spend limits, concurrency controls and a reviewed retention policy.
+3. Organizer confirmation of endpoint/model permissions, cost and parameters.
+4. Explicit approval for costs and external CV-text transfer.
+5. A separately reviewed reconnection, mock safety tests, and a user-run fictional
+   live test. Keep secrets in the approved server-only secrets flow; never log,
+   display or put them in browser code. The existing key alone grants no consent.
 
-## Automated / local validation
+If these cannot be established, continue using local extraction and simulation.
+
+## Verification commands and scope
 
 ```sh
 pnpm --filter @workspace/api-server run test:cv
@@ -144,75 +183,33 @@ pnpm --filter @workspace/api-server run test:ocr
 pnpm --filter @workspace/career-pathways test
 pnpm --filter @workspace/api-server run typecheck
 pnpm --filter @workspace/career-pathways run typecheck
+pnpm --filter @workspace/api-server run build
+PORT=5173 BASE_PATH=/ pnpm --filter @workspace/career-pathways run build
 ```
 
-PDF tests generate actual fictional PDFs with `pdf-lib`, including real embedded
-image-only pages and genuine Standard Security encrypted PDFs (password-required
-and empty-user-password). Tests also cover truncation/corruption, MIME, byte/page/
-text limits, HTTP consent/response shape, and no mapping on OCR_REQUIRED.
-GLM tests deny global outbound fetch and inject mocked transports for successful
-and malformed responses, auth/rate errors, oversized output, timeout/abort,
-bounded requests, evidence rejection and disabled/key-missing protection.
-Loopback HTTP is used for the upload-route tests. No real endpoint is tested.
+PDF tests generate genuine fictional text, image-only, corrupt/truncated,
+encrypted and oversized PDFs. API tests exercise actual local HTTP, including
+blocked paid-mode requests with forged identity/config headers, no parsing on
+blocked requests, simulation labels, missing facts and employment retention.
+GLM network tests are mocked. Existing profile/matching/scenario tests remain.
+No test contacts the real endpoint or reads actual credentials.
 
-Acceptance results for this change:
-- New PDF/API/GLM suite: **14 passed**.
-- Unchanged offline adapter suite: **14 passed**.
-- Full frontend logic suite (matching/scenarios/profile/storage): **30 passed**.
-- API and frontend TypeScript checks passed.
-- Headless Chromium exercised the running, built API: actual text-PDF upload and
-  image-only OCR_REQUIRED response passed. Browser-intercepted (mocked) mapping
-  responses verified failure preservation, editable draft, reload recovery,
-  preview and explicit confirmation; PDF provenance remained intact. An old
-  unconfirmed stored profile was excluded from confirmed state. No browser runtime
-  exceptions were observed in that journey.
-- These are local and mocked results, **not a real RunPod endpoint test**.
+Validation for this change: 19 PDF/API/demo/GLM tests, 14 unchanged offline
+adapter tests and 30 frontend profile/matching/planning tests passed. Both
+TypeScript checks and both builds passed. The frontend build reported a
+non-blocking tooltip source-map warning.
+Headless Chromium used the actual built API for PDF text, OCR_REQUIRED and
+rule-based demo responses (no fabricated happy-path responses). It verified
+editable draft, failure preservation, reload recovery, review and explicit
+confirmation with persistent simulation provenance, with no runtime exceptions.
 
-## Changed files / dependencies
+## Changed areas
 
-- API `src/lib/cv-errors.ts`, `pdf-extraction.ts`,
-  `pdf-extraction-worker.ts`, `runpod-glm-profile.ts`; route
-  `src/routes/cv-extraction.ts` and route registration.
-- API `build.mjs`: separate worker entry point, external `pdf-parse`;
-  `tsconfig.json`: TypeScript import extensions for tests/source.
-- API `package.json`, workspace lockfile: runtime **pdf-parse 2.4.5**;
-  development-only **pdf-lib 1.17.1**, **tsx**; new `test:cv` script.
-  Existing `runpod-sdk` is retained. No OpenAI SDK is needed for the bounded fetch
-  client using the documented compatible HTTP API.
-- OpenAPI spec and generated api-client-react/api-zod files; api-zod type-only DOM
-  lib enables the generated binary `Blob` declaration without runtime DOM use.
-- Web `pdf-extraction-panel.tsx`, existing `profile-page.tsx`, `profile-storage.ts`,
-  its test, `App.tsx` confirmation gate, and EN/ZH/MS translations.
-- This guide, offline adapter guide scope clarification, project memory.
-- Ignore rules exclude generated browser-test outputs. No uploaded CV is saved.
-
-## Remaining limitations and privacy
-
-- No OCR, multimodal submission, layout reconstruction, verified live endpoint,
-  independently verified CV facts, or guaranteed prompt-injection immunity.
-  Literal-span validation cannot prove that a claim belongs to the correct field
-  or is true. User review remains essential; never infer missing credentials.
-- Real PDF extraction was tested on generated fictional documents, not all PDF
-  producers/languages/fonts. Unsupported fonts or complex layouts may extract
-  incorrectly; encrypted documents are intentionally rejected rather than
-  asking for passwords.
-- Local bytes/raw text are memory-only, not in DB, App Storage, localStorage or
-  logs. Draft **profile fields** still use the existing temporary sessionStorage,
-  and confirmed fields use device localStorage. Browser extensions, shared
-  devices, screenshots and an operator's infrastructure can affect privacy;
-  “not saved” does not guarantee secure physical-memory erasure.
-- If live mapping is explicitly enabled, the entire text layer (including contact
-  details present in the CV) goes to the organizer's RunPod endpoint. The prompt
-  tells the model not to populate sensitive fields, but this is **not redaction**.
-- Per-process backstops: two active uploads, ten requests/minute, five mapping
-  attempts/hour. They reset on restart and are not distributed budgets/auth.
-  Add authenticated authorization, distributed limits, usage controls and a
-  reviewed data-retention policy before public live use.
-
-## Documentation consulted
-
-- https://docs.runpod.io/serverless/vllm/openai-compatibility
-  (Chat Completions, base URL, parameters, model/vision support caveats).
-- https://mehmet-kozan.github.io/pdf-parse/typedoc/index.html
-  (PDFParse data/getInfo/getText/destroy, PasswordException and Node support).
-- Existing offline SDK guide remains `docs/runpod-offline-ocr.md`.
+- API: `src/routes/cv-extraction.ts`, new `src/lib/cv-demo-mapping.ts`,
+  `src/lib/runpod-glm-profile.ts`, CV/demo/GLM tests.
+- Web: `pdf-extraction-panel.tsx`, simulation notice in `profile-page.tsx`,
+  optional provenance normalization in `profile.ts`, provenance-storage test,
+  EN/ZH/MS translations.
+- OpenAPI plus regenerated api-client-react/api-zod outputs.
+- This guide and scope clarification in the offline adapter guide.
+- No new dependencies, login, tables, migrations or paid-resource configuration.

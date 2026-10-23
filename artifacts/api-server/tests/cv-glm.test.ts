@@ -33,9 +33,13 @@ test("disabled flag and missing key prevent all requests; disabled does not read
   const missing = createGlmProfileClient({ settings: () => ({ enabled: true }), transport });
   await assert.rejects(missing.extract(fictionalText, "fresh_graduate"), { code: "KEY_MISSING" });
   assert.equal(calls, 0);
-  // Read only the function's source, never the process's actual secrets/configuration.
+  // Server settings are hard-disabled independently of any environment flag/key.
+  assert.deepEqual(serverGlmSettings(), { enabled: false });
   const source = serverGlmSettings.toString();
-  assert.ok(source.indexOf('RUNPOD_LIVE_ENABLED') < source.indexOf('RUNPOD_API_KEY'));
+  assert.doesNotMatch(source, /process\.env/);
+  const serverClient = createGlmProfileClient({ settings: serverGlmSettings, transport });
+  await assert.rejects(serverClient.extract(fictionalText, "fresh_graduate"), { code: "LIVE_DISABLED" });
+  assert.equal(calls, 0);
 });
 test("mocked request has fixed URL/model, bounded tokens, untrusted JSON text and no default reasoning override", async () => {
   let calls = 0;

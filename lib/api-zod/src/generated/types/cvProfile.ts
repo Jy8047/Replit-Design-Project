@@ -7,9 +7,12 @@
  */
 import type { CvEducation } from './cvEducation';
 import type { CvProfileInputMethod } from './cvProfileInputMethod';
+import type { CvProfileMappingProvenance } from './cvProfileMappingProvenance';
 import type { CvProfileProfileType } from './cvProfileProfileType';
 
 export interface CvProfile {
+  /** Persistent demonstration label; not a real GLM result */
+  mapping_provenance?: CvProfileMappingProvenance;
   profile_type: CvProfileProfileType;
   input_method: CvProfileInputMethod;
   education: CvEducation;

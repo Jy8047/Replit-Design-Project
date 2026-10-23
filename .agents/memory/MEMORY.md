@@ -1,4 +1,4 @@
 - [Provisional project name](provisional-project-name.md) — The project name is undecided; keep the title editable and removable.
 - [Evidence and consent](domain-evidence-constraints.md) — Evidence, source checks, paid-service consent, and the confirmation boundary for profile drafts.
-- [Runpod scope](runpod-scope.md) — Runpod is intended for CV text extraction/OCR; no paid-resource provisioning is authorized.
+- [Runpod scope](runpod-scope.md) — No-login CV demo; simulated mapping stays labelled and public requests must never reach paid inference.
 - [PDF worker verification](pdf-worker-verification.md) — Verify real extraction through the bundled API; source-only parser tests can miss deployment failures.

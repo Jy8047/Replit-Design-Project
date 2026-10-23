@@ -3,10 +3,9 @@ import assert from "node:assert/strict";
 import { request as httpRequest } from "node:http";
 import { once } from "node:events";
 import express from "express";
-import { makePdf, encryptedPdf, fictionalText, fictionalProfile } from "./cv-fixtures.ts";
+import { makePdf, encryptedPdf } from "./cv-fixtures.ts";
 import { extractPdfText, MAX_CV_PDF_BYTES } from "../src/lib/pdf-extraction.ts";
 import { createCvExtractionRouter } from "../src/routes/cv-extraction.ts";
-import { CvError } from "../src/lib/cv-errors.ts";
 
 // These tests allow loopback HTTP only, never outbound fetch/inference.
 mock.method(globalThis, "fetch", () => { throw new Error("No external fetch is permitted in CV tests"); });
@@ -46,9 +45,9 @@ test("rejects too many pages and excessive extracted text", async () => {
   await assert.rejects(extractPdfText(await makePdf("Fictional long content ".repeat(120), 25)), { code: "TEXT_TOO_LARGE" });
 });
 
-async function withApi(map: (text: string, type: "fresh_graduate" | "career_switcher") => Promise<any>, run: (post: (bytes: Uint8Array, query?: string, headers?: Record<string, string>) => Promise<{ status: number; body: any; headers: any }>) => Promise<void>) {
+async function withApi(run: (post: (bytes: Uint8Array, query?: string, headers?: Record<string, string>) => Promise<{ status: number; body: any; headers: any }>) => Promise<void>, extract = extractPdfText) {
   const app = express();
-  app.use("/api", createCvExtractionRouter({ extract: extractPdfText, map }));
+  app.use("/api", createCvExtractionRouter({ extract }));
   const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address() as { port: number };
@@ -65,43 +64,61 @@ async function withApi(map: (text: string, type: "fresh_graduate" | "career_swit
   });
   try { await run(post); } finally { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); }
 }
-test("actual HTTP upload extracts text locally and does not invoke mapper without consent", async () => {
-  let calls = 0;
-  await withApi(async () => { calls++; throw new Error("Must not map"); }, async post => {
+test("actual anonymous HTTP upload extracts text locally, with no mapping provenance", async () => {
+  await withApi(async post => {
     const result = await post(await makePdf());
     assert.equal(result.status, 200);
     assert.match(result.body.text, /Fictional Student/);
     assert.equal(result.body.profile, null);
     assert.equal(result.body.mapping, "NOT_REQUESTED");
+    assert.equal(result.body.mapping_provenance, "none");
     assert.equal(result.headers["cache-control"], "no-store");
     const invalid = await post(await makePdf(), "profile_type=fresh_graduate&map_profile=true");
-    assert.equal(invalid.status, 400);
+    assert.equal(invalid.status, 403);
+    assert.equal(invalid.body.code, "LIVE_MAPPING_BLOCKED");
     const wrong = await post(await makePdf(), undefined, { "Content-Type": "image/jpeg" });
     assert.equal(wrong.status, 415);
   });
-  assert.equal(calls, 0);
 });
-test("HTTP mapping uses actual PDF text, preserves employment, and failure returns no draft", async () => {
-  let calls = 0;
-  await withApi(async (text, type) => {
-    assert.match(text, /Fictional Student/);
-    assert.equal(type, "career_switcher");
-    calls++;
-    if (calls > 1) throw new CvError("LIVE_DISABLED");
-    return { ...fictionalProfile(type), employment_experience: "Fictional stated work" };
-  }, async post => {
-    const headers = { "X-CV-Consent": "runpod-text" };
-    const query = "profile_type=career_switcher&map_profile=true";
-    const good = await post(await makePdf(), query, headers);
+test("HTTP demo maps explicit actual PDF lines and preserves employment, never reports real AI success", async () => {
+  await withApi(async post => {
+    const query = "profile_type=career_switcher&mapping_mode=demo";
+    const good = await post(await makePdf("School: Fictional University\nDegree: Bachelor\nMajor: Computing\nSkills: Python, SQL\nEmployment Experience: Fictional stated work"), query);
+    assert.equal(good.status, 200);
+    assert.equal(good.body.mapping, "SIMULATED");
+    assert.equal(good.body.mapping_provenance, "simulated");
+    assert.equal(good.body.profile.mapping_provenance, "simulated");
     assert.equal(good.body.profile.confirmed_by_user, false);
     assert.equal(good.body.profile.employment_experience, "Fictional stated work");
-    const disabled = await post(await makePdf(), query, headers);
-    assert.equal(disabled.body.mapping, "LIVE_DISABLED");
-    assert.equal(disabled.body.profile, null);
-    const scan = await post(await makePdf("", 1, true), query, headers);
+    assert.equal(good.body.profile.education.school, "Fictional University");
+    assert.equal(good.body.profile.skills, "Python, SQL");
+    assert.equal(good.body.profile.name, "");
+    assert.notEqual(good.body.mapping, "READY");
+    const scan = await post(await makePdf("", 1, true), query);
     assert.equal(scan.body.status, "OCR_REQUIRED");
-    assert.equal(calls, 2);
+    assert.equal(scan.body.profile, null);
+    assert.equal(scan.body.mapping_provenance, "none");
     const tooBig = await post(new Uint8Array(MAX_CV_PDF_BYTES + 1));
     assert.equal(tooBig.status, 413);
   });
+});
+
+test("paid-mode requests and spoofed identity/config headers are blocked before parsing or networking", async () => {
+  let extractionCalls = 0;
+  await withApi(async post => {
+    for (const headers of [
+      { "X-CV-Consent": "runpod-text" },
+      { "X-CV-Consent": "local-extraction", "Authorization": "Bearer fictional-forged-token" },
+      { "X-CV-Consent": "runpod-text", "X-Replit-User-Id": "fictional-owner", "RUNPOD_LIVE_ENABLED": "true" },
+    ]) {
+      const response = await post(Buffer.from("not a PDF"), "profile_type=fresh_graduate&map_profile=true&mapping_mode=demo", headers);
+      assert.equal(response.status, 403);
+      assert.deepEqual(response.body, { code: "LIVE_MAPPING_BLOCKED" });
+    }
+    const unknownMode = await post(Buffer.from("not a PDF"), "profile_type=fresh_graduate&mapping_mode=live");
+    assert.equal(unknownMode.status, 400);
+    const repeated = await post(Buffer.from("not a PDF"), "profile_type=fresh_graduate&map_profile=false&map_profile=true");
+    assert.equal(repeated.status, 400);
+    assert.equal(extractionCalls, 0);
+  }, async () => { extractionCalls++; throw new Error("Blocked request must not parse"); });
 });

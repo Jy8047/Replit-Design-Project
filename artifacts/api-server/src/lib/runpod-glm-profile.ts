@@ -38,7 +38,7 @@ export function validateExtractedProfile(value: unknown, text: string, type: Pro
     || Object.keys(education).length !== 4 || Object.keys(education).some(key => !educationFields.includes(key as typeof educationFields[number]))) {
     throw new CvError("INVALID_PROFILE");
   }
-  const result = ExtractCvPdfResponse.safeParse({ status: "TEXT_EXTRACTED", text, pages: 1, profile: value, mapping: "READY" });
+  const result = ExtractCvPdfResponse.safeParse({ status: "TEXT_EXTRACTED", text, pages: 1, profile: value, mapping: "NOT_REQUESTED", mapping_provenance: "none" });
   if (!result.success || !result.data.profile) throw new CvError("INVALID_PROFILE");
   const profile = result.data.profile;
   const source = fold(text);
@@ -130,10 +130,8 @@ export function createGlmProfileClient(options: ClientOptions) {
 }
 
 export function serverGlmSettings(): Settings {
-  if (process.env.RUNPOD_LIVE_ENABLED !== "true") return { enabled: false };
-  return {
-    enabled: true,
-    apiKey: process.env.RUNPOD_API_KEY,
-    lowReasoningSupported: process.env.RUNPOD_LOW_REASONING_SUPPORTED === "true",
-  };
+  // Public demo has no reliable caller authorization or durable spend control.
+  // Deliberately do not read environment credentials, even if a flag is changed.
+  // A future reviewed, authorized live integration requires a code change.
+  return { enabled: false };
 }

@@ -1,3 +1,9 @@
 uploads = []
 generated = []
-outputs = []
+
+[[outputs]]
+id = "XB-RtcOKEyIP-fttq4tTZ"
+uri = "file://generated-artifacts/fictional-labelled-cv.pdf"
+type = "pdf"
+title = "虚拟学生简历：安全演示 PDF"
+description = "完全虚构的文字型 PDF，包含规则映射需要的英文标签，可用于提取、编辑及确认演示；不是模型生成结果。"

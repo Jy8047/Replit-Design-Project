@@ -25,6 +25,16 @@ export interface CvEducation {
   key_courses: string;
 }
 
+/**
+ * Persistent demonstration label; not a real GLM result
+ */
+export type CvProfileMappingProvenance = typeof CvProfileMappingProvenance[keyof typeof CvProfileMappingProvenance];
+
+
+export const CvProfileMappingProvenance = {
+  simulated: 'simulated',
+} as const;
+
 export type CvProfileProfileType = typeof CvProfileProfileType[keyof typeof CvProfileProfileType];
 
 
@@ -41,6 +51,8 @@ export const CvProfileInputMethod = {
 } as const;
 
 export interface CvProfile {
+  /** Persistent demonstration label; not a real GLM result */
+  mapping_provenance?: CvProfileMappingProvenance;
   profile_type: CvProfileProfileType;
   input_method: CvProfileInputMethod;
   education: CvEducation;
@@ -69,6 +81,14 @@ export interface CvProfile {
   confirmed_by_user: false;
 }
 
+export type CvExtractionResultMappingProvenance = typeof CvExtractionResultMappingProvenance[keyof typeof CvExtractionResultMappingProvenance];
+
+
+export const CvExtractionResultMappingProvenance = {
+  none: 'none',
+  simulated: 'simulated',
+} as const;
+
 export type CvExtractionResultStatus = typeof CvExtractionResultStatus[keyof typeof CvExtractionResultStatus];
 
 
@@ -82,20 +102,12 @@ export type CvExtractionResultMapping = typeof CvExtractionResultMapping[keyof t
 
 export const CvExtractionResultMapping = {
   NOT_REQUESTED: 'NOT_REQUESTED',
-  LIVE_DISABLED: 'LIVE_DISABLED',
-  KEY_MISSING: 'KEY_MISSING',
-  READY: 'READY',
+  SIMULATED: 'SIMULATED',
   OCR_REQUIRED: 'OCR_REQUIRED',
-  AUTH_ERROR: 'AUTH_ERROR',
-  RATE_LIMITED: 'RATE_LIMITED',
-  UPSTREAM_TIMEOUT: 'UPSTREAM_TIMEOUT',
-  UPSTREAM_ERROR: 'UPSTREAM_ERROR',
-  MALFORMED_RESPONSE: 'MALFORMED_RESPONSE',
-  INVALID_PROFILE: 'INVALID_PROFILE',
-  TEXT_TOO_LARGE: 'TEXT_TOO_LARGE',
 } as const;
 
 export interface CvExtractionResult {
+  mapping_provenance: CvExtractionResultMappingProvenance;
   status: CvExtractionResultStatus;
   text: string;
   pages: number;
@@ -114,7 +126,11 @@ export type CvErrorResponse = CvError;
 
 export type ExtractCvPdfParams = {
 profile_type: ExtractCvPdfProfileType;
+/**
+ * Legacy parameter; true is always rejected, never enables a model
+ */
 map_profile?: ExtractCvPdfMapProfile;
+mapping_mode?: ExtractCvPdfMappingMode;
 };
 
 export type ExtractCvPdfProfileType = typeof ExtractCvPdfProfileType[keyof typeof ExtractCvPdfProfileType];
@@ -131,5 +147,13 @@ export type ExtractCvPdfMapProfile = typeof ExtractCvPdfMapProfile[keyof typeof 
 export const ExtractCvPdfMapProfile = {
   true: 'true',
   false: 'false',
+} as const;
+
+export type ExtractCvPdfMappingMode = typeof ExtractCvPdfMappingMode[keyof typeof ExtractCvPdfMappingMode];
+
+
+export const ExtractCvPdfMappingMode = {
+  none: 'none',
+  demo: 'demo',
 } as const;
 

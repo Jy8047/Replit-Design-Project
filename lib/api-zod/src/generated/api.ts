@@ -9,15 +9,16 @@ import * as zod from 'zod';
 
 
 /**
- * @summary Extract actual PDF text; optionally request an unconfirmed profile draft
+ * @summary Extract actual PDF text with optional simulated rule-based mapping; live mapping is blocked
  */
 export const ExtractCvPdfQueryParams = zod.object({
   "profile_type": zod.enum(['fresh_graduate', 'career_switcher']),
-  "map_profile": zod.enum(['true', 'false']).optional()
+  "map_profile": zod.enum(['true', 'false']).optional().describe('Legacy parameter; true is always rejected, never enables a model'),
+  "mapping_mode": zod.enum(['none', 'demo']).optional()
 })
 
 export const ExtractCvPdfHeader = zod.object({
-  "X-CV-Consent": zod.enum(['local-extraction', 'runpod-text'])
+  "X-CV-Consent": zod.enum(['local-extraction'])
 })
 
 export const extractCvPdfResponseProfileOneEducationSchoolMax = 8000;
@@ -53,10 +54,12 @@ export const extractCvPdfResponseProfileOneBackgroundMax = 8000;
 
 
 export const ExtractCvPdfResponse = zod.object({
+  "mapping_provenance": zod.enum(['none', 'simulated']),
   "status": zod.enum(['TEXT_EXTRACTED', 'OCR_REQUIRED']),
   "text": zod.string(),
   "pages": zod.number(),
   "profile": zod.union([zod.object({
+  "mapping_provenance": zod.enum(['simulated']).optional().describe('Persistent demonstration label; not a real GLM result'),
   "profile_type": zod.enum(['fresh_graduate', 'career_switcher']),
   "input_method": zod.enum(['pdf_upload']),
   "education": zod.object({
@@ -78,7 +81,7 @@ export const ExtractCvPdfResponse = zod.object({
   "background": zod.string().max(extractCvPdfResponseProfileOneBackgroundMax),
   "confirmed_by_user": zod.literal(false)
 }),zod.null()]),
-  "mapping": zod.enum(['NOT_REQUESTED', 'LIVE_DISABLED', 'KEY_MISSING', 'READY', 'OCR_REQUIRED', 'AUTH_ERROR', 'RATE_LIMITED', 'UPSTREAM_TIMEOUT', 'UPSTREAM_ERROR', 'MALFORMED_RESPONSE', 'INVALID_PROFILE', 'TEXT_TOO_LARGE'])
+  "mapping": zod.enum(['NOT_REQUESTED', 'SIMULATED', 'OCR_REQUIRED'])
 })
 
 

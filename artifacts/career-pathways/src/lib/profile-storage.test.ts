@@ -52,12 +52,13 @@ test('an extracted PDF draft preserves its input provenance and employment witho
   const storage = memoryStorage();
   persistProfileDraft(storage, {
     ...draft, profileType: 'career_switcher',
-    form: { ...draft.form, profile_type: 'career_switcher', input_method: 'pdf_upload', employment_experience: 'Fictional work', confirmed_by_user: true },
+    form: { ...draft.form, profile_type: 'career_switcher', input_method: 'pdf_upload', mapping_provenance: 'simulated', employment_experience: 'Fictional work', confirmed_by_user: true },
   });
   const restored = readProfileDraft(storage, null);
   assert.equal(restored?.form.input_method, 'pdf_upload');
   assert.equal(restored?.form.employment_experience, 'Fictional work');
   assert.equal(restored?.form.confirmed_by_user, false);
+  assert.equal(restored?.form.mapping_provenance, 'simulated');
   assert.equal(storage.getItem(PROFILE_STORAGE_KEY), null);
 });
 

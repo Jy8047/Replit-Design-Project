@@ -14,7 +14,7 @@ paths:
   /profile/extract-pdf:
     post:
       operationId: extractCvPdf
-      summary: Extract actual PDF text; optionally request an unconfirmed profile draft
+      summary: Extract actual PDF text with optional simulated rule-based mapping; live mapping is blocked
       parameters:
         - in: query
           name: profile_type
@@ -24,15 +24,21 @@ paths:
             enum: [fresh_graduate, career_switcher]
         - in: query
           name: map_profile
+          description: Legacy parameter; true is always rejected, never enables a model
           schema:
             type: string
             enum: ["true", "false"]
+        - in: query
+          name: mapping_mode
+          schema:
+            type: string
+            enum: [none, demo]
         - in: header
           name: X-CV-Consent
           required: true
           schema:
             type: string
-            enum: [local-extraction, runpod-text]
+            enum: [local-extraction]
       requestBody:
         required: true
         content:
@@ -107,6 +113,10 @@ components:
       additionalProperties: false
       required: [profile_type, input_method, education, internship_experience, academic_experience, professional_certificates, personal_experience, interests_and_hobbies, employment_experience, other_experience, skills, name, role, background, confirmed_by_user]
       properties:
+        mapping_provenance:
+          type: string
+          enum: [simulated]
+          description: Persistent demonstration label; not a real GLM result
         profile_type: { type: string, enum: [fresh_graduate, career_switcher] }
         input_method: { type: string, enum: [pdf_upload] }
         education: { $ref: "#/components/schemas/CvEducation" }
@@ -125,8 +135,11 @@ components:
     CvExtractionResult:
       type: object
       additionalProperties: false
-      required: [status, text, pages, profile, mapping]
+      required: [status, text, pages, profile, mapping, mapping_provenance]
       properties:
+        mapping_provenance:
+          type: string
+          enum: [none, simulated]
         status: { type: string, enum: [TEXT_EXTRACTED, OCR_REQUIRED] }
         text: { type: string }
         pages: { type: integer }
@@ -136,7 +149,7 @@ components:
             - type: "null"
         mapping:
           type: string
-          enum: [NOT_REQUESTED, LIVE_DISABLED, KEY_MISSING, READY, OCR_REQUIRED, AUTH_ERROR, RATE_LIMITED, UPSTREAM_TIMEOUT, UPSTREAM_ERROR, MALFORMED_RESPONSE, INVALID_PROFILE, TEXT_TOO_LARGE]
+          enum: [NOT_REQUESTED, SIMULATED, OCR_REQUIRED]
     HealthStatus:
       type: object
       properties:

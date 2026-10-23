@@ -2,6 +2,7 @@ export type ProfileType = 'fresh_graduate' | 'career_switcher';
 export type ProfileInputMethod = 'pdf_upload' | 'online_form';
 
 export type Profile = {
+  mapping_provenance?: 'simulated';
   profile_type: ProfileType;
   input_method: ProfileInputMethod;
   education: {
@@ -54,6 +55,7 @@ export function normalizeProfile(value: unknown): Profile | null {
   const inputMethod: ProfileInputMethod = source.input_method === 'pdf_upload' ? 'pdf_upload' : 'online_form';
   return {
     ...emptyProfile,
+    ...(source.mapping_provenance === 'simulated' ? { mapping_provenance: 'simulated' as const } : {}),
     profile_type: profileType,
     input_method: inputMethod,
     education: {

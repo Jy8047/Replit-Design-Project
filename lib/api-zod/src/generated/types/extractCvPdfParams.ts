@@ -5,10 +5,15 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ExtractCvPdfMappingMode } from './extractCvPdfMappingMode';
 import type { ExtractCvPdfMapProfile } from './extractCvPdfMapProfile';
 import type { ExtractCvPdfProfileType } from './extractCvPdfProfileType';
 
 export type ExtractCvPdfParams = {
 profile_type: ExtractCvPdfProfileType;
+/**
+ * Legacy parameter; true is always rejected, never enables a model
+ */
 map_profile?: ExtractCvPdfMapProfile;
+mapping_mode?: ExtractCvPdfMappingMode;
 };

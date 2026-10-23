@@ -6,10 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CvExtractionResultMapping } from './cvExtractionResultMapping';
+import type { CvExtractionResultMappingProvenance } from './cvExtractionResultMappingProvenance';
 import type { CvExtractionResultStatus } from './cvExtractionResultStatus';
 import type { CvProfile } from './cvProfile';
 
 export interface CvExtractionResult {
+  mapping_provenance: CvExtractionResultMappingProvenance;
   status: CvExtractionResultStatus;
   text: string;
   pages: number;

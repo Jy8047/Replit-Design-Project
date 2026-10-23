@@ -69,7 +69,7 @@ export const getExtractCvPdfUrl = (params: ExtractCvPdfParams,) => {
 }
 
 /**
- * @summary Extract actual PDF text; optionally request an unconfirmed profile draft
+ * @summary Extract actual PDF text with optional simulated rule-based mapping; live mapping is blocked
  */
 export const extractCvPdf = async (extractCvPdfBody: Blob,
     params: ExtractCvPdfParams, options?: RequestInit): Promise<CvExtractionResult> => {
@@ -119,7 +119,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ExtractCvPdfMutationError = ErrorType<CvErrorResponse>
 
     /**
- * @summary Extract actual PDF text; optionally request an unconfirmed profile draft
+ * @summary Extract actual PDF text with optional simulated rule-based mapping; live mapping is blocked
  */
 export const useExtractCvPdf = <TError = ErrorType<CvErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof extractCvPdf>>, TError,{data: BodyType<Blob>;params: ExtractCvPdfParams}, TContext>, request?: SecondParameter<typeof customFetch>}

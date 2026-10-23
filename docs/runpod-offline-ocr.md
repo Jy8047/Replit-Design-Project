@@ -4,7 +4,7 @@
 
 This document describes the **unchanged offline adapter**, not a connected OCR
 service. Its synthetic tests never make live calls or create paid resources.
-The separate real-PDF text extractor and default-disabled GLM client are documented
+The separate real-PDF text extractor, simulated rule mapper and disconnected GLM client are documented
 in [CV PDF / GLM integration](cv-pdf-glm-integration.md). They do not use these fixtures.
 
 - Official JavaScript package: `runpod-sdk` (installed version pinned by the lockfile).
