@@ -4,7 +4,9 @@ import { CvError } from "./cv-errors.ts";
 export const MAX_CV_PDF_BYTES = 10 * 1024 * 1024;
 export type PdfTextResult = { status: "TEXT_EXTRACTED" | "OCR_REQUIRED"; text: string; pages: number };
 
-export async function extractPdfText(bytes: Uint8Array, contentType = "application/pdf"): Promise<PdfTextResult> {
+export async function extractPdfText(bytes: Uint8Array, contentType = "application/pdf", signal?: AbortSignal): Promise<PdfTextResult> {
+  const abortError = () => signal?.reason instanceof CvError ? signal.reason : new CvError("UPLOAD_ABORTED", 400);
+  if (signal?.aborted) throw abortError();
   if (contentType.split(";")[0].trim().toLowerCase() !== "application/pdf") throw new CvError("PDF_ONLY", 415);
   if (!bytes.length) throw new CvError("EMPTY_FILE", 400);
   if (bytes.length > MAX_CV_PDF_BYTES) throw new CvError("FILE_TOO_LARGE", 413);
@@ -23,15 +25,21 @@ export async function extractPdfText(bytes: Uint8Array, contentType = "applicati
     worker.stdout?.resume();
     worker.stderr?.resume();
     let settled = false;
+    const onAbort = () => finish(abortError());
     const finish = (error?: CvError, result?: PdfTextResult) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      void worker.terminate();
-      if (error) reject(error);
-      else resolve(result!);
+      signal?.removeEventListener("abort", onAbort);
+      // Do not let the router reuse a slot while the old worker is still alive.
+      void worker.terminate().then(() => {
+        if (error) reject(error);
+        else resolve(result!);
+      }, () => reject(new CvError("CORRUPT_PDF")));
     };
     const timer = setTimeout(() => finish(new CvError("PDF_TIMEOUT", 422)), 15_000);
+    signal?.addEventListener("abort", onAbort, { once: true });
+    if (signal?.aborted) onAbort();
     worker.once("message", (message) => {
       if (message.error) finish(new CvError(message.error));
       else if ((message.status === "TEXT_EXTRACTED" || message.status === "OCR_REQUIRED")
