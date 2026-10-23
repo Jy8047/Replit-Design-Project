@@ -1,3 +1,5 @@
+import { matchCareersForProfile } from './career-matching';
+
 export const REQUIRED_CSV_HEADERS = [
   'occupation',
   'skill',
@@ -262,51 +264,7 @@ export function calculateCareerMatches(
   profileSkills: string | string[],
   records: CareerRecord[],
 ): CareerMatch[] {
-  const profileSkillList = Array.isArray(profileSkills)
-    ? profileSkills
-    : profileSkills.split(/[,\uFF0C]/);
-  const normalizedProfileSkills = new Set(
-    profileSkillList.map(normalizeSkill).filter(Boolean),
-  );
-  const occupations = new Map<string, Set<string>>();
-
-  for (const record of records) {
-    const occupation = record.occupation.trim();
-    const skill = record.skill.trim();
-    if (!occupation || !skill) continue;
-    const key = occupation.toLocaleLowerCase();
-    const requiredSkills = occupations.get(key) ?? new Set<string>();
-    requiredSkills.add(skill);
-    occupations.set(key, requiredSkills);
-  }
-
-  return Array.from(occupations.entries())
-    .map(([key, skillSet]) => {
-      const occupation = records.find(
-        (record) => record.occupation.toLocaleLowerCase() === key,
-      )!.occupation;
-      const requiredSkills = Array.from(skillSet);
-      const matchingSkills = requiredSkills.filter((skill) =>
-        normalizedProfileSkills.has(normalizeSkill(skill)),
-      );
-      const missingSkills = requiredSkills.filter(
-        (skill) => !normalizedProfileSkills.has(normalizeSkill(skill)),
-      );
-      return {
-        occupation,
-        requiredSkills,
-        matchingSkills,
-        missingSkills,
-        score: requiredSkills.length
-          ? Math.round((matchingSkills.length / requiredSkills.length) * 100)
-          : 0,
-      };
-    })
-    .sort(
-      (left, right) =>
-        right.score - left.score ||
-        left.occupation.localeCompare(right.occupation),
-    );
+  return matchCareersForProfile(profileSkills, records);
 }
 
 export function formatPublicationDate(value: string): string {
