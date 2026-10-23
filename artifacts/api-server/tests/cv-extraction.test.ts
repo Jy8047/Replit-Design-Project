@@ -122,3 +122,52 @@ test("paid-mode requests and spoofed identity/config headers are blocked before 
     assert.equal(extractionCalls, 0);
   }, async () => { extractionCalls++; throw new Error("Blocked request must not parse"); });
 });
+
+test("resource backstop allows only two active uploads and releases slots after completion", async () => {
+  const release: Array<() => void> = [];
+  const waitFor = async (count: number) => {
+    for (let i = 0; i < 200; i++) {
+      if (release.length === count) return;
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+    assert.fail("Synthetic extraction did not reach its controlled wait");
+  };
+  await withApi(async post => {
+    const first = post(Buffer.from("synthetic resource-test body"));
+    await waitFor(1);
+    const second = post(Buffer.from("synthetic resource-test body"));
+    await waitFor(2);
+    try {
+      const busy = await post(Buffer.from("synthetic resource-test body"));
+      assert.equal(busy.status, 429);
+      assert.equal(busy.body.code, "BUSY");
+    } finally {
+      for (const resolve of release.splice(0)) resolve();
+    }
+    assert.equal((await first).status, 200);
+    assert.equal((await second).status, 200);
+    const next = post(Buffer.from("synthetic resource-test body"));
+    await waitFor(1);
+    release.shift()!();
+    assert.equal((await next).status, 200);
+  }, async () => {
+    await new Promise<void>(resolve => release.push(resolve));
+    return { status: "OCR_REQUIRED", text: "", pages: 1 };
+  });
+});
+
+test("resource backstop rejects the eleventh request in the same per-process minute", async () => {
+  let extractionCalls = 0;
+  await withApi(async post => {
+    for (let i = 0; i < 10; i++) {
+      assert.equal((await post(Buffer.from("synthetic resource-test body"))).status, 200);
+    }
+    const limited = await post(Buffer.from("synthetic resource-test body"));
+    assert.equal(limited.status, 429);
+    assert.equal(limited.body.code, "BUSY");
+    assert.equal(extractionCalls, 10);
+  }, async () => {
+    extractionCalls++;
+    return { status: "OCR_REQUIRED", text: "", pages: 1 };
+  });
+});

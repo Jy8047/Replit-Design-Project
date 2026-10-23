@@ -28,6 +28,10 @@ node_modules
 !.vscode/extensions.json
 
 # misc
+.env
+.env.*
+!.env.example
+!.env.sample
 /.sass-cache
 /generated-artifacts/
 /connect.lock

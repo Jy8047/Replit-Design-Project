@@ -75,11 +75,11 @@ export async function withProfileBrowser(run) {
       })()`);
       await sleep(150);
     };
-    const upload = async file => {
+    const upload = async (file, expected = 'status-pdf-selected') => {
       const document = await cdp('DOM.getDocument');
       const node = await cdp('DOM.querySelector', { nodeId: document.root.nodeId, selector: selector('input-profile-pdf') });
       await cdp('DOM.setFileInputFiles', { nodeId: node.nodeId, files: [file] });
-      await present('status-pdf-selected');
+      await present(expected);
     };
     await run({ cdp, evaluate, wait, present, click, setValue, upload, errors, requests });
   } finally {

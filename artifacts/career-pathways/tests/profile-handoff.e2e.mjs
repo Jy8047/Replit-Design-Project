@@ -51,6 +51,23 @@ try {
         ...(fixture.employment ? [`Employment Experience: ${fixture.employment}`] : []),
       ].join('\n')));
       await click('button-profile-method-pdf');
+      if (fixture.type === 'fresh_graduate') {
+        for (const [name, bytes, expected] of [
+          ['fictional.docx', await makePdf(), 'extension'],
+          ['fictional.jpg', Buffer.from('synthetic image'), 'extension'],
+          ['empty.pdf', Buffer.alloc(0), 'empty'],
+          ['oversized.pdf', Buffer.alloc(10 * 1024 * 1024 + 1), 'size'],
+          ['false-header.pdf', Buffer.from('This is not PDF content'), 'signature'],
+        ]) {
+          const invalid = `${temp}/${name}`;
+          await writeFile(invalid, bytes);
+          await upload(invalid, 'error-pdf-validation');
+          const words = { extension: 'does not have a .pdf extension', empty: 'empty', size: '10 MB', signature: 'valid PDF header' };
+          await wait(`document.querySelector('[data-testid="error-pdf-validation"]').textContent.includes(${JSON.stringify(words[expected])})`);
+          assert.deepEqual(await stored(), base);
+        }
+        console.log('PASS browser rejects DOCX/JPG/empty/oversized/fake PDF without replacing confirmation');
+      }
       await upload(file);
       await setValue('select-pdf-profile-type', fixture.type);
       // Real text extraction alone must not generate or commit any profile.
@@ -83,6 +100,11 @@ try {
       assert.equal(draft.confirmed_by_user, false);
       assert.equal(draft.mapping_provenance, 'simulated');
       assert.equal(draft.input_method, 'pdf_upload');
+      await navigate('/profile');
+      await present('form-online-profile');
+      assert.equal(await ev(`document.querySelector('[data-testid="input-profile-skills"]').value`), fixture.edited);
+      await present('profile-simulated-provenance');
+      assert.deepEqual(await stored(), base);
       // Navigating to the actual consumer while editing must use OLD confirmation.
       await click('link-future-role-matches');
       const before = await checkMatching(base.skills);
@@ -115,6 +137,77 @@ try {
       await click('link-my-profile');
       await present('profile-simulated-provenance');
       console.log(`PASS ${fixture.type}: genuine PDF -> rules -> edit -> unconfirmed isolation -> confirm -> matching -> reload`);
+    }
+    for (const type of ['fresh_graduate', 'career_switcher']) {
+      await ev('localStorage.clear();sessionStorage.clear()');
+      await navigate('/profile');
+      await click('button-profile-method-online');
+      await click(`button-profile-type-${type}`);
+      await click('button-profile-type-continue');
+      await present('form-online-profile');
+      // Required blanks must prevent review and must not create a saved profile.
+      await click('button-profile-review');
+      assert.equal(await ev(`!!document.querySelector('[data-testid="button-confirm-profile"]')`), false);
+      assert.equal(await stored(), null);
+      for (const [id, value] of [
+        ['education-school', 'None'], ['education-degree', '无'], ['education-major', 'Tiada'],
+        ['education-key_courses', 'Fictional courses'],
+        ['internship_experience', 'Fictional internship'],
+        ['academic_experience', 'Fictional study project'],
+        ['professional_certificates', 'None'],
+        ['personal_experience', 'Fictional volunteering'],
+        ['interests_and_hobbies', 'Fictional hobbies'],
+        ['skills', 'Communication, Research'],
+      ]) await setValue(`input-profile-${id}`, value);
+      if (type === 'career_switcher') {
+        await setValue('input-profile-employment_experience', 'Fictional employment retained');
+        // Back to identity selection: cannot hide and save employment as graduate.
+        await ev(`document.querySelector('[data-testid="form-online-profile"] button[type="button"]').click()`);
+        await click('button-profile-type-fresh_graduate');
+        await present('profile-employment-resolution');
+        assert.equal(await ev(`document.querySelector('[data-testid="button-profile-type-continue"]').disabled`), true);
+        assert.equal(await stored(), null);
+        await click('button-keep-employment');
+        await click('button-profile-type-continue');
+        assert.equal(await ev(`document.querySelector('[data-testid="input-profile-employment_experience"]').value`), 'Fictional employment retained');
+        // Explicit removal is a separate user action and affects only the draft.
+        await ev(`document.querySelector('[data-testid="form-online-profile"] button[type="button"]').click()`);
+        await click('button-profile-type-fresh_graduate');
+        await click('button-clear-employment');
+        await wait(`!document.querySelector('[data-testid="profile-employment-resolution"]')`);
+        assert.equal(await stored(), null);
+        assert.equal(await ev(`JSON.parse(sessionStorage.getItem('${draftKey}')).form.employment_experience`), '');
+        await click('button-profile-type-career_switcher');
+        await click('button-profile-type-continue');
+        await setValue('input-profile-employment_experience', 'Fictional employment retained');
+      } else {
+        assert.equal(await ev(`!!document.querySelector('[data-testid="input-profile-employment_experience"]')`), false);
+      }
+      await navigate('/profile');
+      await present('form-online-profile');
+      assert.equal(await ev(`document.querySelector('[data-testid="input-profile-education-degree"]').value`), '无');
+      await click('button-profile-review');
+      await present('button-confirm-profile');
+      assert.equal(await ev(`document.querySelector('[data-testid="text-profile-input-method"]').textContent`), 'Online form');
+      assert.equal(await stored(), null);
+      await click('button-confirm-profile');
+      await present('status-profile-confirmed');
+      const online = await stored();
+      assert.equal(online.profile_type, type);
+      assert.equal(online.input_method, 'online_form');
+      assert.equal(online.confirmed_by_user, true);
+      assert.equal(online.mapping_provenance, undefined);
+      assert.equal(online.education.degree, '无');
+      assert.equal(online.education.school, 'None');
+      assert.equal(online.education.major, 'Tiada');
+      assert.equal(online.employment_experience, type === 'career_switcher' ? 'Fictional employment retained' : '');
+      assert.deepEqual(Object.keys(online).sort(), Object.keys(emptyProfile).sort());
+      assert.deepEqual(normalizeProfile(online), online);
+      await click('link-future-role-matches');
+      await checkMatching(online.skills);
+      await navigate('/roles');
+      await checkMatching(online.skills);
+      console.log(`PASS ${type}: online form fields -> validation -> confirmation -> normalized JSON -> matching -> reload`);
     }
     // A legacy/untrusted unconfirmed storage record must never feed matching.
     await ev(`localStorage.setItem('${savedKey}', ${JSON.stringify(JSON.stringify({

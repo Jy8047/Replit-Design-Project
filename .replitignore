@@ -3,4 +3,8 @@
 
 # No need to store the pnpm store twice.
 .local
+.env
+.env.*
+!.env.example
+!.env.sample
 /generated-artifacts/
