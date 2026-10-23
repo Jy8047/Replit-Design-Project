@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { ArrowLeft, ArrowRight, Check, FileText, FileUser, ShieldCheck, Trash2, Upload, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PageHeading } from '@/components/page-heading';
 import { PdfExtractionPanel } from '@/components/pdf-extraction-panel';
 import { useI18n } from '@/lib/i18n';
@@ -203,6 +204,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     }
     setForm(draft);
     setValidationError('');
+    setSaveError(false);
     setStep('review');
   };
 
@@ -366,7 +368,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
       </div>
     </section>}
 
-    {step === 'form' && <form className="panel profile-step" onSubmit={submitForm} data-testid="form-online-profile">
+    {(step === 'form' || step === 'review') && <form className="panel profile-step" onSubmit={submitForm} data-testid="form-online-profile">
       <div className="profile-step-heading"><span className="profile-step-number">03</span><div><h2>{t(profileType === 'career_switcher' ? 'Career Switcher Profile' : 'Fresh Graduate Profile')}</h2><p>{t('Required fields are School / University, Degree, and Major. Enter None or 无 if a field does not apply. Other experience fields are optional.')}</p></div></div>
       <div className="profile-form-section"><h3>{t('Education')}</h3><div className="profile-form-grid">
         {([
@@ -396,43 +398,55 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
       </div>
     </form>}
 
-    {step === 'review' && <section className="panel profile-step" aria-labelledby="profile-review-heading">
-      <div className="profile-step-heading"><span className="profile-step-number">04</span><div><h2 id="profile-review-heading">{t('Review your profile')}</h2><p>{t('Check the details below. Use Edit to make changes before confirming.')}</p></div></div>
-      <div className="profile-review-meta"><span className="tag">{t(profileType === 'career_switcher' ? 'Career Switcher' : 'Fresh Graduate')}</span><span className="tag" data-testid="text-profile-input-method">{t(form.input_method === 'pdf_upload' ? 'PDF upload' : 'Online form')}</span></div>
-      <div className="profile-review-group"><h3>{t('Education')}</h3>
-        {([
-          ['School / University', form.education.school], ['Degree', form.education.degree],
-          ['Major', form.education.major], ['Key Courses', form.education.key_courses],
-        ] as const).map(([label, value]) => <ReviewRow key={label} label={label} value={value} t={t}/>)}
-      </div>
-      <div className="profile-review-group"><h3>{t('Experience and interests')}</h3>
-        {([
-          ['Internship Experience', form.internship_experience], ['Academic Experience', form.academic_experience],
-          ['Professional Certificates', form.professional_certificates], ['Personal Experience', form.personal_experience],
-          ['Interests & Hobbies', form.interests_and_hobbies],
-          ...(profileType === 'career_switcher' ? [['Employment Experience', form.employment_experience] as const] : []),
-        ] as const).map(([label, value]) => <ReviewRow key={label} label={label} value={value} t={t}/>)}
-      </div>
-      <div className="profile-review-group"><h3>{t('Career details and matching')}</h3>
-        {additionalFields.map(field => <ReviewRow key={field.key} label={field.label} value={form[field.key]} t={t}/>)}
-        <div data-testid="preview-normalized-skills">
-          <ReviewRow label="Skills after confirmation" value={normalizeOnlineSkills(form.skills)} t={t}/>
-          <p className="profile-section-hint">{t('Current Skills above preserves your original input. The list below is used for matching only after you confirm. Empty and duplicate items are removed; education and experience do not add skills.')}</p>
+    <Dialog open={step === 'review'} onOpenChange={open => { if (!open) setStep('form'); }}>
+      <DialogContent closeLabel={t('Close')} closeTestId="button-review-close" className="flex w-[calc(100%-2rem)] max-w-2xl flex-col gap-3 overflow-hidden p-0" data-testid="dialog-profile-review">
+        <div className="px-6 pt-6 pr-12">
+          <DialogHeader><DialogTitle>{t('Review Your Profile')}</DialogTitle><DialogDescription>{t('Please review your information before confirming.')}</DialogDescription></DialogHeader>
         </div>
-      </div>
-      <div className="profile-confirm-note"><ShieldCheck size={17}/><p>{t('Your entries are personal information provided by you. Confirming records that you reviewed them; it does not independently verify the claims.')}</p></div>
-      {saveError && <p className="profile-error" role="alert" data-testid="error-profile-save">{t('Your profile could not be saved. Your entries are still here and your last saved profile has not changed. Check browser storage permissions or available space, then try Confirm Profile again.')}</p>}
-      <div className="profile-actions">
-        <button type="button" className="btn" onClick={() => setStep('form')}><ArrowLeft size={14}/>{t('Edit')}</button>
-        <button type="button" className="btn btn-primary" onClick={confirmProfile} data-testid="button-confirm-profile">{t('Confirm Profile')}<Check size={15}/></button>
-      </div>
-    </section>}
+        <div className="min-h-0 flex-1 overflow-y-auto px-6" data-testid="review-profile-summary">
+          {form.mapping_provenance === 'simulated' && <div className="profile-inline-notice" role="note" data-testid="dialog-simulated-provenance"><p>{t('This profile contains a simulated rule-mapped draft, not a real GLM-5.3 result. Confirmation records your review; it does not turn the simulation into a verified AI result.')}</p></div>}
+          <div className="profile-review-meta"><span className="tag">{t(profileType === 'career_switcher' ? 'Career Switcher' : 'Fresh Graduate')}</span><span className="tag" data-testid="text-profile-input-method">{t(form.input_method === 'pdf_upload' ? 'PDF upload' : 'Online form')}</span></div>
+          <div className="profile-review-group"><h3>{t('Profile Type')}</h3>
+            <ReviewRow label="Profile Type" value={t(profileType === 'career_switcher' ? 'Career Switcher' : profileType === 'fresh_graduate' ? 'Fresh Graduate' : '')} t={t}/>
+          </div>
+          <div className="profile-review-group"><h3>{t('Education')}</h3>
+            {([
+              ['School / University', form.education.school], ['Degree', form.education.degree],
+              ['Major', form.education.major], ['Key Courses', form.education.key_courses],
+            ] as const).map(([label, value]) => <ReviewRow key={label} label={label} value={value} t={t}/>)}
+          </div>
+          <div className="profile-review-group"><h3>{t('Experience and interests')}</h3>
+            {([
+              ['Internship Experience', form.internship_experience], ['Academic Experience', form.academic_experience],
+              ['Professional Certificates', form.professional_certificates], ['Personal Experience', form.personal_experience],
+              ['Interests & Hobbies', form.interests_and_hobbies], ['Other Experience Notes', form.other_experience],
+            ] as const).map(([label, value]) => <ReviewRow key={label} label={label} value={value} t={t}/>)}
+          </div>
+          {profileType === 'career_switcher' && <div className="profile-review-group"><h3>{t('Employment Experience')}</h3>
+            <ReviewRow label="Employment Experience" value={form.employment_experience} t={t}/>
+          </div>}
+          <div className="profile-review-group"><h3>{t('Career details and matching')}</h3>
+            {additionalFields.filter(field => field.key !== 'other_experience').map(field => <ReviewRow key={field.key} label={field.label} value={form[field.key]} t={t}/>)}
+            <div data-testid="preview-normalized-skills">
+              <ReviewRow label="Skills after confirmation" value={normalizeOnlineSkills(form.skills)} t={t}/>
+              <p className="profile-section-hint">{t('Current Skills above preserves your original input. The list below is used for matching only after you confirm. Empty and duplicate items are removed; education and experience do not add skills.')}</p>
+            </div>
+          </div>
+          <div className="profile-confirm-note"><ShieldCheck size={17}/><p>{t('Your entries are personal information provided by you. Confirming records that you reviewed them; it does not independently verify the claims.')}</p></div>
+        </div>
+        {saveError && <div className="shrink-0 px-6"><p className="profile-error" role="alert" data-testid="error-profile-save">{t('Your profile could not be saved. Your entries are still here and your last saved profile has not changed. Check browser storage permissions or available space, then try Confirm Profile again.')}</p></div>}
+        <div className="profile-actions px-6 pb-6">
+          <button type="button" className="btn" onClick={() => setStep('form')} data-testid="button-review-back"><ArrowLeft size={14}/>{t('Back to Edit')}</button>
+          <button type="button" className="btn" onClick={() => setStep('form')} data-testid="button-review-cancel">{t('Cancel')}</button>
+          <button type="button" className="btn btn-primary" onClick={confirmProfile} data-testid="button-confirm-profile">{t('Confirm Profile')}<Check size={15}/></button>
+        </div>
+      </DialogContent>
+    </Dialog>
 
     {step === 'success' && <section className="panel profile-step profile-success" role="status" data-testid="status-profile-confirmed">
       <span className="profile-success-icon"><Check size={24}/></span>
       <h2>{t('Profile confirmed and saved')}</h2>
       <p>{t('Your standardized profile is saved in this browser and your Current Skills remain connected to role matching.')}</p>
-      <pre className="profile-json" data-testid="profile-standard-json">{JSON.stringify(form, null, 2)}</pre>
       <div className="profile-actions">
         <button type="button" className="btn" onClick={() => { setForm(profile ?? form); setProfileType(profile?.profile_type ?? profileType); setStep('type'); }}>{t('Edit Profile')}</button>
         <button type="button" className="btn btn-primary" onClick={() => setStep('method')}>{t('Done')}<Check size={15}/></button>

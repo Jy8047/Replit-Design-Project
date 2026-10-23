@@ -90,10 +90,9 @@ export function PdfExtractionPanel({ file, onUseDraft, onOnline }: {
     {result && <div className="profile-inline-notice" data-testid="pdf-extraction-result">
       <p role="status">{t(result.status === 'OCR_REQUIRED' ? messages.OCR_REQUIRED : 'Actual PDF text extracted. Check it against your CV; reading order and characters may be imperfect.')}</p>
       {messages[result.mapping] && result.status !== 'OCR_REQUIRED' && <p>{t(messages[result.mapping])}</p>}
-      {result.text && <details open><summary>{t('Extracted PDF text (not saved)')}</summary><pre className="profile-json" data-testid="pdf-extracted-text">{result.text}</pre></details>}
+      {result.text && <details open><summary>{t('Extracted PDF text (not saved)')}</summary><div className="profile-extracted-text" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12, lineHeight: 1.6 }} data-testid="pdf-extracted-text">{result.text}</div></details>}
       {result.profile && <>
         <p data-testid="simulated-mapping-label">{t('SIMULATED MAPPING — not a real GLM-5.3 result. Values are copied by simple label rules, not AI. Review and edit every field before confirmation.')}</p>
-        <pre className="profile-json" data-testid="pdf-draft-json">{JSON.stringify(result.profile, null, 2)}</pre>
         <button type="button" className="btn btn-primary" onClick={() => onUseDraft(result.profile!)} data-testid="button-use-pdf-draft">{t('Review and edit extracted draft')}</button>
       </>}
     </div>}

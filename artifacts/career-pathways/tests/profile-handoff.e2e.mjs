@@ -81,7 +81,13 @@ try {
       await click('checkbox-demo-mapping');
       await click('button-parse-pdf');
       await present('button-use-pdf-draft');
-      const raw = JSON.parse(await ev(`document.querySelector('[data-testid="pdf-draft-json"]').textContent`));
+      assert.equal(await ev(`!!document.querySelector('[data-testid="pdf-draft-json"]')`), false);
+      await click('button-use-pdf-draft');
+      await present('form-online-profile');
+      await wait(`!!sessionStorage.getItem('${draftKey}')`);
+      // Verify the genuine mapped draft via isolated browser state, not a
+      // normal-user JSON/debug panel. The response is never intercepted.
+      const raw = await ev(`JSON.parse(sessionStorage.getItem('${draftKey}')).form`);
       assert.equal(raw.profile_type, fixture.type);
       assert.equal(raw.skills, fixture.skills);
       assert.equal(raw.confirmed_by_user, false);
@@ -90,8 +96,6 @@ try {
       assert.equal(raw.academic_experience, '');
       assert.equal(raw.professional_certificates, 'None');
       assert.deepEqual(normalizeProfile(raw), raw);
-      await click('button-use-pdf-draft');
-      await present('form-online-profile');
       await setValue('input-profile-skills', fixture.edited);
       await setValue('input-profile-education-school', 'Edited Fictional University');
       if (fixture.employment) await setValue('input-profile-employment_experience', 'Edited fictional employment');
@@ -112,12 +116,17 @@ try {
       await click('link-my-profile');
       await present('form-online-profile');
       await click('button-profile-review');
-      await present('button-confirm-profile');
+      await present('dialog-profile-review');
+      assert.equal(await ev(`!!document.querySelector('[data-testid="form-online-profile"]')`), true);
       assert.equal(await ev(`document.querySelector('[data-testid="text-profile-input-method"]').textContent`), 'PDF upload');
       await present('profile-simulated-provenance');
       assert.deepEqual(await stored(), base);
       await click('button-confirm-profile');
       await present('status-profile-confirmed');
+      // Radix retains the closing portal during its exit animation, even after
+      // the successful state has rendered. Wait for unmount, not a fixed delay.
+      await wait(`!document.querySelector('[data-testid="dialog-profile-review"]')`);
+      assert.equal(await ev(`!!document.querySelector('[data-testid="profile-standard-json"]')`), false);
       const confirmed = await stored();
       assert.equal(confirmed.confirmed_by_user, true);
       assert.equal(confirmed.skills, fixture.edited);
@@ -187,7 +196,7 @@ try {
       await present('form-online-profile');
       assert.equal(await ev(`document.querySelector('[data-testid="input-profile-education-degree"]').value`), '无');
       await click('button-profile-review');
-      await present('button-confirm-profile');
+      await present('dialog-profile-review');
       assert.equal(await ev(`document.querySelector('[data-testid="text-profile-input-method"]').textContent`), 'Online form');
       assert.equal(await stored(), null);
       await click('button-confirm-profile');

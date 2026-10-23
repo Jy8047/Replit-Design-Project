@@ -40,14 +40,16 @@ await withProfileBrowser(async ({ cdp, evaluate: ev, present, click, setValue, w
     assert.equal(await ev(`document.querySelector('[data-testid="preview-normalized-skills"] .profile-review-row span').textContent`), normalized);
     assert.ok((await ev(`Array.from(document.querySelectorAll('.profile-review-row span')).map(n => n.textContent)`)).includes(raw));
     assert.deepEqual(await saved(), base);
-    await click('link-future-role-matches');
+    // Navigate as a full page load: background sidebar links are correctly
+    // inert while the review dialog is open.
+    await navigate('/roles');
     await matches(base.skills);
     await click('link-my-profile');
     await present('button-confirm-profile');
     // Full reload restores the raw review draft, not the normalized candidate.
     await navigate('/profile');
     await present('button-confirm-profile');
-    await ev(`document.querySelector('[aria-labelledby="profile-review-heading"] .profile-actions button').click()`);
+    await click('button-review-back');
     await present('input-profile-skills');
     assert.equal(await ev(`document.querySelector('[data-testid="input-profile-skills"]').value`), raw);
     await click('button-profile-review');

@@ -29,3 +29,15 @@ recovery was chosen rather than a new cloud service or a permanent draft archive
 **How to apply:** Preserve the last confirmed profile until a new confirmation
 succeeds. Explain draft storage and provide discard controls. Require an explicit
 choice when changing identity would exclude employment information.
+
+## Human-readable profile review
+
+Keep the user-facing confirmation summary in a modal over the editing form,
+not a separate review screen or a JSON/TypeScript/debug display.
+
+**Why:** The user explicitly requires a beginner-friendly, grouped review
+before confirming, in English, Simplified Chinese and Bahasa Melayu.
+
+**How to apply:** Reuse the existing dialog, show missing facts without
+inference, and keep save errors visible even when a long summary is scrolled.
+Preserve access to extracted CV text for manual checking, not raw profile JSON.
