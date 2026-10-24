@@ -17,9 +17,9 @@ so its file type and identity cannot be verified.
 
 | Material | Specified Drive source | Outcome |
 |---|---|---|
-| Official Technical Declaration | [Drive file](https://drive.google.com/file/d/1ECc2U-cC57M4ijgzaoymZ-pEbVq-9Ryx/view?usp=drive_link) | **Inaccessible** — download redirects to Google sign-in. Source type and identity could not be confirmed, so the existing official PDF was not replaced. |
-| Replit Proof of Use | [Drive file](https://drive.google.com/file/d/1hUdA8XeIPFR9ajQIU_rDceFrPOU5Yidn/view?usp=drive_link) | **Inaccessible** — download redirects to Google sign-in. Source type and identity could not be confirmed; the existing local import was renamed without changing its bytes. |
-| Fresh Team Preliminary | [Drive file](https://drive.google.com/file/d/1tr8J3WP-b7MieW_zmrjx2riJOOM3_gRL/view?usp=drive_link) | **Inaccessible** — download redirects to Google sign-in. Source type and identity could not be confirmed; the existing Preliminary already matches the supplied attachment and was retained without a duplicate. |
+| Official Technical Declaration | [Drive file](https://drive.google.com/file/d/1ECc2U-cC57M4ijgzaoymZ-pEbVq-9Ryx/view?usp=drive_link) | https://drive.google.com/file/d/1ECc2U-cC57M4ijgzaoymZ-pEbVq-9Ryx/view?usp=drive_link |
+| Replit Proof of Use | [Drive file](https://drive.google.com/file/d/1hUdA8XeIPFR9ajQIU_rDceFrPOU5Yidn/view?usp=drive_link) | https://drive.google.com/file/d/1hUdA8XeIPFR9ajQIU_rDceFrPOU5Yidn/view?usp=drive_link |
+| Fresh Team Preliminary | [Drive file](https://drive.google.com/file/d/1tr8J3WP-b7MieW_zmrjx2riJOOM3_gRL/view?usp=drive_link) | https://drive.google.com/file/d/1tr8J3WP-b7MieW_zmrjx2riJOOM3_gRL/view?usp=drive_link |
 
 The existing Technical Declaration states that no third-party external APIs are
 used, while the current app calls the BLS Public API and World Bank Open Data
