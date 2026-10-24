@@ -122,14 +122,16 @@ test('shows the retry notice in English, Simplified Chinese and Bahasa Melayu', 
   ));
 });
 
-test('uses live BLS data first and does not request the archive after live success', async () => {
+test('shows the local archive immediately, then prefers a successful live BLS response', async () => {
   let archiveCalls = 0;
+  let archivedPreview: string | undefined;
   const result = await fetchBlsHistoryWithArchiveFallback(
     '/api/occupations/history',
     '/data/bls-oews-history.json',
     '15-1252.00',
     {
       signal: new AbortController().signal,
+      onArchive: (history) => { archivedPreview = history.sourceMode; },
       fetcher: async (input) => {
         if (String(input).includes('/data/')) {
           archiveCalls += 1;
@@ -149,7 +151,8 @@ test('uses live BLS data first and does not request the archive after live succe
 
   assert.equal(result.sourceMode, 'live');
   assert.deepEqual(result.points, [{ year: 2024, employment: 1_060_000 }]);
-  assert.equal(archiveCalls, 0);
+  assert.equal(archiveCalls, 1);
+  assert.equal(archivedPreview, 'archive');
 });
 
 test('loads only a matching verified BLS record after all live retries fail', async () => {
@@ -253,9 +256,73 @@ test('checked-in California archive contains the extracted series but keeps its 
   assert.deepEqual(result.points.at(-1), { year: 2026, employment: 104_000 });
 });
 
+test('publishes the local chart data before a pending live BLS request finishes', async () => {
+  const archive = JSON.parse(readFileSync(
+    new URL('../../public/data/bls-oews-history.json', import.meta.url),
+    'utf8',
+  )) as { templateOnly: boolean; records: Array<Record<string, unknown>> };
+  let resolveLiveRequest!: (response: Response) => void;
+  const liveRequest = new Promise<Response>((resolve) => {
+    resolveLiveRequest = resolve;
+  });
+  let resolveArchiveShown!: (history: unknown) => void;
+  const archiveShown = new Promise<unknown>((resolve) => {
+    resolveArchiveShown = resolve;
+  });
+  let liveFinished = false;
+
+  const result = fetchBlsHistoryWithArchiveFallback(
+    '/api/occupations/history',
+    '/data/bls-oews-history.json',
+    '13-1071.00',
+    {
+      signal: new AbortController().signal,
+      fetcher: (input) => String(input).includes('/data/')
+        ? Promise.resolve(new Response(JSON.stringify(archive), { status: 200 }))
+        : liveRequest,
+      onArchive: (history) => resolveArchiveShown(history),
+    },
+  ).finally(() => { liveFinished = true; });
+
+  const earlyHistory = await archiveShown as {
+    sourceMode: string;
+    points: Array<{ year: number; employment: number }>;
+  };
+  assert.equal(earlyHistory.sourceMode, 'uploaded-unverified');
+  assert.equal(earlyHistory.points.length, 16);
+  assert.equal(liveFinished, false);
+
+  resolveLiveRequest(new Response(JSON.stringify({
+    occupationCode: '13-1071.00',
+    socCode: '13-1071',
+    sourceName: 'U.S. Bureau of Labor Statistics — OEWS',
+    sourceUrl: 'https://www.bls.gov/oes/tables.htm',
+    refreshedAt: '2026-10-24T00:00:00.000Z',
+    points: [{ year: 2024, employment: 130_000 }],
+  }), { status: 200 }));
+  const finalHistory = await result;
+  assert.equal(finalHistory.sourceMode, 'live');
+  assert.deepEqual(finalHistory.points, [{ year: 2024, employment: 130_000 }]);
+});
+
 test('localizes the California source and limitations notice in all three app languages', () => {
   const translations = readFileSync(new URL('./i18n.tsx', import.meta.url), 'utf8');
   assert.match(translations, /Source: California government open-data mirror, not national data/u);
   assert.match(translations, /来源：加州政府开放数据镜像，非全国数据，缺少2011-2012年/u);
   assert.match(translations, /Sumber: cermin data terbuka kerajaan California/u);
+});
+
+test('history load failure is an inline neutral status with retry, not a red alert', () => {
+  const source = readFileSync(
+    new URL('../components/career-data-pages.tsx', import.meta.url),
+    'utf8',
+  );
+  const start = source.indexOf("historyState === 'error'");
+  const end = source.indexOf("historyState === 'unavailable'", start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const errorState = source.slice(start, end);
+  assert.match(errorState, /role="status"/u);
+  assert.doesNotMatch(errorState, /role="alert"/u);
+  assert.match(errorState, /button-retry-occupation-history/u);
 });

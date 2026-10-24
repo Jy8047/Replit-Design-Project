@@ -317,9 +317,14 @@ export function CareerSkillsPage({
       onRetry: (attempt) => {
         if (controller.signal.aborted) return;
         setHistoryRetryCount(attempt);
-        setHistoryState('retrying');
+        setHistoryState((current) => current === 'archive' ? current : 'retrying');
       },
-      })
+      onArchive: (archive) => {
+        if (controller.signal.aborted) return;
+        setHistory(archive);
+        setHistoryState('archive');
+      },
+    })
       .then((body) => {
         if (controller.signal.aborted) return;
         setHistory(body);
@@ -516,7 +521,12 @@ export function CareerSkillsPage({
                 </div>
               )}
               {historyState === 'error' && (
-                <div role="alert" data-testid="error-occupation-history" className="panel">
+                <div
+                  role="status"
+                  data-testid="error-occupation-history"
+                  className="panel"
+                  style={{ background: '#eaf5f6', borderColor: '#d5e9e9' }}
+                >
                   <p style={{ marginTop: 0 }}>{t('The BLS live service is unavailable and no verified local archive contains this occupation. No substitute values are shown.')}</p>
                   <a href="https://www.bls.gov/oes/tables.htm" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginBottom: 12 }}>
                     {t('Open the official BLS OEWS tables and downloads')} <ArrowUpRight size={14} />

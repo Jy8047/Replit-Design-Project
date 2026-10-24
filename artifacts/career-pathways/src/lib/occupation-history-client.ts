@@ -19,6 +19,7 @@ type RetryOptions = {
   signal: AbortSignal;
   fetcher?: typeof fetch;
   onRetry?: (attempt: number) => void;
+  onArchive?: (history: OccupationHistoryView) => void;
   maxRetries?: number;
   delayMs?: number;
 };
@@ -240,23 +241,31 @@ export async function fetchBlsHistoryWithArchiveFallback(
   occupationCode: string,
   options: RetryOptions,
 ): Promise<OccupationHistoryView> {
+  const liveResult = fetchOccupationHistoryWithRetries(liveUrl, options)
+    .then((payload) => {
+      const history = parseLiveHistory(payload, occupationCode);
+      return history
+        ? { history, error: null }
+        : { history: null, error: new Error('BLS_RESPONSE_INVALID') };
+    })
+    .catch((error: unknown) => ({ history: null, error }));
+
+  let archiveHistory: OccupationHistoryView | null = null;
   try {
-    const payload = await fetchOccupationHistoryWithRetries(liveUrl, options);
-    const liveHistory = parseLiveHistory(payload, occupationCode);
-    if (!liveHistory) throw new Error('BLS_RESPONSE_INVALID');
-    return liveHistory;
-  } catch (error) {
-    if (options.signal.aborted) throw error;
-    try {
-      const archiveHistory = await loadArchiveRecord(
-        archiveUrl,
-        occupationCode,
-        options,
-      );
-      if (archiveHistory) return archiveHistory;
-    } catch (archiveError) {
-      if (options.signal.aborted) throw archiveError;
-    }
-    throw new Error('BLS_HISTORY_UNAVAILABLE');
+    archiveHistory = await loadArchiveRecord(archiveUrl, occupationCode, options);
+  } catch {
+    // A missing or invalid archive must not prevent a successful live response.
   }
+
+  if (archiveHistory && !options.signal.aborted) {
+    options.onArchive?.(archiveHistory);
+  }
+
+  const live = await liveResult;
+  if (live.history) return live.history;
+  if (options.signal.aborted) {
+    throw options.signal.reason ?? new DOMException('Aborted', 'AbortError');
+  }
+  if (archiveHistory) return archiveHistory;
+  throw new Error('BLS_HISTORY_UNAVAILABLE');
 }

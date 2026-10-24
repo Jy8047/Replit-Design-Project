@@ -53,6 +53,20 @@ the metadata needed to establish its origin or release date.
 source/date fields instead of inventing them, and require explicit user approval
 before showing the series.
 
+## Immediate chart fallback
+
+When an explicitly approved, user-supplied historical series is available, show
+it with its unverified status and geographic limits while the live source retries.
+A validated live response may replace the preview; a live failure must not hide
+the usable local series or turn it into a verified claim.
+
+**Why:** The user needs the chart visible promptly during public-source outages,
+without disguising a local archive as a successful live response.
+
+**How to apply:** Keep source mode explicit in state and UI, render the archive
+through the same chart component, and use a neutral retry/error status rather
+than an intrusive alert when no series is available.
+
 **Why:** The user explicitly set these trust and consent requirements for the
 SDC Hackathon Domain 1 application.
 
