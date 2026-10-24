@@ -157,40 +157,126 @@ state remain in browser storage. There is no server-side profile database. BLS
 and World Bank requests are public-data calls; no user profile fields are sent
 to those providers by these flows.
 
-## How to run
 
-Use the existing workspace scripts. In Replit, `.replit` configures the web
-workflow at port `24958` with `BASE_PATH=/` and the API workflow at port `8080`.
-For local development, run the API and web app in separate terminals:
+## How to Run
 
-```sh
+### Option 1 — Run on Replit (Recommended)
+
+1. Open the PivotPath AI project in Replit.
+2. Allow Replit to install the project dependencies.
+3. Click **Run** to start the application using the existing `.replit` configuration.
+4. Open the web application in the Replit preview.
+
+The project uses the following development workflows:
+
+- **Web application:** Port `24958`
+- **API server:** Port `8080`
+- **Base path:** `/`
+
+Use the existing Replit workspace configuration and scripts. The current project setup does not require GPU or RunPod configuration.
+
+### Option 2 — Run Locally
+
+#### Prerequisites
+
+Install the following tools before running the project:
+
+- **Git** — to clone the repository
+- **Node.js** — use a version compatible with the project configuration
+- **pnpm** — to install dependencies and run workspace scripts
+
+#### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/Jy8047/Replit-Design-Project.git
+cd Replit-Design-Project
+```
+
+#### Step 2: Install Dependencies
+
+Run the following command from the project root:
+
+```bash
 pnpm install
+```
 
-# Terminal 1 — API (development script builds, then starts the API)
+#### Step 3: Start the API Server
+
+Open a terminal in the project root and run:
+
+```bash
 PORT=8080 pnpm --filter @workspace/api-server run dev
+```
 
-# Terminal 2 — web application
+Keep this terminal open while the API server is running.
+
+#### Step 4: Start the Web Application
+
+Open a second terminal in the same project root and run:
+
+```bash
 PORT=24958 BASE_PATH=/ pnpm --filter @workspace/career-pathways run dev
 ```
 
-Validation commands:
+Keep both terminals running while using the application. Open the local URL displayed by the web development server.
 
-```sh
+#### Windows PowerShell Commands
+
+If you are using Windows PowerShell, set environment variables before running each command.
+
+**Terminal 1 — API server**
+
+```powershell
+$env:PORT="8080"
+pnpm --filter @workspace/api-server run dev
+```
+
+**Terminal 2 — Web application**
+
+```powershell
+$env:PORT="24958"
+$env:BASE_PATH="/"
+pnpm --filter @workspace/career-pathways run dev
+```
+
+### Validation and Testing
+
+Run the following commands from the project root to validate the application.
+
+#### Frontend Checks
+
+```bash
 pnpm --filter @workspace/career-pathways test
 pnpm --filter @workspace/career-pathways typecheck
 BASE_PATH=/ pnpm --filter @workspace/career-pathways build
+```
 
+#### API Server Checks
+
+```bash
 pnpm --filter @workspace/api-server run test:cv
 pnpm --filter @workspace/api-server run typecheck
 pnpm --filter @workspace/api-server run build
+```
 
+#### Project-Wide and Submission Checks
+
+```bash
 pnpm run typecheck
 pnpm --filter @workspace/pivotpath-submission-deck run validate-slides
 ```
 
-The frontend unit tests use Node's built-in `node:test`; API CV tests use
-`tsx --test`. Browser E2E scripts are separate `.mjs` files and require the
-existing web/API workflows and local Chromium/CDP.
+The frontend unit tests use Node.js's built-in `node:test` runner. The API CV tests use `tsx --test`.
+
+Browser end-to-end tests are maintained as separate `.mjs` scripts. They require the web and API workflows to be running, together with a local Chromium installation and Chrome DevTools Protocol (CDP) support.
+
+**Notes:**
+
+- Run the validation commands individually from the project root.
+- Some checks require the relevant dependencies to be installed or the application workflows to be running.
+- The local development commands above assume the project scripts and workspace package names remain unchanged.
+- No GPU or RunPod setup is required for the current project configuration.
+
 
 ## How we use Replit
 
