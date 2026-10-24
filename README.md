@@ -36,8 +36,8 @@ materials.
 | Resource | Link / status |
 |---|---|
 | GitHub repository | [https://github.com/Jy8047/Replit-Design-Project.git](https://github.com/Jy8047/Replit-Design-Project.git) — listed in the supplied technical declaration; public access and synchronization were not verified. The configured Git remote is Replit-internal. |
-| Demo Video 1 | [https://youtu.be/PmRa8RllxrA?feature=shared](https://youtu.be/PmRa8RllxrA?feature=shared) — supplied link; playback and sharing permissions were not verified. |
-| Demo Video 2 | [https://youtu.be/7KzkwWIodYs?si=kC8E2wW8Dthg8p8v](https://youtu.be/7KzkwWIodYs?si=kC8E2wW8Dthg8p8v) — supplied link; playback and sharing permissions were not verified. |
+| Previously supplied video | [https://youtu.be/PmRa8RllxrA?feature=shared](https://youtu.be/PmRa8RllxrA?feature=shared) |
+| **Demo Video** | [https://youtu.be/7KzkwWIodYs?si=kC8E2wW8Dthg8p8v](https://youtu.be/7KzkwWIodYs?si=kC8E2wW8Dthg8p8v) |
 | RunPod Endpoint | **Not applied** |
 | Slide Deck | [Google Slides](https://docs.google.com/presentation/d/1trne_SWzpuSYvcBpnVeVZkT75rpnpiNO/edit?usp=drive_link&ouid=106855909570867161658&rtpof=true&sd=true) — exact supplied URL; an original PPTX is also included in `submission/`. Link access was not verified. |
 | Replit prototype listed in the technical declaration | `https://replit-design-project--lilya8047.replit.app/roadmap` — returned HTTP 200 and an HTML shell titled “PivotPath AI”; visual and end-to-end access were not verified. |
@@ -125,11 +125,11 @@ forecasts.
 │   ├── career-pathways/          # React + Vite application and static data
 │   ├── api-server/               # Express API, PDF extraction, BLS proxy
 │   ├── mockup-sandbox/           # Component preview utility
-│   └── pivotpath-submission-deck/ # Editable import of the supplied 8-slide PPTX
+│   └── pivotpath-submission-deck/ # Separate editable import of the supplied 8-slide PPTX
 ├── docs/                         # Profile, security, and data-source handoffs
 ├── lib/                          # Shared API packages and unused DB scaffolding
 ├── scripts/                      # Workspace maintenance scripts
-├── submission/                   # Unchanged submission-document copies
+├── submission/                   # Preserved submission-document copies
 ├── attached_assets/               # Supplied files and retained PPTX import staging
 ├── .replit                        # Replit workflows and deployment configuration
 ├── pnpm-workspace.yaml
@@ -260,8 +260,9 @@ are recorded in the data README linked above.
 ## Submission checklist
 
 - [x] Project overview, actual architecture, current tech stack, and run/test commands documented.
-- [x] Supplied Replit Proof of Use, Technical Tools Declaration, and PPTX copied unchanged to `submission/`; the [Preliminary PDF](submission/SDC2026_Fresh_team_preliminary_1792868544917.pdf) matches the supplied attachment byte-for-byte, and its title/content were checked. The supplied Drive URL redirects to Google sign-in and was not independently verified.
-- [x] Demo Video 1, Demo Video 2, and Slide Deck URLs listed exactly as supplied.
+- [x] The [Replit Proof of Use](submission/SDC2026_Freshteam_Replit_POU.pdf) keeps the imported PDF bytes unchanged under the requested local filename. The Technical Declaration and [Preliminary PDF](submission/SDC2026_Fresh_team_preliminary_1792868544917.pdf) remain unchanged; the Preliminary matches its supplied attachment byte-for-byte.
+- [ ] The specified Drive replacement sources for the Technical Declaration, Replit Proof of Use, and Preliminary redirect to Google sign-in. Their Drive file types and identities could not be confirmed; see [`submission/README.md`](submission/README.md). No replacement was made.
+- [x] The previously supplied video URL and the **Demo Video** URL are listed exactly as supplied; the Slide Deck URL is also unchanged.
 - [x] RunPod Endpoint status is **Not applied**.
 - [ ] Update the official Tech Tools Declaration to disclose current BLS and World Bank API calls and reconcile other differences; do not alter its signature or date without the team.
 - [ ] Review the preliminary PDF and presentation claims against current behavior before final submission.
