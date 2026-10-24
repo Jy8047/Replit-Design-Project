@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowRight, BookOpen, ExternalLink } from 'lucide-react';
 import {
@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogClose,
@@ -30,9 +31,24 @@ import {
   type ScenarioId,
   type WorkforceScenarioData,
 } from '@/lib/career-planning';
+import { courseProgress, formatTime, type StudySession } from '@/lib/study-schedule';
+import {
+  readPersistedState,
+  STORAGE_KEY as LEARNING_PROGRESS_STORAGE_KEY,
+  writePersistedState,
+  type PersistedState,
+} from '@/lib/learning-progress';
+import {
+  buildCatalogStudySchedule,
+  groupStudySessionsByWeek,
+  toggleCatalogSession,
+} from '@/lib/roadmap-catalog';
+import { courseSupplements } from '@/lib/learning-resource-supplements';
+import { getCourseLevel } from '@/lib/course-levels';
+import { careerProfiles as learningTracks, resources as learningResources, type Resource } from '@/lib/learning-resources';
 import { sdgLabel } from '@/lib/career-matching';
 import type { CareerRecord } from '@/lib/career-data';
-import { localizeContent, useI18n } from '@/lib/i18n';
+import { localizeContent, useI18n, type Locale } from '@/lib/i18n';
 
 type SelectionProps = {
   occupations: string[];
@@ -50,6 +66,255 @@ function OccupationSelector(props: SelectionProps) {
     </select>
     <p className="planning-note">{t('Your selection is shared between the pathway and SDG pages. Choose a role from')} <Link href="/roles" data-testid="link-selector-roles">{t('Future Role Matches')}</Link> {t('or use this list.')}</p>
   </div>;
+}
+
+const TRACK_SELECTION_STORAGE_KEY = 'career-pathways-catalog-track:v1';
+const weekdayNames: Record<Locale, string[]> = {
+  en: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+  zh: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+  ms: ['Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu', 'Ahad'],
+};
+
+function createTrackProgressStorage(signature: string): Storage | null {
+  if (!signature || typeof window === 'undefined') return null;
+  try {
+    const backing = window.localStorage;
+    const namespacedKey = `${LEARNING_PROGRESS_STORAGE_KEY}:${signature}`;
+    return {
+      get length() {
+        return backing.getItem(namespacedKey) === null ? 0 : 1;
+      },
+      clear() {
+        backing.removeItem(namespacedKey);
+      },
+      getItem() {
+        return backing.getItem(namespacedKey);
+      },
+      key(index: number) {
+        return index === 0 && backing.getItem(namespacedKey) !== null ? namespacedKey : null;
+      },
+      removeItem() {
+        backing.removeItem(namespacedKey);
+      },
+      setItem(_key: string, value: string) {
+        backing.setItem(namespacedKey, value);
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+function CatalogLearningPlan() {
+  const { t, locale } = useI18n();
+  const [selectedTrackId, setSelectedTrackId] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      const saved = window.localStorage.getItem(TRACK_SELECTION_STORAGE_KEY) ?? '';
+      return learningTracks.some((track) => track.id === saved) ? saved : '';
+    } catch {
+      return '';
+    }
+  });
+  const [trackSelectionSaveError, setTrackSelectionSaveError] = useState(false);
+  const [progressSaveError, setProgressSaveError] = useState(false);
+  const selectedTrack = learningTracks.find((track) => track.id === selectedTrackId);
+  const signature = selectedTrack ? `catalog-track:v1:${selectedTrack.id}` : '';
+  const progressStorage = useMemo(() => createTrackProgressStorage(signature), [signature]);
+  const resourceById = useMemo(
+    () => new Map<string, Resource>(learningResources.map((resource) => [resource.id, resource] as const)),
+    [],
+  );
+  const trackCourses = useMemo(() => selectedTrack?.skills.flatMap(({ skill, courses }) =>
+    courses.map((resource) => ({ skill, resource })),
+  ) ?? [], [selectedTrack]);
+  const coursesById = useMemo(
+    () => new Map(trackCourses.map((course) => [course.resource.id, course] as const)),
+    [trackCourses],
+  );
+  const validResourceIds = useMemo(
+    () => new Set(trackCourses.map(({ resource }) => resource.id)),
+    [trackCourses],
+  );
+  const courseHours = useMemo(
+    () => new Map<string, number>(trackCourses.map(({ resource }) => [resource.id, resource.estimatedHours] as const)),
+    [trackCourses],
+  );
+  const defaultPlan = useMemo(
+    () => selectedTrack
+      ? buildCatalogStudySchedule(selectedTrack)
+      : { sessions: [] as StudySession[], unscheduledResourceIds: [] as string[] },
+    [selectedTrack],
+  );
+  const [trackProgress, setTrackProgress] = useState<PersistedState>({
+    signature: '',
+    completedIds: [],
+    schedule: [],
+  });
+
+  useEffect(() => {
+    if (!selectedTrack || !progressStorage) {
+      setTrackProgress({ signature, completedIds: [], schedule: defaultPlan.sessions });
+      setProgressSaveError(Boolean(selectedTrack));
+      return;
+    }
+    const restored = readPersistedState(signature, progressStorage, validResourceIds, courseHours);
+    let nextState = restored.state;
+    let saved = restored.available;
+    if (!nextState.schedule.length && defaultPlan.sessions.length) {
+      nextState = { ...nextState, schedule: defaultPlan.sessions };
+      saved = writePersistedState(nextState, progressStorage);
+    }
+    setTrackProgress(nextState);
+    setProgressSaveError(!saved);
+  }, [selectedTrack, signature, progressStorage, validResourceIds, courseHours, defaultPlan]);
+
+  const activeProgress = trackProgress.signature === signature ? trackProgress : null;
+  const sessions = activeProgress?.schedule ?? defaultPlan.sessions;
+  const completedIds = activeProgress?.completedIds ?? [];
+  const weeks = groupStudySessionsByWeek(sessions);
+  const totalCompleted = sessions.filter((session) => session.completed).length;
+
+  function handleTrackChange(trackId: string) {
+    setSelectedTrackId(trackId);
+    setTrackSelectionSaveError(false);
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(TRACK_SELECTION_STORAGE_KEY, trackId);
+    } catch {
+      setTrackSelectionSaveError(true);
+    }
+  }
+
+  function handleSessionChange(sessionId: string, isComplete: boolean) {
+    if (!selectedTrack || !progressStorage) {
+      setProgressSaveError(true);
+      return;
+    }
+    const currentState = activeProgress ?? {
+      signature,
+      completedIds: [],
+      schedule: defaultPlan.sessions,
+    };
+    const nextState = toggleCatalogSession(currentState, sessionId, isComplete, [...validResourceIds]);
+    setTrackProgress(nextState);
+    setProgressSaveError(!writePersistedState(nextState, progressStorage));
+  }
+
+  return <section className="panel" style={{ marginTop: 18 }} data-testid="catalog-learning-plan">
+    <h2 className="planning-title">{t('Catalogue learning track')}</h2>
+    <p className="planning-note">{t('This is a separate catalogue track and does not change your selected FuturePath occupation.')}</p>
+    <div style={{ maxWidth: 520, marginTop: 14 }}>
+      <label className="label" htmlFor="catalog-learning-track">{t('Choose a catalogue career track')}</label>
+      <select
+        id="catalog-learning-track"
+        className="field"
+        value={selectedTrackId}
+        onChange={(event) => handleTrackChange(event.target.value)}
+        data-testid="select-catalog-learning-track"
+      >
+        <option value="">{t('Choose a catalogue career track')}</option>
+        {learningTracks.map((track) => <option key={track.id} value={track.id}>{localizeContent(track.targetRole, locale)}</option>)}
+      </select>
+    </div>
+    {trackSelectionSaveError && <p className="planning-notice" role="alert">{t('Track selection could not be saved. Select it again after refreshing.')}</p>}
+    {!selectedTrack && <p className="planning-note" role="status" data-testid="status-catalog-track-empty">{t('Select a track to generate its weekly schedule.')}</p>}
+    {selectedTrack && <>
+      <h3 className="planning-title" style={{ marginTop: 20 }}>{t('Weekly study schedule')}</h3>
+      <div className="planning-notice">{t('The schedule uses catalogue study-hour estimates and places one session at 09:00 at a time. It is a starter template, not a required workload.')}</div>
+      <p className="planning-note" role={progressSaveError ? 'alert' : 'status'} data-testid="status-catalog-progress">
+        {progressSaveError
+          ? t('Progress could not be saved. Changes remain visible here but may be lost after refresh.')
+          : t('Progress is saved in this browser for this learning track.')}
+      </p>
+      {weeks.length === 0
+        ? <div className="panel" role="status" data-testid="status-catalog-no-schedule">{t('No weekly sessions could be generated for this track.')}</div>
+        : <div style={{ display: 'grid', gap: 16 }} data-testid="list-catalog-weeks">
+          {weeks.map(({ week, sessions: weekSessions }) => {
+            const weekResourceIds = [...new Set(weekSessions.map((session) => session.nodeId))];
+            return <section className="panel" key={week} data-testid={`catalog-week-${week + 1}`}>
+              <h4 className="planning-title">{t('Week')} {week + 1}</h4>
+              {weekResourceIds.length === 0
+                ? <p className="planning-note">{t('No resources are planned for this week.')}</p>
+                : <div style={{ display: 'grid', gap: 14 }}>
+                  {weekResourceIds.map((resourceId) => {
+                    const course = coursesById.get(resourceId);
+                    const resource = resourceById.get(resourceId) ?? course?.resource;
+                    const thisWeekSessions = weekSessions.filter((session) => session.nodeId === resourceId);
+                    if (!resource || !course) {
+                      return <div className="planning-notice" role="status" key={resourceId}>
+                        {t('No catalogue resource is available for this plan item.')}
+                      </div>;
+                    }
+                    const courseStatus = courseProgress(
+                      resourceId,
+                      resource.estimatedHours,
+                      sessions,
+                      completedIds.includes(resourceId),
+                    );
+                    const level = getCourseLevel(course.skill, resource.id);
+                    const supplementUrl = courseSupplements[course.skill];
+                    const hasSupplement = Boolean(supplementUrl && selectedTrack.skills
+                      .find((item) => item.skill === course.skill)?.courses.some((item) => item.url === supplementUrl));
+                    return <article className="panel" key={resourceId} data-testid={`catalog-course-${resourceId}-week-${week + 1}`}>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <h5 className="planning-title" style={{ margin: 0 }}>{localizeContent(course.skill, locale)}</h5>
+                        <span className="tag">{t(level)}</span>
+                      </div>
+                      <p className="planning-note">{resource.resourceName} · {resource.provider}</p>
+                      <p className="planning-note">
+                        {t('Estimated course hours')}: {resource.estimatedHours} {t('hours')} · {t('Progress')}: {courseStatus.completedHours} / {courseStatus.totalHours} {t('hours')} ({courseStatus.percentage}%)
+                      </p>
+                      {thisWeekSessions.length === 0
+                        ? <p className="planning-note">{t('No study sessions are planned for this week.')}</p>
+                        : <div style={{ display: 'grid', gap: 8, margin: '12px 0' }}>
+                          {thisWeekSessions.map((session) => {
+                            const duration = session.durationMinutes / 60;
+                            const durationLabel = Number.isInteger(duration) ? String(duration) : duration.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+                            const sessionLabel = `${weekdayNames[locale][session.day]} · ${formatTime(session.startMinutes)}–${formatTime(session.startMinutes + session.durationMinutes)} · ${durationLabel} ${t('hours')}`;
+                            return <div
+                              key={session.id}
+                              className={`flex items-center gap-3 rounded-md border p-3 ${session.completed ? 'opacity-60' : ''}`}
+                              data-testid={`catalog-session-${session.id}`}
+                            >
+                              <Checkbox
+                                checked={session.completed}
+                                onCheckedChange={(checked) => handleSessionChange(session.id, checked === true)}
+                                aria-label={`${t('Mark study session complete')}: ${sessionLabel}`}
+                                data-testid={`checkbox-session-${session.id}`}
+                              />
+                              <span className={session.completed ? 'line-through' : ''}>{sessionLabel}</span>
+                            </div>;
+                          })}
+                        </div>}
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <a href={resource.url} target="_blank" rel="noopener noreferrer" className="btn" data-testid={`link-catalog-resource-${resource.id}`}>
+                          <BookOpen size={14} />{t('Open learning resource')}<ExternalLink size={13} />
+                        </a>
+                        {supplementUrl && !hasSupplement && <a
+                          href={supplementUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn"
+                          data-testid={`link-catalog-supplement-${resource.id}`}
+                        >
+                          <BookOpen size={14} />{t('Supplementary reference')}<ExternalLink size={13} />
+                        </a>}
+                      </div>
+                    </article>;
+                  })}
+                </div>}
+            </section>;
+          })}
+        </div>}
+      {defaultPlan.unscheduledResourceIds.length > 0 && <p className="planning-notice" role="status" data-testid="status-catalog-unscheduled">
+        {t('Some catalogue resources have missing or invalid duration estimates and were not scheduled.')}
+      </p>}
+      {sessions.length > 0 && <p className="planning-note" data-testid="status-catalog-completion">
+        {t('Progress')}: {totalCompleted} / {sessions.length} {t('study sessions completed')}
+      </p>}
+    </>}
+  </section>;
 }
 
 export function PersonalisedRoadmapPage(props: SelectionProps & { profileSkills: string; records: CareerRecord[] }) {
@@ -78,6 +343,7 @@ export function PersonalisedRoadmapPage(props: SelectionProps & { profileSkills:
         </div>
       </li>)}
     </ol>
+    <CatalogLearningPlan />
     <Link href="/impact" className="btn btn-primary" data-testid="link-pathway-sdg">{t('Explore this occupation’s SDG alignment')} <ArrowRight size={14} /></Link>
   </>;
 }
