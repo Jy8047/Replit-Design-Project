@@ -380,6 +380,51 @@ const translations: Record<string, [string, string]> = {
   'sdg4.explanation': ['数字学习岗位可通过可负担的在线培训，扩大实用技能与包容性教育的获取机会。', 'Peranan pembelajaran digital boleh meluaskan akses kepada kemahiran praktikal dan pendidikan inklusif melalui latihan dalam talian yang mampu milik.'],
   'sdg7.explanation': ['清洁能源数据技能可以帮助团队监测能源使用，并识别采用可再生能源的机会。', 'Kemahiran data tenaga bersih membantu pasukan memantau penggunaan tenaga dan mengenal pasti peluang penggunaan tenaga boleh baharu.'],
   'sdg9.explanation': ['这类岗位所需的云端协作技能与 SDG 9“产业、创新和基础设施”相关，能够提升当地微型、小型和中型企业的数字化采用率。', 'Berkaitan dengan SDG 9, Industri, Inovasi dan Infrastruktur, kemahiran kolaborasi awan yang diperlukan untuk peranan ini boleh meningkatkan kadar penggunaan digital dalam perusahaan mikro, kecil dan sederhana tempatan.'],
+  'sdg8.explanation': ['如果团队负责任地使用 AI 改进日常工作流程，这条职业路径可能与体面工作相关。本应用不测量工作质量或就业结果。', 'Laluan kerjaya ini mungkin menyokong pekerjaan yang baik jika pasukan menggunakan AI secara bertanggungjawab untuk menambah baik aliran kerja harian. Aplikasi ini tidak mengukur kualiti pekerjaan atau hasil pekerjaan.'],
+  'sdg10.explanation': ['无障碍远程工作可能为面临地理位置或行动障碍的人拓宽机会；实际效果取决于无障碍设计和雇佣做法。', 'Kerja jarak jauh yang mudah diakses mungkin meluaskan peluang bagi mereka yang menghadapi halangan geografi atau mobiliti; hasil sebenar bergantung pada reka bentuk kebolehcapaian dan amalan pengambilan pekerja.'],
+  'sdg12.explanation': ['数据与供应链技能可能帮助组织跟踪资源使用、减少浪费并支持负责任的生产；本应用不测量这些结果。', 'Kemahiran data dan rantaian bekalan mungkin membantu organisasi menjejak penggunaan sumber, mengurangkan pembaziran dan menyokong pengeluaran yang bertanggungjawab; aplikasi ini tidak mengukur hasil tersebut.'],
+  'sdg13.explanation': ['气候与碳分析技能可能支持排放追踪和更充分知情的气候行动；本应用不测量减排成果。', 'Kemahiran analisis iklim dan karbon mungkin menyokong penjejakan pelepasan dan tindakan iklim yang lebih termaklum; aplikasi ini tidak mengukur pengurangan pelepasan.'],
+  'Why this match': ['匹配理由', 'Sebab padanan'],
+  'Priority skill gaps': ['优先技能缺口', 'Jurang kemahiran keutamaan'],
+  'High priority': ['高优先级', 'Keutamaan tinggi'],
+  'Medium priority': ['中优先级', 'Keutamaan sederhana'],
+  'Low priority': ['低优先级', 'Keutamaan rendah'],
+  'Estimated {n} hours': ['预计 {n} 小时', 'Anggaran {n} jam'],
+  'Add saved skills to view match reasons.': ['保存技能后即可查看匹配理由。', 'Simpan kemahiran untuk melihat sebab padanan.'],
+  '2026–2030 illustrative scenario curves': ['2026–2030 示例情景曲线', 'Lengkung senario ilustrasi 2026–2030'],
+  'These team-provided values are illustrative, not measured labour-market data or a forecast. The data does not specify a unit.': ['这些团队提供的数值仅为示例，不是实测劳动力市场数据或预测；数据未注明计量单位。', 'Nilai yang diberikan oleh pasukan ini hanyalah ilustrasi, bukan data pasaran buruh terukur atau ramalan. Set data ini tidak menyatakan unit ukuran.'],
+  'Loading local scenario data…': ['正在加载本地情景数据…', 'Memuatkan data senario setempat…'],
+  'Scenario data could not be loaded.': ['无法加载情景数据。', 'Data senario tidak dapat dimuatkan.'],
+  'Scenario values are illustrative; the dataset does not provide a unit.': ['情景数值仅供示例；数据集未提供计量单位。', 'Nilai senario hanyalah ilustrasi; set data tidak menyatakan unit ukuran.'],
+  'Explore the seven SDG contribution notes': ['查看七项 SDG 预期贡献说明', 'Lihat tujuh nota sumbangan SDG'],
+  'Potential contribution': ['预期贡献', 'Sumbangan berpotensi'],
+  'Open contribution note': ['查看贡献说明', 'Buka nota sumbangan'],
+  'This is an intended alignment, not a measured impact or proof of SDG progress.': ['这是预期关联，并非经过测量的影响，也不代表已证明 SDG 取得进展。', 'Ini ialah keselarasan yang diniatkan, bukan impak terukur atau bukti kemajuan SDG.'],
+  'Uncertainty sources': ['不确定性来源', 'Sumber ketidakpastian'],
+  'Illustrative source: {source} · published {date}': ['示例来源：{source} · 发布日期 {date}', 'Sumber ilustrasi: {source} · diterbitkan {date}'],
+  Year: ['年份', 'Tahun'],
+};
+
+const englishTranslations: Record<string, string> = {
+  'scenario.why': 'These are different assumptions about AI adoption and workforce adjustment, not three certain futures or assigned probabilities.',
+  'scenario.assumption.low': 'Gradual AI adoption; tools assist workers, while training and new tasks support demand.',
+  'scenario.assumption.moderate': 'Uneven AI adoption; some routine tasks are automated while new roles partly offset displacement.',
+  'scenario.assumption.high': 'Faster automation and slower reskilling; routine roles face greater pressure before new opportunities emerge.',
+  'uncertainty.sources': 'AI capability and cost; employer adoption; economic demand and policy; access to training; and the speed at which new tasks and roles appear. Small samples and incomplete source coverage add uncertainty.',
+  'scenario.estimateDisclaimer': 'All projections are estimates and do not represent certain future outcomes.',
+  'scenario.placeholderDisclaimer': 'Scenario paths are layout placeholders only—not forecasts, and not connected to real future data.',
+  'scenario.interpolation': 'Annual example points are linearly interpolated to the illustrative endpoint. They are not outputs of a calibrated forecast or a confidence interval.',
+  'provenance.sampleNotCensus': 'Sample, not census',
+  'provenance.contextNotForecast': 'Official SDG indicators are not employment forecasts.',
+  'provenance.sourceLinked': 'Every item keeps its original URL and date.',
+  'dataEntry.manualScoreDisclaimer': 'Manually entered display score; not a personal assessment.',
+  'sdg4.explanation': 'Digital learning roles can expand access to practical skills and inclusive education through affordable online training.',
+  'sdg7.explanation': 'Clean-energy data skills can help teams monitor energy use and identify opportunities to adopt renewable power.',
+  'sdg9.explanation': 'Linked to SDG 9 Industry, Innovation and Infrastructure, the cloud collaboration skills required for these roles can lift digital adoption rate of local micro, small and medium enterprises.',
+  'sdg8.explanation': 'This career path may support decent work if teams use AI responsibly to improve everyday workflows. This app does not measure job quality or employment outcomes.',
+  'sdg10.explanation': 'Accessible remote work may broaden opportunities for people facing geographic or mobility barriers; actual outcomes depend on accessibility and employment practices.',
+  'sdg12.explanation': 'Data and supply-chain skills may help organizations track resource use, reduce waste, and support responsible production; this app does not measure these outcomes.',
+  'sdg13.explanation': 'Climate and carbon-analysis skills may support emissions tracking and better-informed climate action; this app does not measure emissions reductions.',
 };
 
 const contentTranslations: Record<string, [string, string]> = {
@@ -420,7 +465,7 @@ const contentTranslations: Record<string, [string, string]> = {
 
 export function translate(source: string, locale: Locale, values?: Record<string, string | number>): string {
   const entry = translations[source] ?? contentTranslations[source];
-  let result = locale === 'en' || !entry ? source : entry[locale === 'zh' ? 0 : 1];
+  let result = locale === 'en' ? (englishTranslations[source] ?? source) : !entry ? source : entry[locale === 'zh' ? 0 : 1];
   if (values) for (const [key, value] of Object.entries(values)) result = result.replaceAll(`{${key}}`, String(value));
   return result;
 }

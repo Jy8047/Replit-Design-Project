@@ -1,13 +1,36 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowRight, BookOpen, ExternalLink } from 'lucide-react';
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { PageHeading } from '@/components/page-heading';
 import {
   buildLearningPlan,
   calculateScenarioResults,
   getOccupationGoalMappings,
+  parseWorkforceScenarioData,
   scenarioAssumptions,
   type ScenarioId,
+  type WorkforceScenarioData,
 } from '@/lib/career-planning';
+import { sdgLabel } from '@/lib/career-matching';
 import type { CareerRecord } from '@/lib/career-data';
 import { localizeContent, useI18n } from '@/lib/i18n';
 
@@ -61,11 +84,63 @@ export function PersonalisedRoadmapPage(props: SelectionProps & { profileSkills:
 
 export function OccupationImpactPage(props: SelectionProps) {
   const { t, locale } = useI18n();
+  const [selectedGoal, setSelectedGoal] = useState<number | null>(null);
   const mappings = getOccupationGoalMappings(props.selectedOccupation);
+  const contributionNotes = [
+    { goalNumber: 4, key: 'sdg4.explanation' },
+    { goalNumber: 7, key: 'sdg7.explanation' },
+    { goalNumber: 8, key: 'sdg8.explanation' },
+    { goalNumber: 9, key: 'sdg9.explanation' },
+    { goalNumber: 10, key: 'sdg10.explanation' },
+    { goalNumber: 12, key: 'sdg12.explanation' },
+    { goalNumber: 13, key: 'sdg13.explanation' },
+  ] as const;
+  const activeNote = contributionNotes.find(note => note.goalNumber === selectedGoal);
   return <>
     <PageHeading kicker={t('Connect work to wider goals')} title={t('SDG Mapping')} description={t('Explore how an occupation and its skills could support selected UN Sustainable Development Goals in an appropriate context.')} />
     <OccupationSelector {...props} />
     <div className="planning-notice"><strong>{t('Intended contribution is not measured impact.')}</strong> {t('These are app-authored explanations, not UN endorsements or assessments. No SDG indicators, employment outcomes, emissions, or social outcomes are measured here.')}</div>
+    <section className="panel" aria-labelledby="sdg-contribution-notes-title" style={{ marginBottom: 18 }}>
+      <h2 id="sdg-contribution-notes-title" className="planning-title">{t('Explore the seven SDG contribution notes')}</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
+        {contributionNotes.map(note => (
+          <button
+            type="button"
+            className="panel"
+            key={note.goalNumber}
+            onClick={() => setSelectedGoal(note.goalNumber)}
+            aria-haspopup="dialog"
+            data-testid={`button-sdg-note-${note.goalNumber}`}
+            style={{ textAlign: 'left', cursor: 'pointer', display: 'grid', gap: 7, padding: 14 }}
+          >
+            <span className="tag">SDG {note.goalNumber}</span>
+            <strong>{sdgLabel(note.goalNumber, locale === 'ms' ? 'bm' : locale)}</strong>
+            <span style={{ fontSize: 11 }}>{t('Open contribution note')} →</span>
+          </button>
+        ))}
+      </div>
+    </section>
+    <Dialog open={selectedGoal !== null} onOpenChange={open => { if (!open) setSelectedGoal(null); }}>
+      <DialogContent closeLabel={t('Close')} closeTestId="button-close-sdg-note" className="sm:max-w-xl">
+        {activeNote && (
+          <>
+            <DialogHeader>
+              <DialogTitle>
+                SDG {activeNote.goalNumber} · {sdgLabel(activeNote.goalNumber, locale === 'ms' ? 'bm' : locale)}
+              </DialogTitle>
+              <DialogDescription>{t('Potential contribution')}</DialogDescription>
+            </DialogHeader>
+            <p className="planning-note" data-testid={`text-sdg-note-${activeNote.goalNumber}`}>
+              {t(activeNote.key)}
+            </p>
+            <p className="planning-note">{t('This is an intended alignment, not a measured impact or proof of SDG progress.')}</p>
+            <DialogFooter>
+              <DialogClose asChild><button className="btn">{t('Close')}</button></DialogClose>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
     {props.selectedOccupation && mappings.length === 0 && <div className="panel" data-testid="status-sdg-unmapped">{t('No reviewed SDG explanation is available for this occupation yet. A goal label has not been assigned automatically.')}</div>}
     <div style={{ display: 'grid', gap: 14 }}>
       {mappings.map(mapping => <article className="panel" key={mapping.goalNumber} data-testid={`card-occupation-sdg-${mapping.goalNumber}`}>
@@ -83,10 +158,84 @@ export function OccupationImpactPage(props: SelectionProps) {
 
 export function FutureScenarioPage({ scenario, onScenarioChange, records, profileSkills }: { scenario: ScenarioId; onScenarioChange: (scenario: ScenarioId) => void; records: CareerRecord[]; profileSkills: string }) {
   const { t, locale } = useI18n();
+  const [curveData, setCurveData] = useState<WorkforceScenarioData | null>(null);
+  const [curveStatus, setCurveStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  useEffect(() => {
+    let cancelled = false;
+    const loadScenarioData = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL}data/workforce-scenarios.json`);
+        if (!response.ok) throw new Error('Scenario data request failed');
+        const parsed = parseWorkforceScenarioData(await response.json());
+        if (!cancelled) {
+          setCurveData(parsed);
+          setCurveStatus('ready');
+        }
+      } catch {
+        if (!cancelled) setCurveStatus('error');
+      }
+    };
+    void loadScenarioData();
+    return () => { cancelled = true; };
+  }, []);
   const results = calculateScenarioResults(profileSkills, records, scenario);
+  const curveLabel = (item: WorkforceScenarioData['scenarios'][number]) =>
+    locale === 'zh' ? item.labelZh : locale === 'ms' ? item.labelMs : item.labelEn;
   return <>
     <PageHeading kicker={t('Test assumptions, not predictions')} title={t('Future Scenarios')} description={t('Choose a what-if lens and see how it changes the interpretation and ranking of your skill overlap. Your original overlap score is preserved.')} />
     <div className="planning-notice"><strong>{t('Estimates only.')}</strong> {t('These synthetic scenarios do not predict AI adoption, hiring odds, or employment outcomes. The included skill directions are synthetic too.')}</div>
+    <section className="panel" aria-labelledby="scenario-curves-title" data-testid="section-scenario-curves" style={{ marginBottom: 18 }}>
+      <h2 id="scenario-curves-title" className="planning-title">{t('2026–2030 illustrative scenario curves')}</h2>
+      <p className="planning-note">{t('scenario.why')}</p>
+      <p className="planning-note">{t('These team-provided values are illustrative, not measured labour-market data or a forecast. The data does not specify a unit.')}</p>
+      {curveStatus === 'loading' && <p role="status">{t('Loading local scenario data…')}</p>}
+      {curveStatus === 'error' && <p role="alert">{t('Scenario data could not be loaded.')}</p>}
+      {curveData && (
+        <>
+          <div role="img" aria-label={t('2026–2030 illustrative scenario curves')} style={{ width: '100%', height: 280 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={curveData.years} margin={{ top: 12, right: 14, bottom: 4, left: -12 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e7e6dc" />
+                <XAxis dataKey="year" tickLine={false} axisLine={{ stroke: '#c9c9bd' }} />
+                <YAxis allowDecimals={false} width={40} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(value) => [String(value), t('Scenario values are illustrative; the dataset does not provide a unit.')]} />
+                <Legend />
+                <Line type="linear" dataKey="lowAI" name={curveLabel(curveData.scenarios[0])} stroke="#557f61" strokeWidth={2.5} dot={{ r: 3 }} isAnimationActive={false} />
+                <Line type="linear" dataKey="moderateAI" name={curveLabel(curveData.scenarios[1])} stroke="#b8874b" strokeWidth={2.5} dot={{ r: 3 }} isAnimationActive={false} />
+                <Line type="linear" dataKey="highAI" name={curveLabel(curveData.scenarios[2])} stroke="#a5645e" strokeWidth={2.5} dot={{ r: 3 }} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="planning-note" data-testid="text-scenario-source">
+            {t('Illustrative source: {source} · published {date}', { source: curveData.source.name, date: curveData.source.publishedAt })}
+          </p>
+          <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+            {curveData.scenarios.map(option => (
+              <div key={option.id} style={{ borderTop: '1px solid #e8e7dd', paddingTop: 9 }}>
+                <strong style={{ fontSize: 12 }}>{curveLabel(option)}</strong>
+                <p className="planning-note" style={{ marginBottom: 0 }}>{t(`scenario.assumption.${option.id}`)}</p>
+              </div>
+            ))}
+          </div>
+          <p className="planning-note"><strong>{t('Uncertainty sources')}:</strong> {t('uncertainty.sources')}</p>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, textAlign: 'left' }}>
+              <caption style={{ textAlign: 'left', padding: '8px 0', color: '#697568' }}>{t('Scenario values are illustrative; the dataset does not provide a unit.')}</caption>
+              <thead><tr>
+                <th style={{ padding: 8 }}>{t('Year')}</th>
+                {curveData.scenarios.map(option => <th key={option.id} style={{ padding: 8 }}>{curveLabel(option)}</th>)}
+              </tr></thead>
+              <tbody>{curveData.years.map(row => <tr key={row.year} style={{ borderTop: '1px solid #e8e7dd' }}>
+                <th scope="row" style={{ padding: 8 }}>{row.year}</th>
+                <td style={{ padding: 8 }}>{row.lowAI}</td>
+                <td style={{ padding: 8 }}>{row.moderateAI}</td>
+                <td style={{ padding: 8 }}>{row.highAI}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </section>
     <fieldset className="panel" style={{ margin: '0 0 18px' }}><legend className="label">{t('Choose your AI disruption scenario')}</legend>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {(['moderate', 'fast'] as const).map(option => <label className="btn" key={option} style={{ background: scenario === option ? '#e8eadf' : undefined }}><input type="radio" name="scenario" checked={scenario === option} onChange={() => onScenarioChange(option)} data-testid={`input-scenario-${option}`} />{t(option === 'moderate' ? 'Moderate AI disruption' : 'Fast AI disruption')}</label>)}

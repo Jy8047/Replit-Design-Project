@@ -2,11 +2,37 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { calculateCareerMatches, parseCareerCsv } from './career-data.ts';
-import { buildLearningPlan, calculateScenarioResults, getOccupationGoalMappings } from './career-planning.ts';
+import { matchCareers } from './career-matching.ts';
+import { buildLearningPlan, calculateScenarioResults, getOccupationGoalMappings, parseWorkforceScenarioData } from './career-planning.ts';
 
 const records = parseCareerCsv(readFileSync(new URL('../../public/data/skills-occupations.csv', import.meta.url), 'utf8')).records;
 
 describe('fictional career exploration journeys', () => {
+  it('loads only the illustrative 2026–2030 scenario data with its source limitations intact', () => {
+    const source = readFileSync(new URL('../../public/data/workforce-scenarios.json', import.meta.url), 'utf8');
+    const parsed = parseWorkforceScenarioData(JSON.parse(source));
+    assert.deepEqual(parsed.years.map(row => row.year), [2026, 2027, 2028, 2029, 2030]);
+    assert.deepEqual(parsed.scenarios.map(scenario => scenario.id), ['low', 'moderate', 'high']);
+    assert.equal(parsed.source.url, null);
+    assert.throws(() => parseWorkforceScenarioData({ ...parsed, years: [] }), /Invalid workforce scenario data/);
+  });
+
+  it('provides localized role reasons and prioritized skill gaps for role cards', () => {
+    const english = matchCareers('Communication', records, {}, 'en').matches.find(match => match.occupation === 'Learning Experience Designer');
+    const chinese = matchCareers('Communication', records, {}, 'zh').matches.find(match => match.occupation === 'Learning Experience Designer');
+    const malay = matchCareers('Communication', records, {}, 'bm').matches.find(match => match.occupation === 'Learning Experience Designer');
+    assert.ok(english && chinese && malay);
+    assert.ok(english.reasons.length > 0);
+    assert.ok(english.gaps.length > 0);
+    assert.deepEqual(
+      [...english.gaps.map(gap => gap.skill)].sort(),
+      [...english.missingSkills].sort(),
+    );
+    assert.ok(english.gaps.every(gap => ['high', 'medium', 'low'].includes(gap.priority)));
+    assert.notDeepEqual(english.reasons, chinese.reasons);
+    assert.notDeepEqual(english.reasons, malay.reasons);
+  });
+
   it('connects a fictional facilitator profile to gaps, ordered learning, SDGs and scenarios', () => {
     const skills = 'Communication, Facilitation';
     const role = calculateCareerMatches(skills, records)[0];

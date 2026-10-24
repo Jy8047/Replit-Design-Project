@@ -6,6 +6,7 @@ import {
   type CareerRecord,
   type DatasetResult,
 } from '@/lib/career-data';
+import { matchCareers } from '@/lib/career-matching';
 import { PageHeading } from '@/components/page-heading';
 import { localizeContent, useI18n } from '@/lib/i18n';
 
@@ -269,6 +270,10 @@ export function CareerRolesPage({
 }) {
   const { t, locale } = useI18n();
   const matches = calculateCareerMatches(profileSkills, dataset.records);
+  const explanations = new Map(
+    matchCareers(profileSkills, dataset.records, {}, locale === 'ms' ? 'bm' : locale).matches
+      .map((match) => [match.occupation, match]),
+  );
   const hasProfileSkills = profileSkills
     .split(',')
     .some((skill) => skill.trim().length > 0);
@@ -333,7 +338,9 @@ export function CareerRolesPage({
       )}
       {dataset.records.length > 0 && (
         <div style={{ display: 'grid', gap: 14 }}>
-          {matches.map((match, index) => (
+          {matches.map((match, index) => {
+            const explanation = explanations.get(match.occupation);
+            return (
             <article
               className="panel"
               key={match.occupation}
@@ -410,6 +417,31 @@ export function CareerRolesPage({
                   </div>
                 </div>
               </div>
+              <section
+                aria-label={t('Why this match')}
+                style={{
+                  marginTop: 17,
+                  padding: '13px 15px',
+                  borderRadius: 11,
+                  background: '#f7f7f1',
+                  border: '1px solid #e7e6dc',
+                }}
+              >
+                <strong style={{ fontSize: 12, color: '#30483b' }}>
+                  {t('Why this match')}
+                </strong>
+                {explanation?.reasons.length ? (
+                  <ul style={{ margin: '8px 0 0', paddingLeft: 19, color: '#697568', fontSize: 12, lineHeight: 1.7 }}>
+                    {explanation.reasons.map((reason, reasonIndex) => (
+                      <li key={`${match.occupation}-reason-${reasonIndex}`}>{reason}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ margin: '7px 0 0', color: '#697568', fontSize: 12 }}>
+                    {t('Add saved skills to view match reasons.')}
+                  </p>
+                )}
+              </section>
               <div
                 className="role-lists"
                 style={{
@@ -480,11 +512,25 @@ export function CareerRolesPage({
                       </span>
                     ))}
                   </div>
+                  {explanation?.gaps.length ? (
+                    <div style={{ display: 'grid', gap: 6, marginTop: 10 }}>
+                      {explanation.gaps.map((gap) => (
+                        <div
+                          key={`${match.occupation}-gap-${gap.skill}`}
+                          style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', fontSize: 10, color: '#737a70' }}
+                        >
+                          <span>{localizeContent(gap.skill, locale)} · {t(`${gap.priority === 'high' ? 'High' : gap.priority === 'medium' ? 'Medium' : 'Low'} priority`)}</span>
+                          <span>{t('Estimated {n} hours', { n: gap.hours })}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               </div>
               <Link href="/roadmap" className="btn btn-primary" style={{marginTop:18}} onClick={() => onChooseOccupation(match.occupation)} data-testid={`link-plan-role-${index}`}>{t('Build a learning plan')} <ArrowUpRight size={14}/></Link>
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
       <style>{`@media(max-width:560px){.role-lists{grid-template-columns:1fr!important;gap:16px!important}}`}</style>

@@ -48,6 +48,112 @@ export interface GoalMapping {
   relationship: 'potential' | 'conditional';
 }
 
+export interface WorkforceScenarioYear {
+  year: number;
+  lowAI: number;
+  moderateAI: number;
+  highAI: number;
+}
+
+export interface WorkforceScenarioOption {
+  id: 'low' | 'moderate' | 'high';
+  labelEn: string;
+  labelZh: string;
+  labelMs: string;
+}
+
+export interface WorkforceScenarioData {
+  schemaVersion: 1;
+  note: string;
+  years: WorkforceScenarioYear[];
+  scenarios: WorkforceScenarioOption[];
+  source: {
+    name: string;
+    publishedAt: string;
+    url: null;
+  };
+  sdgExplanationKeys: number[];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function parseWorkforceScenarioData(value: unknown): WorkforceScenarioData {
+  if (!isRecord(value) || value.schemaVersion !== 1 || typeof value.note !== 'string') {
+    throw new Error('Invalid workforce scenario data');
+  }
+  if (!Array.isArray(value.years) || value.years.length !== 5) {
+    throw new Error('Invalid workforce scenario data');
+  }
+
+  const years: WorkforceScenarioYear[] = [];
+  for (const [index, row] of value.years.entries()) {
+    if (
+      !isRecord(row) ||
+      row.year !== 2026 + index ||
+      !Number.isFinite(row.lowAI) ||
+      !Number.isFinite(row.moderateAI) ||
+      !Number.isFinite(row.highAI)
+    ) {
+      throw new Error('Invalid workforce scenario data');
+    }
+    years.push({
+      year: row.year as number,
+      lowAI: row.lowAI as number,
+      moderateAI: row.moderateAI as number,
+      highAI: row.highAI as number,
+    });
+  }
+
+  const expectedIds = ['low', 'moderate', 'high'];
+  if (!Array.isArray(value.scenarios) || value.scenarios.length !== expectedIds.length) {
+    throw new Error('Invalid workforce scenario data');
+  }
+  const scenarios: WorkforceScenarioOption[] = [];
+  for (const [index, option] of value.scenarios.entries()) {
+    if (
+      !isRecord(option) ||
+      option.id !== expectedIds[index] ||
+      typeof option.labelEn !== 'string' ||
+      typeof option.labelZh !== 'string' ||
+      typeof option.labelMs !== 'string'
+    ) {
+      throw new Error('Invalid workforce scenario data');
+    }
+    scenarios.push({
+      id: option.id as WorkforceScenarioOption['id'],
+      labelEn: option.labelEn,
+      labelZh: option.labelZh,
+      labelMs: option.labelMs,
+    });
+  }
+
+  if (
+    !isRecord(value.source) ||
+    typeof value.source.name !== 'string' ||
+    typeof value.source.publishedAt !== 'string' ||
+    value.source.url !== null ||
+    !Array.isArray(value.sdgExplanationKeys) ||
+    !value.sdgExplanationKeys.every((key) => Number.isInteger(key))
+  ) {
+    throw new Error('Invalid workforce scenario data');
+  }
+
+  return {
+    schemaVersion: 1,
+    note: value.note,
+    years,
+    scenarios,
+    source: {
+      name: value.source.name,
+      publishedAt: value.source.publishedAt,
+      url: null,
+    },
+    sdgExplanationKeys: value.sdgExplanationKeys as number[],
+  };
+}
+
 const RESOURCE_CHECK_DATE = '2026-10-23';
 const NOT_VERIFIED_RESOURCE: LearningResource = {
   status: 'unverified',
