@@ -32,6 +32,7 @@ await withProfileBrowser(async ({ cdp, evaluate, wait, errors }) => {
       const splash = document.querySelector('[data-testid="entry-splash"]');
       const scene = splash.querySelector('.entry-splash__scene');
       const brand = scene.querySelector('.entry-splash__brand');
+      const logoFrame = scene.querySelector('.entry-splash__logo-crop');
       const logo = scene.querySelector('.entry-splash__logo-crop img');
       const sphere = scene.querySelector('.entry-splash__sphere');
       const sphereSpin = sphere.querySelector('.entry-splash__sphere-spin');
@@ -80,7 +81,11 @@ await withProfileBrowser(async ({ cdp, evaluate, wait, errors }) => {
             rect: rect(element),
           })),
         },
-        logo: { src: logo?.getAttribute('src') ?? '', rect: logo ? rect(logo) : null },
+        logo: {
+          src: logo?.getAttribute('src') ?? '',
+          rect: logo ? rect(logo) : null,
+          frame: logoFrame ? rect(logoFrame) : null,
+        },
         sphere: {
           rect: sphereRect,
           letterCount: sphere.querySelectorAll('.entry-splash__sphere-letter').length,
@@ -109,6 +114,8 @@ await withProfileBrowser(async ({ cdp, evaluate, wait, errors }) => {
       assert.ok(text.rect.right <= layout.brand.rect.right + 1, `${viewport.name}: brand segment ${index + 1} stays inside the brand row`);
     }
     assert.match(layout.logo.src, /\/logo\.png$/u, `${viewport.name}: existing logo is shown`);
+    assert.ok(layout.logo.frame.bottom > layout.logo.frame.top, `${viewport.name}: enlarged logo crop remains visible`);
+    assert.ok(layout.brand.rect.top >= layout.logo.frame.bottom, `${viewport.name}: brand name remains below the logo`);
     assert.equal(layout.sphere.letterCount, 120, `${viewport.name}: one letter-built sphere is rendered`);
     assert.match(layout.sphere.mask, /radial-gradient/u, `${viewport.name}: sphere leaves a clear title area`);
     assert.ok(layout.sphere.titleZIndex > layout.sphere.zIndex, `${viewport.name}: title sits in front of the sphere`);
@@ -135,6 +142,13 @@ await withProfileBrowser(async ({ cdp, evaluate, wait, errors }) => {
     return { name: style.animationName, duration: style.animationDuration };
   })()`);
   assert.deepEqual(sphereMotion, { name: 'splash-sphere-rotate', duration: '18s' }, 'sphere rotates slowly when motion is allowed');
+  const identityLayout = await evaluate(`(() => {
+    const frame = document.querySelector('.entry-splash__logo-crop').getBoundingClientRect();
+    const brand = document.querySelector('.entry-splash__brand').getBoundingClientRect();
+    return { logoSize: frame.width, brandGap: brand.top - frame.bottom };
+  })()`);
+  assert.equal(identityLayout.logoSize, 96, 'desktop logo is enlarged');
+  assert.ok(identityLayout.brandGap >= 20, 'brand name is visibly spaced below the larger logo');
   await wait(`!document.querySelector('[data-testid="entry-splash"]')`);
   await wait(`!!document.querySelector('[data-testid="card-home-01"]')`);
   await evaluate(`document.querySelector('[data-testid="link-future-role-matches"]').click()`);
