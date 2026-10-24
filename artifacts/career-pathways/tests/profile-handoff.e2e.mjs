@@ -3,11 +3,14 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { makePdf } from '../../api-server/tests/cv-fixtures.ts';
-import { calculateCareerMatches, parseCareerCsv } from '../src/lib/career-data.ts';
+import { combineCareerDatasets, rankCareerMatchesForDisplay } from '../src/lib/career-data.ts';
 import { normalizeProfile, emptyProfile } from '../src/lib/profile.ts';
 import { withProfileBrowser } from './profile-handoff-browser.mjs';
 
-const { records, errors } = parseCareerCsv(await readFile(new URL('../public/data/skills-occupations.csv', import.meta.url), 'utf8'));
+const { records, errors } = combineCareerDatasets(
+  await readFile(new URL('../public/data/skills-occupations.csv', import.meta.url), 'utf8'),
+  await readFile(new URL('../public/data/official-occupations.csv', import.meta.url), 'utf8'),
+);
 assert.deepEqual(errors, []);
 const savedKey = 'career-pathways-profile';
 const draftKey = 'career-pathways-profile-draft';
@@ -25,7 +28,7 @@ try {
     };
     const stored = () => ev(`JSON.parse(localStorage.getItem('${savedKey}'))`);
     const checkMatching = async skills => {
-      const expected = calculateCareerMatches(skills, records);
+      const expected = rankCareerMatchesForDisplay(skills, records).slice(0, 8);
       await wait(`document.querySelectorAll('[data-testid^="text-match-score-"]').length === ${expected.length}`);
       const actual = await ev(`Array.from(document.querySelectorAll('[data-testid^="card-role-"]')).map(card => ({
         occupation: card.querySelector('h2').textContent,

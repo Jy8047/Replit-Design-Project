@@ -559,6 +559,11 @@ export function CareerRolesPage({
                   >
                     {localizeContent(match.occupation, locale)}
                   </h2>
+                  {match.catalog && (
+                    <span className="tag role-career-field">
+                      {t('Career field')}: {match.catalog.category[locale]}
+                    </span>
+                  )}
                   <p
                     style={{
                       fontSize: 12,

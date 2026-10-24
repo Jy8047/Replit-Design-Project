@@ -3,13 +3,15 @@
 import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import { emptyProfile } from '../src/lib/profile.ts';
-import { calculateCareerMatches, parseCareerCsv } from '../src/lib/career-data.ts';
+import { combineCareerDatasets, rankCareerMatchesForDisplay } from '../src/lib/career-data.ts';
 import { withProfileBrowser } from './profile-handoff-browser.mjs';
 
 const savedKey = 'career-pathways-profile';
 const draftKey = 'career-pathways-profile-draft';
-const { records, errors } = parseCareerCsv(await readFile(
-  new URL('../public/data/skills-occupations.csv', import.meta.url), 'utf8'));
+const { records, errors } = combineCareerDatasets(
+  await readFile(new URL('../public/data/skills-occupations.csv', import.meta.url), 'utf8'),
+  await readFile(new URL('../public/data/official-occupations.csv', import.meta.url), 'utf8'),
+);
 assert.deepEqual(errors, []);
 const copy = {
   en: ['Review Your Profile', 'Please review your information before confirming.', 'Back to Edit', 'Cancel', 'Confirm Profile', 'Not provided', 'Close'],
@@ -27,7 +29,7 @@ await withProfileBrowser(async b => {
     await present('link-my-profile');
   };
   const assertMatching = async skills => {
-    const expected = calculateCareerMatches(skills, records);
+    const expected = rankCareerMatchesForDisplay(skills, records).slice(0, 8);
     await wait(`document.querySelectorAll('[data-testid^="card-role-"]').length === ${expected.length}`);
     const actual = await ev(`Array.from(document.querySelectorAll('[data-testid^="card-role-"]')).map(n => ({
       occupation: n.querySelector('h2').textContent,

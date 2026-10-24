@@ -72,35 +72,35 @@ function Shell({ children, hasProfile }: { children: ReactNode; hasProfile: bool
   return <div className="app-shell">
     <aside className={`sidebar ${menuOpen ? 'open' : ''}`} aria-label={t('Main navigation')}>
       <div style={{display:'flex',alignItems:'center',gap:11,padding:'0 10px 27px'}}>
-        <div className="brand-mark"><Compass size={19}/></div>
-        <div><div style={{font:'700 15px Manrope',letterSpacing:'-.03em'}}>{PRODUCT_NAME}</div><div style={{fontSize:10,color:'#b7c3b8',marginTop:2,lineHeight:1.5}}>{t(PRODUCT_TAGLINE)}</div></div>
-        <button className="mobile-menu" style={{marginLeft:'auto',color:'#f2eee3',borderColor:'#536459'}} onClick={()=>setMenuOpen(false)} aria-label={t('Close menu')} data-testid="button-close-menu"><X size={17}/></button>
+         <div className="brand-mark"><Compass size={19}/></div>
+         <div><div style={{font:'700 15px Manrope',letterSpacing:'-.03em'}}>{PRODUCT_NAME}</div><div style={{fontSize:10,color:'#bdcbd8',marginTop:2,lineHeight:1.5}}>{t(PRODUCT_TAGLINE)}</div></div>
+         <button className="mobile-menu" style={{marginLeft:'auto',color:'#f2f7fa',borderColor:'#536b81'}} onClick={()=>setMenuOpen(false)} aria-label={t('Close menu')} data-testid="button-close-menu"><X size={17}/></button>
       </div>
       <div style={{padding:'0 5px',display:'flex',flexDirection:'column',gap:24}}>
         {navGroups.map(group=><div key={group.label}>
-          <div style={{font:'500 9px IBM Plex Mono',letterSpacing:'.16em',color:'#93a297',padding:'0 11px 9px'}}>{t(group.label)}</div>
+           <div style={{font:'500 9px IBM Plex Mono',letterSpacing:'.16em',color:'#91a7ba',padding:'0 11px 9px'}}>{t(group.label)}</div>
           <nav style={{display:'grid',gap:3}}>{group.links.map(item=>{
             const Icon=item.icon; const active=location===item.href;
-            return <Link key={item.href} href={item.href} className={`nav-link ${active?'active':''}`} onClick={()=>setMenuOpen(false)} data-testid={`link-${item.title.toLowerCase().replaceAll(' ','-')}`}>
-              <Icon size={16} strokeWidth={1.8}/><span>{t(item.title)}</span>{item.href==='/profile'&&hasProfile?<span style={{marginLeft:'auto',width:6,height:6,borderRadius:'50%',background:'#dfb66a'}}/>:null}
+             return <Link key={item.href} href={item.href} className={`nav-link ${active?'active':''}`} onClick={()=>setMenuOpen(false)} data-testid={`link-${item.title.toLowerCase().replaceAll(' ','-')}`}>
+               <Icon size={16} strokeWidth={1.8}/><span>{t(item.title)}</span>{item.href==='/profile'&&hasProfile?<span style={{marginLeft:'auto',width:6,height:6,borderRadius:'50%',background:'#16A6A0'}}/>:null}
             </Link>;
           })}</nav>
         </div>)}
       </div>
       <div style={{marginTop:'auto'}}>
-        <div style={{padding:'14px 13px',background:'#30473d',borderRadius:12,margin:'0 4px 14px'}}>
-          <div style={{display:'flex',alignItems:'center',gap:7,color:'#e1bc76',fontSize:11,fontWeight:700}}><ShieldCheck size={14}/> {t('Your workspace')}</div>
-          <p style={{fontSize:11,lineHeight:1.55,color:'#c2cdc3',margin:'8px 0 0'}}>{t('Saved on this device only. Examples are illustrative, not recommendations.')}</p>
+         <div style={{padding:'14px 13px',background:'#1d3852',borderRadius:12,margin:'0 4px 14px',border:'1px solid #2a4962'}}>
+           <div style={{display:'flex',alignItems:'center',gap:7,color:'#69d1c8',fontSize:11,fontWeight:700}}><ShieldCheck size={14}/> {t('Your workspace')}</div>
+           <p style={{fontSize:11,lineHeight:1.55,color:'#c3d0dc',margin:'8px 0 0'}}>{t('Saved on this device only. Examples are illustrative, not recommendations.')}</p>
         </div>
         <Link href="/settings" className={`nav-link ${location==='/settings'?'active':''}`} onClick={()=>setMenuOpen(false)} data-testid="link-settings"><Settings2 size={16}/><span>{t('Workspace settings')}</span></Link>
       </div>
     </aside>
-    {menuOpen&&<button aria-label={t('Close navigation overlay')} onClick={()=>setMenuOpen(false)} style={{position:'fixed',inset:0,zIndex:20,border:0,background:'#172a2270'}}/>}
+     {menuOpen&&<button aria-label={t('Close navigation overlay')} onClick={()=>setMenuOpen(false)} style={{position:'fixed',inset:0,zIndex:20,border:0,background:'#14283f70'}}/>}
     <div className="main-area">
       <header className="topbar">
         <div style={{display:'flex',alignItems:'center',gap:12}}>
           <button className="mobile-menu" onClick={()=>setMenuOpen(true)} aria-label={t('Open menu')} data-testid="button-open-menu"><Menu size={19}/></button>
-          <div className="top-title" style={{fontSize:14,fontWeight:700,color:'#34493e'}} data-testid="text-workspace-title">{PRODUCT_NAME}</div>
+           <div className="top-title" style={{fontSize:14,fontWeight:700,color:'#14283F'}} data-testid="text-workspace-title">{PRODUCT_NAME}</div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <div className="language-switch" role="group" aria-label={t('Choose language')} data-testid="language-switch">
@@ -110,11 +110,11 @@ function Shell({ children, hasProfile }: { children: ReactNode; hasProfile: bool
               ['ms', 'BM', 'Bahasa Melayu'],
             ] as const).map(([value, label, accessible]) => <button key={value} type="button" aria-label={accessible} aria-pressed={locale === value} className={locale === value ? 'language-active' : ''} onClick={() => setLocale(value as Locale)} data-testid={`button-language-${value}`}>{label}</button>)}
           </div>
-          <div className="workspace-private"><span style={{width:7,height:7,borderRadius:9,background:'#6b9872'}}/> {t('Private workspace')}</div>
+           <div className="workspace-private"><span style={{width:7,height:7,borderRadius:9,background:'#16A6A0'}}/> {t('Private workspace')}</div>
         </div>
       </header>
       <main className="content">{children}</main>
-      <footer style={{padding:'0 28px 24px',color:'#737a70',fontSize:11,lineHeight:1.6}}>{PRODUCT_NAME} · {t(PRODUCT_TAGLINE)}</footer>
+     <footer style={{padding:'0 28px 24px',color:'#718196',fontSize:11,lineHeight:1.6}}>{PRODUCT_NAME} · {t(PRODUCT_TAGLINE)}</footer>
     </div>
   </div>;
 }
@@ -129,19 +129,19 @@ function Home({ profile }: {profile:Profile|null}) {
     {href:'/impact',n:'05',title:'Connect work to wider goals',text:'Explore explained SDG links without presenting them as measured impact.',icon:Network,cta:'Explore SDG mapping'},
   ];
   return <>
-    <div style={{background:'#e8eadf',borderRadius:20,padding:'clamp(24px,5vw,52px)',position:'relative',overflow:'hidden',marginBottom:28}}>
-      <div style={{position:'absolute',right:-55,top:-75,width:290,height:290,border:'1px solid #cbd2c3',borderRadius:'50%'}}/><div style={{position:'absolute',right:-22,top:-42,width:220,height:220,border:'1px solid #cbd2c3',borderRadius:'50%'}}/>
+     <div style={{background:'linear-gradient(118deg,#e5f4f3 0%,#f1f6f9 58%,#e8f0f6 100%)',borderRadius:20,padding:'clamp(24px,5vw,52px)',position:'relative',overflow:'hidden',marginBottom:28,border:'1px solid #d5e8e9'}}>
+       <div style={{position:'absolute',right:-55,top:-75,width:290,height:290,border:'1px solid #c4dfdf',borderRadius:'50%'}}/><div style={{position:'absolute',right:-22,top:-42,width:220,height:220,border:'1px solid #c4dfdf',borderRadius:'50%'}}/>
       <div style={{position:'relative',maxWidth:700}}>
         <div className="eyebrow" style={{color:'#627867',textTransform:'none'}}>{PRODUCT_NAME}</div>
-        <h1 style={{font:'700 clamp(34px,5vw,58px)/1.06 Manrope',letterSpacing:'-.055em',color:'#294237',maxWidth:650,margin:'17px 0'}}>{t(PRODUCT_TAGLINE)}</h1>
-        <p style={{fontSize:15,lineHeight:1.75,color:'#626e62',maxWidth:570,margin:'0 0 16px'}}>{t(PRODUCT_DESCRIPTION)}</p>
-        <p style={{fontSize:12,lineHeight:1.7,color:'#626e62',maxWidth:570,margin:'0 0 24px'}}>{t(DEMO_IMPLEMENTATION_NOTICE)}</p>
+         <h1 style={{font:'700 clamp(34px,5vw,58px)/1.06 Manrope',letterSpacing:'-.055em',color:'#14283F',maxWidth:650,margin:'17px 0'}}>{t(PRODUCT_TAGLINE)}</h1>
+         <p style={{fontSize:15,lineHeight:1.75,color:'#4f667b',maxWidth:570,margin:'0 0 16px'}}>{t(PRODUCT_DESCRIPTION)}</p>
+         <p style={{fontSize:12,lineHeight:1.7,color:'#4f667b',maxWidth:570,margin:'0 0 24px'}}>{t(DEMO_IMPLEMENTATION_NOTICE)}</p>
         <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
           <Link href="/profile" className="btn btn-primary" data-testid="link-home-profile">{t(profile?'Review your profile':'Build your profile')} <ArrowRight size={15}/></Link>
           <Link href="/roles" className="btn" data-testid="link-home-roles">{t('Browse role examples')} <ChevronRight size={15}/></Link>
         </div>
       </div>
-      <div style={{position:'absolute',right:'8%',bottom:25,display:'flex',alignItems:'center',gap:8,color:'#687767',font:'11px IBM Plex Mono'}} className="hero-note"><Sparkles size={14}/> {t('YOUR NEXT CHAPTER, AT YOUR PACE')}</div>
+       <div style={{position:'absolute',right:'8%',bottom:25,display:'flex',alignItems:'center',gap:8,color:'#49777a',font:'11px IBM Plex Mono'}} className="hero-note"><Sparkles size={14}/> {t('YOUR NEXT CHAPTER, AT YOUR PACE')}</div>
     </div>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'end',gap:14,margin:'0 0 15px'}}>
        <div><div className="eyebrow">{t('A simple way through')}</div><h2 style={{font:'700 22px Manrope',letterSpacing:'-.03em',margin:'5px 0 0',color:'#30483b'}}>{t('Explore at your own pace')}</h2></div>

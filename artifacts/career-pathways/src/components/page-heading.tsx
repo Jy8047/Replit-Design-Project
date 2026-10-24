@@ -19,7 +19,7 @@ export function PageHeading({
         justifyContent: 'space-between',
         gap: 22,
         flexWrap: 'wrap',
-        marginBottom: 30,
+        marginBottom: 28,
       }}
     >
       <div>

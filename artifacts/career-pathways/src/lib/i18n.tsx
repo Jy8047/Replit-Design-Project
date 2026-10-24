@@ -20,6 +20,7 @@ const translations: Record<string, [string, string]> = {
   'Source-backed associations and synthetic examples are shown separately. No market forecast is provided for the sourced occupations.': ['来源支持的职业能力关联与合成示例分别标注。已核验职业资料不提供市场预测。', 'Perkaitan kompetensi bersumber dan contoh sintetik dilabel berasingan. Tiada ramalan pasaran bagi pekerjaan bersumber.'],
   'Verified occupation association': ['已核验职业能力关联', 'Perkaitan kompetensi pekerjaan disahkan'],
   'Market trend unknown': ['市场趋势未知', 'Trend pasaran tidak diketahui'],
+  'Career field': ['职业领域', 'Bidang kerjaya'],
   'Unknown trend records': ['趋势未知的记录', 'Rekod trend tidak diketahui'],
   'Source verification covers the occupation–competency association only. No demand trend has been verified.': ['来源核验仅覆盖职业与能力的关联，尚未核验需求趋势。', 'Pengesahan sumber hanya meliputi perkaitan pekerjaan dan kompetensi. Trend permintaan belum disahkan.'],
   'Sourced subset: O*NET 31.0 Database, USDOL/ETA. Selection, translations and SDG interpretations are app-authored; no endorsement.': ['来源子集：O*NET 31.0 数据库，USDOL/ETA。筛选、翻译与 SDG 解释由项目编写，不代表来源机构认可。', 'Subset bersumber: Pangkalan Data O*NET 31.0, USDOL/ETA. Pemilihan, terjemahan dan tafsiran SDG oleh aplikasi; tiada pengendorsan.'],

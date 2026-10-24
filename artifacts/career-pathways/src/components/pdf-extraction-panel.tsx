@@ -67,8 +67,8 @@ export function PdfExtractionPanel({ file, onUseDraft, onOnline }: {
   return <div className="profile-pdf-flow" data-testid="pdf-extraction-panel">
     <div className="profile-inline-notice" role="note" data-testid="public-demo-notice"><p>{t('This project does not use an AI model or GPU service. Local PDF extraction and rule-based simulation are available; no external model service is called.')}</p></div>
     <div className="profile-parser-note"><p>{t('PDF bytes are sent to this app server for text extraction only. Files and raw text are not saved on the server. OCR is not implemented. Nothing changes your confirmed profile until you confirm.')}</p></div>
-    <label className="profile-form-field">{t('Profile Type')}
-      <select value={type} disabled={busy} onChange={event => { setType(event.target.value as ProfileType); setResult(null); }} data-testid="select-pdf-profile-type">
+      <label className="profile-form-field">{t('Profile Type')}
+       <select className="field" value={type} disabled={busy} onChange={event => { setType(event.target.value as ProfileType); setResult(null); }} data-testid="select-pdf-profile-type">
         <option value="fresh_graduate">{t('Fresh Graduate')}</option>
         <option value="career_switcher">{t('Career Switcher')}</option>
       </select>

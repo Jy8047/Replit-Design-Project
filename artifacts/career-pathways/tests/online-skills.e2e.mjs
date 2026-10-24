@@ -2,10 +2,13 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { emptyProfile } from '../src/lib/profile.ts';
-import { calculateCareerMatches, parseCareerCsv } from '../src/lib/career-data.ts';
+import { combineCareerDatasets, rankCareerMatchesForDisplay } from '../src/lib/career-data.ts';
 import { withProfileBrowser } from './profile-handoff-browser.mjs';
 
-const { records } = parseCareerCsv(await readFile(new URL('../public/data/skills-occupations.csv', import.meta.url), 'utf8'));
+const { records } = combineCareerDatasets(
+  await readFile(new URL('../public/data/skills-occupations.csv', import.meta.url), 'utf8'),
+  await readFile(new URL('../public/data/official-occupations.csv', import.meta.url), 'utf8'),
+);
 const key = 'career-pathways-profile';
 // Textareas use LF even when pasted content originally has CRLF.
 const raw = ' Communication；communication，\n- Facilitation;\n• Project coordination\n* C++ / C# & .NET';
@@ -18,7 +21,7 @@ await withProfileBrowser(async ({ cdp, evaluate: ev, present, click, setValue, w
   };
   const saved = () => ev(`JSON.parse(localStorage.getItem('${key}'))`);
   const matches = async skills => {
-    const expected = calculateCareerMatches(skills, records);
+    const expected = rankCareerMatchesForDisplay(skills, records).slice(0, 8);
     await wait(`document.querySelectorAll('[data-testid^="text-match-score-"]').length === ${expected.length}`);
     assert.deepEqual(await ev(`Array.from(document.querySelectorAll('[data-testid^="card-role-"]')).map(card => ({
       occupation: card.querySelector('h2').textContent,
