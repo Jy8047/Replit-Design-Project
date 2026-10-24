@@ -14,6 +14,18 @@ are execution-environment failures, not evidence that the input is invalid.
 dependencies, worker isolation, build entry points or packaging. Preserve safe
 user errors without logging CV contents or raw parser output for diagnosis.
 
+## Skill alias evidence
+
+For rule-based skill aliases, retain the exact matched spelling from the CV,
+validate that source span against the extracted text, and only then canonicalize
+it for downstream matching.
+
+**Why:** A canonical skill label may not literally appear in the source CV; using
+it as evidence would either reject a valid alias or tempt weakening source checks.
+
+**How to apply:** Keep alias lookup separate from source-evidence validation and
+test aliases through the actual API response as well as the mapper.
+
 ## Cancellation and concurrency
 
 Keep parser concurrency allocated until the worker has actually stopped, even

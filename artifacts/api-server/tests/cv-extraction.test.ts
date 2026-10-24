@@ -93,6 +93,8 @@ test("HTTP demo maps explicit actual PDF lines and preserves employment, never r
     assert.equal(good.body.profile.education.school, "Fictional University");
     assert.equal(good.body.profile.skills, "Python, SQL");
     assert.equal(good.body.profile.name, "");
+    assert.equal(good.body.profile.mapping_method, "rules-v2");
+    assert.deepEqual(good.body.profile.matched_summary, { skills: 2, education: 3, basics: 0 });
     assert.notEqual(good.body.mapping, "READY");
     const scan = await post(await makePdf("", 1, true), query);
     assert.equal(scan.body.status, "OCR_REQUIRED");

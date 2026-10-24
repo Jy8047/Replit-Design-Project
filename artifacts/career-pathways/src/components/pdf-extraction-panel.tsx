@@ -87,7 +87,7 @@ export function PdfExtractionPanel({ file, onUseDraft, onOnline }: {
       {result.text && <details open><summary>{t('Extracted PDF text (not saved)')}</summary><div className="profile-extracted-text" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12, lineHeight: 1.6 }} data-testid="pdf-extracted-text">{result.text}</div></details>}
       {result.profile && <>
         <p data-testid="simulated-mapping-label">{t('SIMULATED MAPPING — not AI output. Values are identified by local rules. Review and edit every field before confirmation.')}</p>
-        <p data-testid="pdf-rules-review-hint">已用规则解析器自动识别，请逐项核对；识别不到的字段请手动补充。</p>
+        <p data-testid="pdf-rules-review-hint">{t('The local rules parser identified these fields automatically. Review each one and manually fill any fields it missed.')}</p>
         <button type="button" className="btn btn-primary" onClick={() => onUseDraft(result.profile!)} data-testid="button-use-pdf-draft">{t('Review and edit extracted draft')}</button>
       </>}
     </div>}

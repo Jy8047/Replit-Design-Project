@@ -21,7 +21,8 @@ export type CvSectionKind =
   | "internship"
   | "projects"
   | "skills"
-  | "leadership";
+  | "leadership"
+  | "summary";
 
 export interface CvSectionRange {
   kind: CvSectionKind;
@@ -86,6 +87,9 @@ const headingKinds: Readonly<Record<string, CvSectionKind>> = {
   "key skills": "skills",
   leadership: "leadership",
   "leadership experience": "leadership",
+  summary: "summary",
+  "professional summary": "summary",
+  "profile summary": "summary",
   "教育经历": "education",
   "教育背景": "education",
   "工作经历": "employment",
@@ -97,6 +101,7 @@ const headingKinds: Readonly<Record<string, CvSectionKind>> = {
   "领导经历": "leadership",
   "领导力": "leadership",
   "实习经历": "internship",
+  "个人简介": "summary",
 };
 
 function splitLines(text: string): { line: string; start: number; end: number; next: number }[] {
@@ -146,7 +151,15 @@ export function extractSections(text: string): CvSectionRange[] {
     return [{ ...parsed, start: record.start, contentStart, lineIndex: index }];
   });
   return headings.map((heading, index) => {
-    const end = headings[index + 1]?.start ?? text.length;
+    let end = headings[index + 1]?.start ?? text.length;
+    if (heading.kind !== "education") {
+      const fieldBoundary = lines.find(record =>
+        record.start >= heading.contentStart
+        && record.start < end
+        && isKnownFieldLabelLine(record.line),
+      );
+      if (fieldBoundary) end = fieldBoundary.start;
+    }
     const content = text.slice(heading.contentStart, end);
     return {
       kind: heading.kind,
@@ -295,6 +308,13 @@ const knownFieldLabels = new Set([
   "otherexperience", "name", "role", "background", "currentorrecentrole",
 ]);
 
+function isKnownFieldLabelLine(line: string): boolean {
+  const label = line.trim().match(/^([^:：]{1,50})\s*[:：]/u)?.[1];
+  if (!label) return false;
+  const key = label.toLowerCase().replace(/[\s_&/]+/gu, "");
+  return knownFieldLabels.has(key);
+}
+
 function boundedSkillSection(text: string, section: CvSectionRange): string {
   const body = text.slice(section.contentStart, section.end);
   const accepted: string[] = [];
@@ -308,6 +328,9 @@ function boundedSkillSection(text: string, section: CvSectionRange): string {
     }
     const nextHeading = headingFromLine(trimmed);
     if (nextHeading && nextHeading.kind !== "skills") break;
+    const bullet = /^[-*•▪◦]\s+/u.test(trimmed);
+    const listLike = /[,，、;；/]/u.test(trimmed) || /\s+(?:and|&|和|与)\s+/iu.test(trimmed);
+    if (!bullet && !listLike && !extractSkillMatches(trimmed).length) break;
     accepted.push(line);
   }
   return accepted.join("\n");
@@ -375,6 +398,8 @@ export function mapCvSmart(text: string, type: ProfileType): SmartCvProfile {
     } else if ((section.kind === "experience" || section.kind === "projects")
       && !profile.other_experience) {
       profile.other_experience = value;
+    } else if (section.kind === "summary" && !profile.background) {
+      profile.background = value;
     }
   }
 

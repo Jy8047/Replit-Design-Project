@@ -1,6 +1,6 @@
 - [Project brand](provisional-project-name.md) — Fixed PivotPath AI naming; localize slogans, remove custom naming, and distinguish branding from simulated/rule-based implementation.
 - [Evidence and consent](domain-evidence-constraints.md) — Evidence, source checks, paid-service consent, and the confirmation boundary for profile drafts.
 - [Runpod scope](runpod-scope.md) — Team decision: no GPU, RunPod, or GLM; keep PDF extraction local and mapping explicitly simulated.
-- [PDF worker verification](pdf-worker-verification.md) — Verify real extraction through the bundled API; source-only parser tests can miss deployment failures.
+- [PDF worker verification](pdf-worker-verification.md) — Test the bundled API and validate matched source spellings before canonicalizing skill aliases.
 - [Security scan evidence](security-scan-evidence.md) — Validate the actual findings collection and completion flags; absent properties do not establish a clean scan.
 - [Catalog/codegen compatibility](catalog-codegen-compatibility.md) — Keep generator runtime targets explicit; catalog auto-detection can silently select incompatible majors.
