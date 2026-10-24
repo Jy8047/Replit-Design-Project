@@ -89,7 +89,7 @@ export default function MarketSignalPanel() {
         .filter((row) => row && row.value !== null && row.value !== undefined)
         .sort((a, b) => Number(b.date) - Number(a.date));
       if (!usable.length) throw new Error('no data');
-      setLatest({ year: String(usable[0].date), value: String(usable[0].value) });
+      setLatest({ year: String(usable[0].date), value: Number(usable[0].value).toFixed(2) });
       setRetrievedAt(new Date().toLocaleString());
       setStatus('success');
     } catch {

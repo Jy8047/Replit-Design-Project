@@ -36,6 +36,7 @@ import { CatalogAttribution, OccupationCatalogDetails } from './occupation-catal
 import { PageHeading } from '@/components/page-heading';
 import { localizeContent, useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
+import { fetchOccupationHistoryWithRetries } from '@/lib/occupation-history-client';
 import {
   Dialog,
   DialogContent,
@@ -245,7 +246,8 @@ export function CareerSkillsPage({
     refreshedAt: string;
     points: { year: number; employment: number }[];
   } | null>(null);
-  const [historyState, setHistoryState] = useState<'idle' | 'loading' | 'ready' | 'empty' | 'unavailable' | 'error'>('idle');
+  const [historyState, setHistoryState] = useState<'idle' | 'loading' | 'retrying' | 'ready' | 'empty' | 'unavailable' | 'error'>('idle');
+  const [historyRetryCount, setHistoryRetryCount] = useState(0);
   const [historyRefresh, setHistoryRefresh] = useState(0);
   const confirmedSkills = readConfirmedProfileSkills();
   const profileValues = confirmedSkills.length ? profileDimensions(confirmedSkills) : null;
@@ -291,28 +293,40 @@ export function CareerSkillsPage({
     const controller = new AbortController();
     setHistory(null);
     setHistoryState('loading');
+    setHistoryRetryCount(0);
     const url = `${import.meta.env.BASE_URL}api/occupations/history?occupationCode=${encodeURIComponent(occupationCode)}&refresh=${historyRefresh}`;
-    void fetch(url, { signal: controller.signal, cache: 'no-store' })
-      .then(async (response) => {
-        const body = await response.json();
-        if (!response.ok) throw new Error('BLS_HISTORY_UNAVAILABLE');
+    void fetchOccupationHistoryWithRetries(url, {
+      signal: controller.signal,
+      onRetry: (attempt) => {
+        if (controller.signal.aborted) return;
+        setHistoryRetryCount(attempt);
+        setHistoryState('retrying');
+      },
+    })
+      .then((body) => {
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+          throw new Error('BLS_RESPONSE_INVALID');
+        }
+        const payload = body as Record<string, unknown>;
+        const points = payload.points;
         if (
-          typeof body?.occupationCode !== 'string' ||
-          typeof body?.socCode !== 'string' ||
-          typeof body?.sourceName !== 'string' ||
-          typeof body?.sourceUrl !== 'string' ||
-          typeof body?.refreshedAt !== 'string' ||
-          !Array.isArray(body?.points) ||
-          body.points.some((point: unknown) =>
-            !point || typeof point !== 'object' ||
-            !Number.isInteger((point as { year?: unknown }).year) ||
-            typeof (point as { employment?: unknown }).employment !== 'number' ||
-            !Number.isFinite((point as { employment?: number }).employment),
-          )
+          typeof payload.occupationCode !== 'string' ||
+          typeof payload.socCode !== 'string' ||
+          typeof payload.sourceName !== 'string' ||
+          typeof payload.sourceUrl !== 'string' ||
+          typeof payload.refreshedAt !== 'string' ||
+          !Array.isArray(points) ||
+          points.some((point: unknown) => {
+            if (!point || typeof point !== 'object' || Array.isArray(point)) return true;
+            const value = point as Record<string, unknown>;
+            return !Number.isInteger(value.year) ||
+              typeof value.employment !== 'number' ||
+              !Number.isFinite(value.employment);
+          })
         ) {
           throw new Error('BLS_RESPONSE_INVALID');
         }
-        return body as NonNullable<typeof history>;
+        return payload as NonNullable<typeof history>;
       })
       .then((body) => {
         if (controller.signal.aborted) return;
@@ -495,6 +509,12 @@ export function CareerSkillsPage({
                 <div role="status" data-testid="status-occupation-history-loading" className="panel" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Spinner aria-hidden="true" />
                   {t('Loading historical employment data…')}
+                </div>
+              )}
+              {historyState === 'retrying' && (
+                <div role="status" data-testid="status-occupation-history-retrying" className="panel" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Spinner aria-hidden="true" />
+                  {t('The official BLS server is busy; retrying ({attempt}/3)…', { attempt: historyRetryCount })}
                 </div>
               )}
               {historyState === 'error' && (

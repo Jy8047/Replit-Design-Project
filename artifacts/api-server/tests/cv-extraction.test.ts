@@ -225,6 +225,7 @@ WORK EXPERIENCE Northstar Analytics | Data Intern | 2023-2024`;
 
 test("HTTP PDF extraction normalizes a collapsed TechnicalSkills heading end to end", async () => {
   const text = `Synthetic Candidate
+Developed a software project with a team.
 TechnicalSkills:
 Python, SQL, Machine Learning
 EDUCATION
