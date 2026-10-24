@@ -101,6 +101,7 @@ describe('skill dimensions', () => {
     assert.equal(dimensionOf('Adobe Photoshop'), 'design');
     assert.equal(dimensionOf('Management of Personnel Resources'), 'management');
     assert.equal(dimensionOf('Medicine and Dentistry'), 'domain');
+    assert.equal(dimensionOf('Biology'), 'domain');
     assert.equal(dimensionOf('Chemistry'), 'domain');
     assert.equal(dimensionOf('Speaking'), 'communication');
     assert.equal(dimensionOf('Telecommunications'), 'tech');
