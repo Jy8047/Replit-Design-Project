@@ -210,9 +210,46 @@ function SettingsPage({onReset}:{onReset:()=>void}) {
 }
 
 const DECODE_GLYPHS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>/\\|';
-const DECODE_DURATION_MS = 2500;
-const BRAND_HOLD_MS = 3000;
-const SPLASH_FADE_MS = 560;
+const DECODE_DURATION_MS = 700;
+const BRAND_HOLD_MS = 1800;
+const SPLASH_FADE_MS = 500;
+const SPHERE_LETTERS = 'PIVOTPATHAI';
+const SPHERE_POINTS = Array.from({ length: 88 }, (_, index) => {
+  const y = 1 - ((index + 0.5) / 88) * 2;
+  const ringRadius = Math.sqrt(1 - y * y);
+  const angle = Math.PI * (3 - Math.sqrt(5)) * index;
+  return {
+    x: Math.cos(angle) * ringRadius,
+    y,
+    z: Math.sin(angle) * ringRadius,
+    letter: SPHERE_LETTERS[index % SPHERE_LETTERS.length],
+  };
+});
+
+function EntrySplashSphere() {
+  const [radius, setRadius] = useState(() =>
+    Math.max(32, Math.min((window.innerWidth - 32) * 0.46, 215)),
+  );
+
+  useEffect(() => {
+    const updateRadius = () => setRadius(Math.max(32, Math.min((window.innerWidth - 32) * 0.46, 215)));
+    window.addEventListener('resize', updateRadius);
+    return () => window.removeEventListener('resize', updateRadius);
+  }, []);
+
+  return <div className="entry-splash__sphere" aria-hidden="true" style={{ width: radius * 2, height: radius * 2 }}>
+    <div className="entry-splash__sphere-spin">
+      {SPHERE_POINTS.map((point, index) => <span
+        className="entry-splash__sphere-letter"
+        key={index}
+        style={{
+          opacity: 0.3 + ((point.z + 1) / 2) * 0.45,
+          transform: `translate3d(${point.x * radius * 0.88}px, ${point.y * radius * 0.88}px, ${point.z * radius * 0.88}px) translate(-50%, -50%)`,
+        }}
+      >{point.letter}</span>)}
+    </div>
+  </div>;
+}
 
 function EntrySplashBrand({ reducedMotion, decoding }: { reducedMotion: boolean; decoding: boolean }) {
   const [displayName, setDisplayName] = useState(() =>
@@ -351,12 +388,13 @@ function App() {
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router/></WouterRouter>
       <Toaster/>
     </div>
-    {splashPhase !== 'done' && <div className={`entry-splash${splashPhase === 'fading' ? ' entry-splash--fading' : ''}`} aria-hidden={splashPhase === 'fading' || undefined} role={splashPhase === 'visible' || splashPhase === 'holding' ? 'status' : undefined} aria-label={splashPhase === 'visible' || splashPhase === 'holding' ? PRODUCT_NAME : undefined} data-testid="entry-splash">
-      <div className="entry-splash__particles" aria-hidden="true">
-        <span/><span/><span/><span/><span/><span/>
-      </div>
-      <div className="entry-splash__core" aria-label={PRODUCT_NAME}>
+    {splashPhase !== 'done' && <div className={`entry-splash${splashPhase === 'fading' ? ' entry-splash--fading' : ''}`} aria-hidden={splashPhase === 'fading' || undefined} role={splashPhase === 'visible' || splashPhase === 'holding' ? 'status' : undefined} aria-label={splashPhase === 'visible' || splashPhase === 'holding' ? PRODUCT_NAME : undefined} data-testid="entry-splash" data-decode-duration-ms={DECODE_DURATION_MS}>
+      <div className="entry-splash__scene">
+        <EntrySplashSphere/>
+        <div className="entry-splash__identity">
+          <span className="entry-splash__logo-crop" aria-hidden="true"><img src="/logo.png" alt="" /></span>
         <EntrySplashBrand reducedMotion={reducedMotion} decoding={splashPhase === 'visible' && !reducedMotion}/>
+        </div>
       </div>
     </div>}
   </TooltipProvider></QueryClientProvider></I18nProvider>;
