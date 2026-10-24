@@ -215,12 +215,47 @@ test('does not treat template, unverified, or non-BLS records as static fallback
   }
 });
 
-test('checked-in BLS archive is an empty, clearly marked template rather than sample data', () => {
+test('checked-in California archive contains the extracted series but keeps its source unverified', async () => {
   const archive = JSON.parse(readFileSync(
     new URL('../../public/data/bls-oews-history.json', import.meta.url),
     'utf8',
-  )) as { templateOnly: boolean; officialDownloadPage: string; records: unknown[] };
-  assert.equal(archive.templateOnly, true);
-  assert.equal(archive.officialDownloadPage, 'https://www.bls.gov/oes/tables.htm');
-  assert.deepEqual(archive.records, []);
+  )) as { templateOnly: boolean; records: Array<Record<string, unknown>> };
+  assert.equal(archive.templateOnly, false);
+  assert.equal(archive.records.length, 1);
+  assert.equal(archive.records[0].recordStatus, 'user-supplied-unverified');
+  assert.equal(archive.records[0].areaName, 'California');
+  assert.deepEqual(archive.records[0].missingYears, [2011, 2012]);
+  assert.equal(archive.records[0].publicationDate, null);
+  assert.equal(archive.records[0].sourceUrl, null);
+
+  const result = await fetchBlsHistoryWithArchiveFallback(
+    '/api/occupations/history',
+    '/data/bls-oews-history.json',
+    '13-1071.00',
+    {
+      signal: new AbortController().signal,
+      fetcher: async (input) => {
+        if (String(input).includes('/data/')) {
+          return new Response(JSON.stringify(archive), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response('No live series for this test', { status: 404 });
+      },
+    },
+  );
+  assert.equal(result.sourceMode, 'uploaded-unverified');
+  assert.equal(result.socCode, '13-1071');
+  assert.equal(result.points.length, 16);
+  assert.deepEqual(result.missingYears, [2011, 2012]);
+  assert.deepEqual(result.points[0], { year: 2009, employment: 19_150 });
+  assert.deepEqual(result.points.at(-1), { year: 2026, employment: 104_000 });
+});
+
+test('localizes the California source and limitations notice in all three app languages', () => {
+  const translations = readFileSync(new URL('./i18n.tsx', import.meta.url), 'utf8');
+  assert.match(translations, /Source: California government open-data mirror, not national data/u);
+  assert.match(translations, /来源：加州政府开放数据镜像，非全国数据，缺少2011-2012年/u);
+  assert.match(translations, /Sumber: cermin data terbuka kerajaan California/u);
 });

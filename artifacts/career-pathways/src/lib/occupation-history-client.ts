@@ -6,11 +6,13 @@ export type OccupationHistoryView = {
   occupationCode: string;
   socCode: string;
   sourceName: string;
-  sourceUrl: string;
+  sourceUrl: string | null;
   refreshedAt: string;
   points: EmploymentPoint[];
-  sourceMode: 'live' | 'archive';
-  publicationDate?: string;
+  sourceMode: 'live' | 'archive' | 'uploaded-unverified';
+  publicationDate?: string | null;
+  areaName?: string;
+  missingYears?: number[];
 };
 
 type RetryOptions = {
@@ -95,7 +97,7 @@ function parseLiveHistory(value: unknown, expectedOccupationCode: string): Occup
   };
 }
 
-async function loadVerifiedArchiveRecord(
+async function loadArchiveRecord(
   url: string,
   occupationCode: string,
   options: ArchiveOptions,
@@ -121,18 +123,48 @@ async function loadVerifiedArchiveRecord(
   if (records.length !== 1) return null;
 
   const record = records[0];
-  if (record.recordStatus !== 'verified' ||
-      typeof record.occupationTitle !== 'string' ||
+  if (typeof record.occupationTitle !== 'string' ||
       !record.occupationTitle.trim() ||
       typeof record.sourceName !== 'string' ||
-      !record.sourceName.includes('Bureau of Labor Statistics') ||
-      !isBlsUrl(record.sourceUrl) ||
-      !isIsoDate(record.publicationDate) ||
       !isIsoDateTime(record.retrievedAt)) {
     return null;
   }
   const points = parseEmploymentPoints(record.points, 2);
   if (!points) return null;
+
+  if (record.recordStatus === 'user-supplied-unverified') {
+    const missingYears = record.missingYears;
+    if (record.sourceUrl !== null ||
+        record.publicationDate !== null ||
+        record.areaName !== 'California' ||
+        record.areaType !== 'California statewide' ||
+        !record.sourceName.toLowerCase().includes('not independently verified') ||
+        !Array.isArray(missingYears) ||
+        missingYears.some((year) =>
+          !Number.isInteger(year) || points.some((point) => point.year === year),
+        )) {
+      return null;
+    }
+    return {
+      occupationCode,
+      socCode: match[1],
+      sourceName: record.sourceName,
+      sourceUrl: null,
+      refreshedAt: record.retrievedAt,
+      points,
+      sourceMode: 'uploaded-unverified',
+      publicationDate: null,
+      areaName: record.areaName,
+      missingYears: missingYears as number[],
+    };
+  }
+
+  if (record.recordStatus !== 'verified' ||
+      !record.sourceName.includes('Bureau of Labor Statistics') ||
+      !isBlsUrl(record.sourceUrl) ||
+      !isIsoDate(record.publicationDate)) {
+    return null;
+  }
   return {
     occupationCode,
     socCode: match[1],
@@ -216,7 +248,7 @@ export async function fetchBlsHistoryWithArchiveFallback(
   } catch (error) {
     if (options.signal.aborted) throw error;
     try {
-      const archiveHistory = await loadVerifiedArchiveRecord(
+      const archiveHistory = await loadArchiveRecord(
         archiveUrl,
         occupationCode,
         options,

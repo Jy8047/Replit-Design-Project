@@ -242,15 +242,29 @@ export function CareerSkillsPage({
     occupationCode: string;
     socCode: string;
     sourceName: string;
-    sourceUrl: string;
+    sourceUrl: string | null;
     refreshedAt: string;
     points: { year: number; employment: number }[];
-    sourceMode: 'live' | 'archive';
-    publicationDate?: string;
+    sourceMode: 'live' | 'archive' | 'uploaded-unverified';
+    publicationDate?: string | null;
+    areaName?: string;
+    missingYears?: number[];
   } | null>(null);
   const [historyState, setHistoryState] = useState<'idle' | 'loading' | 'retrying' | 'ready' | 'archive' | 'empty' | 'unavailable' | 'error'>('idle');
   const [historyRefresh, setHistoryRefresh] = useState(0);
   const [historyRetryCount, setHistoryRetryCount] = useState(0);
+  const historyChartPoints = history?.points.length
+    ? (() => {
+        if (!history.missingYears?.length) return history.points;
+        const pointsByYear = new Map(history.points.map((point) => [point.year, point]));
+        const firstYear = Math.min(...history.points.map((point) => point.year));
+        const lastYear = Math.max(...history.points.map((point) => point.year));
+        return Array.from({ length: lastYear - firstYear + 1 }, (_, index) => {
+          const year = firstYear + index;
+          return pointsByYear.get(year) ?? { year, employment: null };
+        });
+      })()
+    : [];
   const confirmedSkills = readConfirmedProfileSkills();
   const profileValues = confirmedSkills.length ? profileDimensions(confirmedSkills) : null;
   const profileRadarData = profileValues
@@ -309,9 +323,9 @@ export function CareerSkillsPage({
       .then((body) => {
         if (controller.signal.aborted) return;
         setHistory(body);
-        setHistoryState(body.sourceMode === 'archive'
-          ? 'archive'
-          : body.points.length ? 'ready' : 'empty');
+        setHistoryState(body.sourceMode === 'live'
+          ? body.points.length ? 'ready' : 'empty'
+          : 'archive');
       })
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -467,7 +481,9 @@ export function CareerSkillsPage({
               <DialogHeader>
                 <DialogTitle>{localizeContent(selectedOccupation.occupation, locale)}</DialogTitle>
                 <DialogDescription>
-                  {t('Historical U.S. employment estimates from BLS OEWS. These annual estimates describe the past, not a forecast.')}
+                  {history?.sourceMode === 'uploaded-unverified'
+                    ? t('Historical California estimates are from a user-uploaded CSV; source is not independently verified.')
+                    : t('Historical U.S. employment estimates from BLS OEWS. These annual estimates describe the past, not a forecast.')}
                 </DialogDescription>
               </DialogHeader>
               {selectedOccupation.catalog && (
@@ -475,9 +491,11 @@ export function CareerSkillsPage({
                   <a href={selectedOccupation.catalog.sourceUrl} target="_blank" rel="noopener noreferrer">
                     {t('O*NET occupation details')} · {selectedOccupation.catalog.onetCode}
                   </a>
-                  <a href="https://www.bls.gov/oes/tables.htm" target="_blank" rel="noopener noreferrer">
-                    {t('BLS OEWS source')}
-                  </a>
+                  {history?.sourceMode !== 'uploaded-unverified' && (
+                    <a href="https://www.bls.gov/oes/tables.htm" target="_blank" rel="noopener noreferrer">
+                      {t('BLS OEWS source')}
+                    </a>
+                  )}
                 </div>
               )}
               {selectedOccupation.catalog && !selectedOccupation.catalog.onetCode.endsWith('.00') && (
@@ -527,16 +545,28 @@ export function CareerSkillsPage({
                       })}
                     </div>
                   )}
+                  {history.sourceMode === 'uploaded-unverified' && (
+                    <div role="status" className="panel" data-testid="status-occupation-history-unverified">
+                      {t('Source: California government open-data mirror, not national data, missing 2011–2012. Source not independently verified; every row in the uploaded file is labeled “1st Qtr”.')}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                     <p style={{ margin: 0, fontSize: 12, color: '#6e776b' }}>
-                      {t('Source')}: {history.sourceName} · {t('BLS occupation group')} {history.socCode} · {t('Last checked')}{' '}
-                      {new Intl.DateTimeFormat(tag, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(history.refreshedAt))}
+                      {history.sourceMode === 'uploaded-unverified'
+                        ? <>{t('Source')}: {t('User-uploaded CSV; source attribution is not independently verified')} · {t('Area')}: {t('California statewide')} · {t('Imported from uploaded CSV')}{' '}</>
+                        : <>{t('Source')}: {history.sourceName} · {t('BLS occupation group')} {history.socCode} · {t('Last checked')}{' '}</>}
+                      {new Intl.DateTimeFormat(
+                        tag,
+                        history.sourceMode === 'uploaded-unverified'
+                          ? { dateStyle: 'medium' }
+                          : { dateStyle: 'medium', timeStyle: 'short' },
+                      ).format(new Date(history.refreshedAt))}
                     </p>
                     <button className="btn" type="button" onClick={() => setHistoryRefresh(value => value + 1)} data-testid="button-refresh-occupation-history">
                       <RefreshCw size={14} /> {t('Refresh for latest data')}
                     </button>
                   </div>
-                  {history.sourceMode === 'archive' && (
+                  {history.sourceMode === 'archive' && history.sourceUrl && (
                     <a href={history.sourceUrl} target="_blank" rel="noopener noreferrer" data-testid="link-occupation-history-archive-source">
                       {t('Open the official BLS OEWS tables and downloads')} <ArrowUpRight size={14} />
                     </a>
@@ -544,7 +574,7 @@ export function CareerSkillsPage({
                   {history.points.length >= 2 ? (
                     <div data-testid="chart-occupation-history" style={{ width: '100%', height: 320, marginTop: 4 }}>
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={history.points} margin={{ top: 12, right: 16, bottom: 8, left: 4 }}>
+                        <LineChart data={historyChartPoints} margin={{ top: 12, right: 16, bottom: 8, left: 4 }}>
                           <CartesianGrid stroke="#e6e9e1" strokeDasharray="3 3" />
                           <XAxis dataKey="year" tick={{ fill: '#637064', fontSize: 11 }} />
                           <YAxis

@@ -1,29 +1,108 @@
 {
   "schemaVersion": 1,
-  "templateOnly": true,
-  "sourceName": "U.S. Bureau of Labor Statistics — Occupational Employment and Wage Statistics (OEWS)",
-  "officialDownloadPage": "https://www.bls.gov/oes/tables.htm",
-  "downloadInstructions": [
-    "Download the national annual OEWS employment estimates from the official BLS OEWS tables page.",
-    "Add one record per six-digit SOC occupation. Keep annual employment estimates only; do not substitute wages, projections, or neighboring occupations.",
-    "Record the official release/table URL, its publication date, and the date the file was retrieved.",
-    "Include only values verified against that BLS release. Omit suppressed or unavailable observations.",
-    "After replacing this template with verified records, set templateOnly to false."
-  ],
+  "templateOnly": false,
+  "datasetStatus": "user-supplied-unverified",
+  "sourceName": "User-uploaded California series; source attribution is not independently verified",
+  "referenceForFutureVerification": "https://www.bls.gov/oes/tables.htm",
   "recordSchema": {
-    "socCode": "Six-digit SOC code in NN-NNNN format, matching the occupation's O*NET code prefix.",
-    "occupationTitle": "Exact occupation title used in the selected BLS OEWS release.",
-    "sourceName": "U.S. Bureau of Labor Statistics — OEWS.",
-    "sourceUrl": "Direct official BLS release or table URL for this record.",
-    "publicationDate": "Actual BLS publication date in YYYY-MM-DD format.",
-    "retrievedAt": "Actual download/verification timestamp in ISO 8601 format.",
-    "recordStatus": "Must be verified only after checking every value against the cited BLS source.",
+    "socCode": "Six-digit SOC code in NN-NNNN format.",
+    "areaName": "Geographic name represented by the point series.",
+    "areaType": "Normalized geography label. The uploaded California rows used two spellings of statewide area type.",
+    "sourceUrl": "null when the uploaded file does not include a verifiable direct source URL.",
+    "publicationDate": "null when the uploaded file does not provide a verified release date.",
+    "retrievedAt": "Timestamp when this local snapshot was assembled.",
+    "recordStatus": "verified only after source comparison; user-supplied-unverified when origin or values have not been independently checked.",
+    "reportedQuarter": "Quarter label exactly as shown in the uploaded CSV.",
+    "missingYears": "Years without observations; the chart leaves visible breaks for these years.",
     "points": [
       {
-        "year": "integer calendar year from the BLS annual table",
-        "employment": "non-negative integer annual employment estimate from BLS"
+        "year": "integer year as supplied by the uploaded CSV",
+        "employment": "non-negative integer from the CSV's Number of Employed field"
       }
     ]
   },
-  "records": []
+  "records": [
+    {
+      "socCode": "13-1071",
+      "occupationTitle": "Human Resources Specialists",
+      "areaName": "California",
+      "areaType": "California statewide",
+      "sourceName": "California government open-data mirror (attributed by uploader; not independently verified)",
+      "sourceUrl": null,
+      "publicationDate": null,
+      "retrievedAt": "2026-10-24T16:02:21Z",
+      "recordStatus": "user-supplied-unverified",
+      "reportedQuarter": "1st Qtr",
+      "missingYears": [
+        2011,
+        2012
+      ],
+      "points": [
+        {
+          "year": 2009,
+          "employment": 19150
+        },
+        {
+          "year": 2010,
+          "employment": 17870
+        },
+        {
+          "year": 2013,
+          "employment": 43100
+        },
+        {
+          "year": 2014,
+          "employment": 47990
+        },
+        {
+          "year": 2015,
+          "employment": 50790
+        },
+        {
+          "year": 2016,
+          "employment": 54050
+        },
+        {
+          "year": 2017,
+          "employment": 56950
+        },
+        {
+          "year": 2018,
+          "employment": 60260
+        },
+        {
+          "year": 2019,
+          "employment": 64980
+        },
+        {
+          "year": 2020,
+          "employment": 71130
+        },
+        {
+          "year": 2021,
+          "employment": 75340
+        },
+        {
+          "year": 2022,
+          "employment": 84590
+        },
+        {
+          "year": 2023,
+          "employment": 93790
+        },
+        {
+          "year": 2024,
+          "employment": 96920
+        },
+        {
+          "year": 2025,
+          "employment": 104880
+        },
+        {
+          "year": 2026,
+          "employment": 104000
+        }
+      ]
+    }
+  ]
 }

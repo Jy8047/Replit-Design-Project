@@ -39,6 +39,20 @@ sub-occupation is aggregated to that broader group, display source and refresh
 time, and show an explicit unavailable state when BLS returns no validated
 annual series.
 
+## User-supplied employment series
+
+A historical employment series without a verifiable source URL or publication
+date may be displayed only as explicitly user-supplied and unverified, with its
+geographic scope and missing years visible. Never mark it verified or imply that
+the supplied attribution was independently confirmed.
+
+**Why:** An uploaded file can contain plausible occupation values while lacking
+the metadata needed to establish its origin or release date.
+
+**How to apply:** Keep such rows out of verified-source states, preserve null
+source/date fields instead of inventing them, and require explicit user approval
+before showing the series.
+
 **Why:** The user explicitly set these trust and consent requirements for the
 SDC Hackathon Domain 1 application.
 
