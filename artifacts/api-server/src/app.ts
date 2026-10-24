@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { createCvExtractionRouter } from "./routes/cv-extraction";
+import { createOccupationHistoryRouter } from "./routes/occupation-history";
 
 const app: Express = express();
 
@@ -29,6 +30,7 @@ app.use(
 app.use(cors());
 // Reject PDF endpoint encodings/types before general parsers can inflate a body.
 app.use("/api", createCvExtractionRouter());
+app.use("/api", createOccupationHistoryRouter());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -24,6 +24,21 @@ occupation title without the corresponding rated skill records.
 release dates from observation/check dates, and omit unsupported candidates
 rather than borrowing a neighbouring occupation's skills.
 
+## Employment history source boundary
+
+Use BLS OEWS for historical employment estimates; the existing O*NET catalog
+provides occupation codes and descriptions, not employment history. Do not
+present O*NET competency data as a labor-market trend or forecast.
+
+**Why:** The team chose BLS for historical employment and the local O*NET
+catalog for occupation identity. The live BLS response still needs verification
+before any chart is treated as available evidence.
+
+**How to apply:** Match the BLS six-digit SOC series, disclose when an O*NET
+sub-occupation is aggregated to that broader group, display source and refresh
+time, and show an explicit unavailable state when BLS returns no validated
+annual series.
+
 **Why:** The user explicitly set these trust and consent requirements for the
 SDC Hackathon Domain 1 application.
 

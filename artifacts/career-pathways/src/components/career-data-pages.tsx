@@ -1,13 +1,20 @@
-import { ArrowUpRight, Check, Lightbulb } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowUpRight, Check, Lightbulb, RefreshCw } from 'lucide-react';
 import { Link } from 'wouter';
 import {
+  CartesianGrid,
   Legend,
+  Line,
+  LineChart,
   PolarAngleAxis,
   PolarGrid,
   PolarRadiusAxis,
   Radar,
   RadarChart,
   ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
 import {
   explainCareerMatches,
@@ -28,6 +35,13 @@ import {
 import { CatalogAttribution, OccupationCatalogDetails } from './occupation-catalog-details';
 import { PageHeading } from '@/components/page-heading';
 import { localizeContent, useI18n } from '@/lib/i18n';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export type DatasetState = DatasetResult & {
   loading: boolean;
@@ -111,7 +125,13 @@ function readConfirmedProfileSkills(): string[] {
   }
 }
 
-function RecordProvenance({ record }: { record: CareerRecord }) {
+function RecordProvenance({
+  record,
+  onSelectOccupation,
+}: {
+  record: CareerRecord;
+  onSelectOccupation: (record: CareerRecord) => void;
+}) {
   const { t, locale, tag } = useI18n();
   const directionLabel = record.catalog ? t('Market trend unknown') : t(record.trendDirection.charAt(0).toUpperCase() + record.trendDirection.slice(1));
   const citation = getVerifiedCitation(record);
@@ -133,7 +153,22 @@ function RecordProvenance({ record }: { record: CareerRecord }) {
           marginBottom: 7,
         }}
       >
-        <span className="tag">{localizeContent(record.occupation, locale)}</span>
+        <button
+          type="button"
+          className="tag"
+          onClick={() => onSelectOccupation(record)}
+          aria-label={t('Show historical employment for {occupation}', {
+            occupation: localizeContent(record.occupation, locale),
+          })}
+          data-testid={`button-occupation-history-${record.catalog?.onetCode ?? record.occupation}`}
+          style={{
+            cursor: 'pointer',
+            font: 'inherit',
+            lineHeight: 'inherit',
+          }}
+        >
+          {localizeContent(record.occupation, locale)}
+        </button>
         <span
           className={`tag ${
             record.trendDirection === 'declining' ? 'trend-down' : 'trend-up'
@@ -199,7 +234,18 @@ export function CareerSkillsPage({
 }: {
   dataset: DatasetState;
 }) {
-  const { t, locale } = useI18n();
+  const { t, locale, tag } = useI18n();
+  const [selectedOccupation, setSelectedOccupation] = useState<CareerRecord | null>(null);
+  const [history, setHistory] = useState<{
+    occupationCode: string;
+    socCode: string;
+    sourceName: string;
+    sourceUrl: string;
+    refreshedAt: string;
+    points: { year: number; employment: number }[];
+  } | null>(null);
+  const [historyState, setHistoryState] = useState<'idle' | 'loading' | 'ready' | 'empty' | 'unavailable' | 'error'>('idle');
+  const [historyRefresh, setHistoryRefresh] = useState(0);
   const confirmedSkills = readConfirmedProfileSkills();
   const profileValues = confirmedSkills.length ? profileDimensions(confirmedSkills) : null;
   const profileRadarData = profileValues
@@ -227,6 +273,59 @@ export function CareerSkillsPage({
   const verifiedCount = dataset.records.filter(
     (record) => record.recordStatus === 'verified',
   ).length;
+
+  useEffect(() => {
+    if (!selectedOccupation) {
+      setHistory(null);
+      setHistoryState('idle');
+      return;
+    }
+    const occupationCode = selectedOccupation.catalog?.onetCode;
+    if (!occupationCode) {
+      setHistory(null);
+      setHistoryState('unavailable');
+      return;
+    }
+
+    const controller = new AbortController();
+    setHistory(null);
+    setHistoryState('loading');
+    const url = `${import.meta.env.BASE_URL}api/occupations/history?occupationCode=${encodeURIComponent(occupationCode)}&refresh=${historyRefresh}`;
+    void fetch(url, { signal: controller.signal, cache: 'no-store' })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error('BLS_HISTORY_UNAVAILABLE');
+        if (
+          typeof body?.occupationCode !== 'string' ||
+          typeof body?.socCode !== 'string' ||
+          typeof body?.sourceName !== 'string' ||
+          typeof body?.sourceUrl !== 'string' ||
+          typeof body?.refreshedAt !== 'string' ||
+          !Array.isArray(body?.points) ||
+          body.points.some((point: unknown) =>
+            !point || typeof point !== 'object' ||
+            !Number.isInteger((point as { year?: unknown }).year) ||
+            typeof (point as { employment?: unknown }).employment !== 'number' ||
+            !Number.isFinite((point as { employment?: number }).employment),
+          )
+        ) {
+          throw new Error('BLS_RESPONSE_INVALID');
+        }
+        return body as NonNullable<typeof history>;
+      })
+      .then((body) => {
+        if (controller.signal.aborted) return;
+        setHistory(body);
+        setHistoryState(body.points.length ? 'ready' : 'empty');
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setHistory(null);
+          setHistoryState('error');
+        }
+      });
+    return () => controller.abort();
+  }, [historyRefresh, selectedOccupation]);
 
   return (
     <>
@@ -345,12 +444,132 @@ export function CareerSkillsPage({
                 <RecordProvenance
                   key={`${record.occupation}-${record.skill}-${recordIndex}`}
                   record={record}
+                  onSelectOccupation={setSelectedOccupation}
                 />
               ))}
             </article>
           ))}
         </div>
       )}
+      <Dialog
+        open={selectedOccupation !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedOccupation(null);
+            setHistory(null);
+            setHistoryState('idle');
+          }
+        }}
+      >
+        <DialogContent
+          closeLabel={t('Close')}
+          closeTestId="button-close-occupation-history"
+          className="sm:max-w-3xl"
+          data-testid="dialog-occupation-history"
+        >
+          {selectedOccupation && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{localizeContent(selectedOccupation.occupation, locale)}</DialogTitle>
+                <DialogDescription>
+                  {t('Historical U.S. employment estimates from BLS OEWS. These annual estimates describe the past, not a forecast.')}
+                </DialogDescription>
+              </DialogHeader>
+              {selectedOccupation.catalog && (
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', fontSize: 12 }}>
+                  <a href={selectedOccupation.catalog.sourceUrl} target="_blank" rel="noopener noreferrer">
+                    {t('O*NET occupation details')} · {selectedOccupation.catalog.onetCode}
+                  </a>
+                  <a href="https://www.bls.gov/oes/tables.htm" target="_blank" rel="noopener noreferrer">
+                    {t('BLS OEWS source')}
+                  </a>
+                </div>
+              )}
+              {selectedOccupation.catalog && !selectedOccupation.catalog.onetCode.endsWith('.00') && (
+                <p role="note" style={{ margin: 0, fontSize: 11, color: '#737a70' }}>
+                  {t('This O*NET sub-occupation is shown using its broader six-digit BLS SOC group.')}
+                </p>
+              )}
+              {historyState === 'loading' && (
+                <div role="status" data-testid="status-occupation-history-loading" className="panel">
+                  {t('Loading historical employment data…')}
+                </div>
+              )}
+              {historyState === 'error' && (
+                <div role="alert" data-testid="error-occupation-history" className="panel">
+                  <p style={{ marginTop: 0 }}>{t('Historical employment data could not be loaded. Check your connection and try again.')}</p>
+                  <button className="btn" type="button" onClick={() => setHistoryRefresh(value => value + 1)} data-testid="button-retry-occupation-history">
+                    {t('Try again')} <RefreshCw size={14} />
+                  </button>
+                </div>
+              )}
+              {historyState === 'unavailable' && (
+                <div role="status" className="panel" data-testid="status-occupation-history-unavailable">
+                  {t('No O*NET occupation code is available for this record, so BLS history cannot be matched safely.')}
+                </div>
+              )}
+              {historyState === 'empty' && (
+                <div role="status" className="panel" data-testid="status-occupation-history-empty">
+                  {t('BLS did not return historical employment observations for this occupation.')}
+                </div>
+              )}
+              {historyState === 'ready' && history && (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <p style={{ margin: 0, fontSize: 12, color: '#6e776b' }}>
+                      {t('Source')}: {history.sourceName} · {t('BLS occupation group')} {history.socCode} · {t('Last checked')}{' '}
+                      {new Intl.DateTimeFormat(tag, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(history.refreshedAt))}
+                    </p>
+                    <button className="btn" type="button" onClick={() => setHistoryRefresh(value => value + 1)} data-testid="button-refresh-occupation-history">
+                      <RefreshCw size={14} /> {t('Refresh data')}
+                    </button>
+                  </div>
+                  {history.points.length >= 2 ? (
+                    <div data-testid="chart-occupation-history" style={{ width: '100%', height: 320, marginTop: 4 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={history.points} margin={{ top: 12, right: 16, bottom: 8, left: 4 }}>
+                          <CartesianGrid stroke="#e6e9e1" strokeDasharray="3 3" />
+                          <XAxis dataKey="year" tick={{ fill: '#637064', fontSize: 11 }} />
+                          <YAxis
+                            tick={{ fill: '#637064', fontSize: 11 }}
+                            tickFormatter={(value: number) => new Intl.NumberFormat(tag, { notation: 'compact' }).format(value)}
+                            width={54}
+                          />
+                          <Tooltip
+                            formatter={(value) => [new Intl.NumberFormat(tag).format(Number(value)), t('Employment estimate')]}
+                            labelFormatter={(year) => `${t('Year')} ${year}`}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="employment"
+                            name={t('Employment estimate')}
+                            stroke="#2f746d"
+                            strokeWidth={2.5}
+                            dot={{ r: 3, fill: '#2f746d' }}
+                            activeDot={{ r: 5 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div role="status" className="panel" data-testid="status-occupation-history-single-point">
+                      {t('BLS returned only one annual estimate; there is not enough history to draw a trend line.')}
+                      {history.points[0] && (
+                        <strong style={{ display: 'block', marginTop: 8 }}>
+                          {history.points[0].year}: {new Intl.NumberFormat(tag).format(history.points[0].employment)} {t('estimated jobs')}
+                        </strong>
+                      )}
+                    </div>
+                  )}
+                  <p style={{ margin: 0, fontSize: 11, color: '#777f74' }}>
+                    {t('Historical employment estimates are not forecasts. BLS occupation definitions may change across years.')}
+                  </p>
+                </>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
       <style>{`.skills-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}@media(max-width:950px){.skills-list{grid-template-columns:1fr}}.trend-down{background:#f8f0e9;color:#805f46;border-color:#e8d6c8}.trend-up{background:#edf2e9;color:#4c7156;border-color:#dce4d9}`}</style>
     </>
   );
