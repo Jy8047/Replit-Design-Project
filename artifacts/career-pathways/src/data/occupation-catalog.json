@@ -5,7 +5,7 @@
   "checkedOn": "2026-10-24",
   "releaseUrl": "https://www.onetcenter.org/whatsnew.html#2026082500",
   "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-  "attribution": "O*NET 31.0 Database, U.S. Department of Labor, Employment and Training Administration (USDOL/ETA), CC BY 4.0. FuturePath selected a subset, standardized two software labels, and added translations, categories and conditional SDG interpretations. USDOL/ETA has not approved, endorsed, or tested these modifications.",
+  "attribution": "O*NET 31.0 Database, U.S. Department of Labor, Employment and Training Administration (USDOL/ETA), CC BY 4.0. PivotPath AI selected a subset, standardized two software labels, and added translations, categories and conditional SDG interpretations. USDOL/ETA has not approved, endorsed, or tested these modifications.",
   "selectionMethod": "Top 2 essential skills, top 2 transferable skills and top 4 knowledge domains by unsuppressed importance rating; up to 2 explicitly listed software examples. App-selected subset, not a complete employer requirements list. Importance ratings are not used as matching weights. No wage, growth or demand prediction.",
   "sources": [
     {

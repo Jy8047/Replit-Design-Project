@@ -19,13 +19,12 @@ import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter';
 import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronRight, Compass, FileUser, Gauge, Menu, Network, RotateCcw, Settings2, ShieldCheck, Sparkles, Target, Trash2, X } from 'lucide-react';
 import { I18nProvider, useI18n, type Locale } from '@/lib/i18n';
+import { PRODUCT_NAME, PRODUCT_TAGLINE, PRODUCT_DESCRIPTION, DEMO_IMPLEMENTATION_NOTICE, BRAND_PAGE_LABELS, applyBrandMetadata } from '@/lib/brand';
 import {
   combineCareerDatasets,
 } from '@/lib/career-data';
 
-const defaultTitle = 'Career Pathways';
 const queryClient = new QueryClient();
-const STORAGE_TITLE = 'career-pathways-title';
 const STORAGE_PROFILE = PROFILE_STORAGE_KEY;
 const navGroups = [
   { label: 'WORKSPACE', links: [
@@ -61,16 +60,22 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
-function Shell({ children, title, hasProfile }: { children: ReactNode; title: string; hasProfile: boolean }) {
+function Shell({ children, hasProfile }: { children: ReactNode; hasProfile: boolean }) {
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const { locale, setLocale, t } = useI18n();
-  useEffect(() => { document.title = title === defaultTitle ? t('Career Pathways') : title; }, [title, locale]);
+  useEffect(() => {
+    applyBrandMetadata(document, {
+      pageLabel: t(BRAND_PAGE_LABELS[location] ?? ''),
+      description: t(PRODUCT_DESCRIPTION),
+      locale,
+    });
+  }, [location, locale, t]);
   return <div className="app-shell">
     <aside className={`sidebar ${menuOpen ? 'open' : ''}`} aria-label={t('Main navigation')}>
       <div style={{display:'flex',alignItems:'center',gap:11,padding:'0 10px 27px'}}>
         <div className="brand-mark"><Compass size={19}/></div>
-        <div><div style={{font:'700 15px Manrope',letterSpacing:'-.03em'}}>{t('Pathways')}</div><div style={{fontSize:10,color:'#b7c3b8',marginTop:2}}>{t('CAREER WORKSPACE')}</div></div>
+        <div><div style={{font:'700 15px Manrope',letterSpacing:'-.03em'}}>{PRODUCT_NAME}</div><div style={{fontSize:10,color:'#b7c3b8',marginTop:2,lineHeight:1.5}}>{t(PRODUCT_TAGLINE)}</div></div>
         <button className="mobile-menu" style={{marginLeft:'auto',color:'#f2eee3',borderColor:'#536459'}} onClick={()=>setMenuOpen(false)} aria-label={t('Close menu')} data-testid="button-close-menu"><X size={17}/></button>
       </div>
       <div style={{padding:'0 5px',display:'flex',flexDirection:'column',gap:24}}>
@@ -97,7 +102,7 @@ function Shell({ children, title, hasProfile }: { children: ReactNode; title: st
       <header className="topbar">
         <div style={{display:'flex',alignItems:'center',gap:12}}>
           <button className="mobile-menu" onClick={()=>setMenuOpen(true)} aria-label={t('Open menu')} data-testid="button-open-menu"><Menu size={19}/></button>
-          <div className="top-title" style={{fontSize:14,fontWeight:700,color:'#34493e'}} data-testid="text-workspace-title">{title}</div>
+          <div className="top-title" style={{fontSize:14,fontWeight:700,color:'#34493e'}} data-testid="text-workspace-title">{PRODUCT_NAME}</div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <div className="language-switch" role="group" aria-label={t('Choose language')} data-testid="language-switch">
@@ -111,6 +116,7 @@ function Shell({ children, title, hasProfile }: { children: ReactNode; title: st
         </div>
       </header>
       <main className="content">{children}</main>
+      <footer style={{padding:'0 28px 24px',color:'#737a70',fontSize:11,lineHeight:1.6}}>{PRODUCT_NAME} · {t(PRODUCT_TAGLINE)}</footer>
     </div>
   </div>;
 }
@@ -128,9 +134,10 @@ function Home({ profile }: {profile:Profile|null}) {
     <div style={{background:'#e8eadf',borderRadius:20,padding:'clamp(24px,5vw,52px)',position:'relative',overflow:'hidden',marginBottom:28}}>
       <div style={{position:'absolute',right:-55,top:-75,width:290,height:290,border:'1px solid #cbd2c3',borderRadius:'50%'}}/><div style={{position:'absolute',right:-22,top:-42,width:220,height:220,border:'1px solid #cbd2c3',borderRadius:'50%'}}/>
       <div style={{position:'relative',maxWidth:700}}>
-        <div className="eyebrow" style={{color:'#627867'}}>{t('A practical place to explore what’s next')}</div>
-        <h1 style={{font:'700 clamp(34px,5vw,58px)/1.06 Manrope',letterSpacing:'-.055em',color:'#294237',maxWidth:650,margin:'17px 0'}}>{t('Your experience can open more than one door.')}</h1>
-        <p style={{fontSize:15,lineHeight:1.75,color:'#626e62',maxWidth:570,margin:'0 0 24px'}}>{t('Career Pathways helps you map what you already bring to work, explore adjacent roles, and decide what might be worth learning next. No predictions, just a clearer place to think.')}</p>
+        <div className="eyebrow" style={{color:'#627867',textTransform:'none'}}>{PRODUCT_NAME}</div>
+        <h1 style={{font:'700 clamp(34px,5vw,58px)/1.06 Manrope',letterSpacing:'-.055em',color:'#294237',maxWidth:650,margin:'17px 0'}}>{t(PRODUCT_TAGLINE)}</h1>
+        <p style={{fontSize:15,lineHeight:1.75,color:'#626e62',maxWidth:570,margin:'0 0 16px'}}>{t(PRODUCT_DESCRIPTION)}</p>
+        <p style={{fontSize:12,lineHeight:1.7,color:'#626e62',maxWidth:570,margin:'0 0 24px'}}>{t(DEMO_IMPLEMENTATION_NOTICE)}</p>
         <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
           <Link href="/profile" className="btn btn-primary" data-testid="link-home-profile">{t(profile?'Review your profile':'Build your profile')} <ArrowRight size={15}/></Link>
           <Link href="/roles" className="btn" data-testid="link-home-roles">{t('Browse role examples')} <ChevronRight size={15}/></Link>
@@ -196,23 +203,15 @@ export function LegacyScenariosPage() {
   <style>{`.scenario-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}@media(max-width:640px){.scenario-grid{grid-template-columns:1fr}}`}</style>
  </>;
 }
-function SettingsPage({title,onTitleChange,onReset}:{title:string;onTitleChange:(v:string)=>void;onReset:()=>void}) {
+function SettingsPage({onReset}:{onReset:()=>void}) {
  const { t } = useI18n();
- const [draft,setDraft]=useState(title);
- const [saved,setSaved]=useState(false);
- useEffect(()=>setDraft(title),[title]);
-  return <><PageHeading kicker={t('Make this space yours')} title={t('Workspace Settings')} description={t('Choose a name for this workspace and manage the information saved on this device.')}/>
-   <section className="panel" style={{maxWidth:740,marginBottom:16}}><div style={{display:'flex',gap:13,alignItems:'center',marginBottom:20}}><div style={{width:40,height:40,display:'grid',placeItems:'center',background:'#edf0e7',borderRadius:12,color:'#52705a'}}><Settings2 size={19}/></div><div><h2 style={{font:'700 17px Manrope',color:'#30483b',margin:0}}>{t('Workspace name')}</h2><p style={{fontSize:12,color:'#7a8176',margin:'4px 0 0'}}>{t('Only visible in this browser.')}</p></div></div>
-    <label className="label" htmlFor="workspace-name">{t('Project title')}</label><div className="settings-title-form"><input id="workspace-name" className="field" maxLength={48} value={draft} onChange={e=>{setDraft(e.target.value);setSaved(false)}} data-testid="input-workspace-title"/><button className="btn btn-primary" onClick={()=>{const name=draft.trim()||defaultTitle;setDraft(name);onTitleChange(name);setSaved(true)}} data-testid="button-save-title">{t('Save title')} <Check size={14}/></button></div>{saved&&<p style={{fontSize:11,color:'#52745b',margin:'9px 0 0'}} role="status" data-testid="status-title-saved">{t('Workspace title saved on this device.')}</p>}
-  </section>
-   <section className="panel" style={{maxWidth:740,borderColor:'#e4d7ca'}}><div style={{display:'flex',gap:13,alignItems:'start'}}><div style={{width:40,height:40,flex:'0 0 auto',display:'grid',placeItems:'center',background:'#f6eee5',borderRadius:12,color:'#9a6e50'}}><RotateCcw size={18}/></div><div><h2 style={{font:'700 17px Manrope',color:'#30483b',margin:'2px 0 6px'}}>{t('Reset workspace data')}</h2><p style={{fontSize:12,color:'#737a70',lineHeight:1.65,margin:'0 0 17px'}}>{t('This removes the saved profile and returns the title to “Career Pathways.” Your illustrative examples remain available. This action cannot be undone.')}</p><button className="btn btn-danger" onClick={()=>{if(window.confirm(t('Reset workspace data? Your saved profile and custom title will be permanently removed from this device.')))onReset()}} data-testid="button-reset-workspace"><Trash2 size={14}/> {t('Reset profile and title')}</button></div></div></section>
-   <div style={{marginTop:19,fontSize:11,color:'#8a9085',lineHeight:1.7,maxWidth:740}}>{t('Privacy note: profile and title are stored in your browser’s local storage. There is no account, backend, or cloud sync. Clearing browser storage will remove this information.')}</div>
-  <style>{`.settings-title-form{display:grid;grid-template-columns:1fr auto;gap:9px}@media(max-width:460px){.settings-title-form{grid-template-columns:1fr}}`}</style>
+  return <><PageHeading kicker={t('Your workspace')} title={t('Workspace Settings')} description={t('Manage the profile saved on this device.')}/>
+   <section className="panel" style={{maxWidth:740,borderColor:'#e4d7ca'}}><div style={{display:'flex',gap:13,alignItems:'start'}}><div style={{width:40,height:40,flex:'0 0 auto',display:'grid',placeItems:'center',background:'#f6eee5',borderRadius:12,color:'#9a6e50'}}><RotateCcw size={18}/></div><div><h2 style={{font:'700 17px Manrope',color:'#30483b',margin:'2px 0 6px'}}>{t('Reset workspace data')}</h2><p style={{fontSize:12,color:'#737a70',lineHeight:1.65,margin:'0 0 17px'}}>{t('This removes the saved profile and unconfirmed draft from this device. Occupation datasets remain available. This action cannot be undone.')}</p><button className="btn btn-danger" onClick={()=>{if(window.confirm(t('Reset the saved profile and unconfirmed draft on this device? This cannot be undone.')))onReset()}} data-testid="button-reset-workspace"><Trash2 size={14}/> {t('Reset saved profile')}</button></div></div></section>
+   <div style={{marginTop:19,fontSize:11,color:'#8a9085',lineHeight:1.7,maxWidth:740}}>{t('Profiles are stored in this browser. Clearing browser storage removes them; there is no profile cloud sync.')}</div>
  </>;
 }
 function Router() {
   const { t } = useI18n();
- const [title,setTitle]=useState(()=>localStorage.getItem(STORAGE_TITLE)||defaultTitle);
  const [profile,setProfile]=useState<Profile|null>(()=>readProfile());
  const [dataset,setDataset]=useState<DatasetState>({records:[],errors:[],loading:true,loadError:''});
  const [selected,setSelected]=useState(()=>localStorage.getItem('career-pathways-occupation')||'');
@@ -222,7 +221,6 @@ function Router() {
  const chooseOccupation=(occupation:string)=>{setSelected(occupation);localStorage.setItem('career-pathways-occupation',occupation);};
  const chooseScenario=(next:ScenarioId)=>{setScenario(next);localStorage.setItem('career-pathways-scenario',next);};
  const selectionProps={occupations,selectedOccupation,onSelectOccupation:chooseOccupation};
- useEffect(()=>localStorage.setItem(STORAGE_TITLE,title),[title]);
  useEffect(()=>{
   let cancelled=false;
   const loadDataset=async()=>{
@@ -249,8 +247,8 @@ function Router() {
  };
  const clearDraft=()=>{try{removeProfileDraft(sessionStorage);}catch{/* Storage access may be blocked. */}};
  const deleteProfile=()=>{localStorage.removeItem(STORAGE_PROFILE);clearDraft();setProfile(null);};
- const reset=()=>{localStorage.removeItem(STORAGE_PROFILE);localStorage.removeItem(STORAGE_TITLE);clearDraft();setProfile(null);setTitle(defaultTitle);};
-   return <RoutedErrorBoundary><Shell title={title===defaultTitle?t('Career Pathways'):title} hasProfile={Boolean(profile)}><PlanningStyles/><nav aria-label={t('Career exploration steps')} className="journey-nav" style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:11,marginBottom:24}}>{[['/profile','1. Profile'],['/skills','2. Skills radar'],['/roles','3. Role matches'],['/roadmap','4. Learning plan'],['/impact','5. SDG mapping']].map(([href,label])=><Link href={href} key={href} data-testid={`link-journey-${href.slice(1)}`}>{t(label)}</Link>)}</nav><Switch>
+ const reset=()=>{localStorage.removeItem(STORAGE_PROFILE);clearDraft();setProfile(null);};
+   return <RoutedErrorBoundary><Shell hasProfile={Boolean(profile)}><PlanningStyles/><nav aria-label={t('Career exploration steps')} className="journey-nav" style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:11,marginBottom:24}}>{[['/profile','1. Profile'],['/skills','2. Skills radar'],['/roles','3. Role matches'],['/roadmap','4. Learning plan'],['/impact','5. SDG mapping']].map(([href,label])=><Link href={href} key={href} data-testid={`link-journey-${href.slice(1)}`}>{t(label)}</Link>)}</nav><Switch>
    <Route path="/"><Home profile={profile}/></Route>
    <Route path="/profile"><ProfilePage profile={profile} onSave={saveProfile} onDelete={deleteProfile}/></Route>
    <Route path="/skills"><SkillsPage dataset={dataset}/></Route>
@@ -258,7 +256,7 @@ function Router() {
    <Route path="/roadmap"><DatasetFeedback dataset={dataset}/><PersonalisedRoadmapPage {...selectionProps} records={dataset.records} profileSkills={profile?.skills??''}/></Route>
    <Route path="/impact"><DatasetFeedback dataset={dataset}/><OccupationImpactPage {...selectionProps}/></Route>
    <Route path="/scenarios"><DatasetFeedback dataset={dataset}/><FutureScenarioPage scenario={scenario} onScenarioChange={chooseScenario} records={dataset.records} profileSkills={profile?.skills??''}/></Route>
-   <Route path="/settings"><SettingsPage title={title} onTitleChange={setTitle} onReset={reset}/></Route>
+   <Route path="/settings"><SettingsPage onReset={reset}/></Route>
    <Route component={NotFound}/>
   </Switch></Shell></RoutedErrorBoundary>;
 }

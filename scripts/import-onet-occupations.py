@@ -194,7 +194,7 @@ def main():
         checkedOn=datetime.now(timezone.utc).date().isoformat(),
         releaseUrl=item.findtext("link"), licenseUrl="https://creativecommons.org/licenses/by/4.0/",
         attribution="O*NET 31.0 Database, U.S. Department of Labor, Employment and Training Administration (USDOL/ETA), CC BY 4.0. "
-                    "FuturePath selected a subset, standardized two software labels, and added translations, categories and conditional SDG interpretations. "
+                    "PivotPath AI selected a subset, standardized two software labels, and added translations, categories and conditional SDG interpretations. "
                     "USDOL/ETA has not approved, endorsed, or tested these modifications.",
         selectionMethod="Top 2 essential skills, top 2 transferable skills and top 4 knowledge domains by unsuppressed importance rating; "
                         "up to 2 explicitly listed software examples. App-selected subset, not a complete employer requirements list. "

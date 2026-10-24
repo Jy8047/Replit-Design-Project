@@ -50,5 +50,6 @@ The fictional journeys cover profile changes, selected-occupation changes,
 ordered missing-skill plans, verified/unverified resource states, SDG coverage,
 scenario-weight changes, and empty/unknown/fully-matched states.
 
-Profile, selected occupation, scenario and editable workspace title are stored
-in browser local storage; they are not cloud-synced.
+Profile, selected occupation and scenario are stored in browser local storage;
+they are not cloud-synced. The product name is fixed as PivotPath AI and is not
+editable. Any legacy custom-title storage is ignored, not automatically deleted.

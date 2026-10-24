@@ -1,6 +1,25 @@
-# FuturePath AI
+# PivotPath AI
 
-FuturePath AI is a multilingual career exploration demo. It connects a user-confirmed profile to transparent skill matching, learning pathways, SDG relevance notes, and estimate-based disruption scenarios.
+**Navigate Change. Shape Your Future.**
+
+An AI-powered career intelligence and future-readiness platform.
+
+PivotPath AI is the fixed product name in every language. It connects a
+user-confirmed profile to transparent skill matching, learning pathways, SDG
+relevance notes, and estimate-based disruption scenarios.
+
+| Language | Tagline | Product description |
+|---|---|---|
+| English | Navigate Change. Shape Your Future. | An AI-powered career intelligence and future-readiness platform. |
+| 简体中文 | 洞见变化，规划未来。 | 一个以人工智能辅助职业匹配、技能差距分析和未来职业发展规划的平台。 |
+| Bahasa Melayu | Kenali Perubahan, Rancang Masa Depan. | Platform kecerdasan kerjaya dan kesiapsiagaan masa depan yang dibantu oleh kecerdasan buatan. |
+
+The description is product positioning, not a claim that the current demo runs
+AI inference: matching is deterministic and rule-based, PDF mapping is explicitly
+`simulated`, and no external AI model is called. The UI repeats this distinction.
+There is no custom product-name editor. Existing profile, draft, language,
+occupation and learning-progress storage keys are preserved; a legacy custom
+title is ignored without automatically clearing browser data.
 
 ## Current implementation
 
@@ -28,7 +47,22 @@ pnpm --filter @workspace/api-server typecheck
 pnpm --filter @workspace/api-server build
 pnpm --filter @workspace/career-pathways test
 pnpm --filter @workspace/career-pathways typecheck
-pnpm --filter @workspace/career-pathways build
+BASE_PATH=/ pnpm --filter @workspace/career-pathways build
 ```
 
 The official Tech Tools Declaration template was not present in this workspace. This README is project documentation, not a substitute for that official declaration; provide the required template before preparing one.
+
+## Brand regression checks
+
+The normal frontend test command includes `src/lib/brand.test.ts`. With the
+existing web/API workflows running and local Chromium available, run:
+
+```sh
+node --experimental-strip-types artifacts/career-pathways/tests/brand.e2e.mjs
+```
+
+The browser check uses a separate temporary browser profile and fictional data:
+three languages across eight routes, fixed branding and social metadata, removed
+name-editing controls, online confirmation/cancellation, a genuine local PDF
+extraction with simulated mapping, and matching/reload. It does not operate on
+the user's browser storage, intercept a success response, or call an AI model.

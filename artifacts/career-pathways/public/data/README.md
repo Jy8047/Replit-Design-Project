@@ -39,7 +39,7 @@ does not mistake that placeholder for evidence of market stability.
 
 This subset includes information from the O*NET 31.0 Database, U.S. Department
 of Labor, Employment and Training Administration (USDOL/ETA), under
-[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). FuturePath selected and
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). PivotPath AI selected and
 adapted the subset and added translations and SDG interpretations. USDOL/ETA
 has not approved, endorsed, or tested these modifications.
 See `docs/occupation-expansion.md` for selection, verification and limitations.

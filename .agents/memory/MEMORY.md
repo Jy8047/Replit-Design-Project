@@ -1,4 +1,4 @@
-- [Provisional project name](provisional-project-name.md) — The project name is undecided; keep the title editable and removable.
+- [Project brand](provisional-project-name.md) — Fixed PivotPath AI naming; localize slogans, remove custom naming, and distinguish branding from simulated/rule-based implementation.
 - [Evidence and consent](domain-evidence-constraints.md) — Evidence, source checks, paid-service consent, and the confirmation boundary for profile drafts.
 - [Runpod scope](runpod-scope.md) — Team decision: no GPU, RunPod, or GLM; keep PDF extraction local and mapping explicitly simulated.
 - [PDF worker verification](pdf-worker-verification.md) — Verify real extraction through the bundled API; source-only parser tests can miss deployment failures.

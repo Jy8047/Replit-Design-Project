@@ -3,7 +3,7 @@ name: Runpod integration scope
 description: Selected Runpod workload and the limits of the user's authorization
 ---
 
-The team decided on 2026-10-24 that FuturePath AI will not use a GPU, RunPod, or
+The team decided on 2026-10-24 that PivotPath AI will not use a GPU, RunPod, or
 GLM-5.3. The prepared provider client and offline SDK fixture have been removed.
 The current product scope is local text extraction from text-based PDFs and
 explicitly labelled, rule-based simulated profile mapping; OCR is not implemented.

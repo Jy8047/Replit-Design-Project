@@ -203,7 +203,7 @@ function CatalogLearningPlan() {
 
   return <section className="panel" style={{ marginTop: 18 }} data-testid="catalog-learning-plan">
     <h2 className="planning-title">{t('Catalogue learning track')}</h2>
-    <p className="planning-note">{t('This is a separate catalogue track and does not change your selected FuturePath occupation.')}</p>
+    <p className="planning-note">{t('This is a separate catalogue track and does not change your selected PivotPath AI occupation.')}</p>
     <div style={{ maxWidth: 520, marginTop: 14 }}>
       <label className="label" htmlFor="catalog-learning-track">{t('Choose a catalogue career track')}</label>
       <select
