@@ -339,8 +339,9 @@ provided in the supplied submission files.
 
 ## License
 
-No project-wide `LICENSE` file is present. Do not infer a project license from
-the licenses of individual dependencies. O*NET attribution and license details
+This project is licensed under the **Apache License 2.0**.
+
+See the [LICENSE](LICENSE) file in the repository root for the full license text. O*NET attribution and license details
 are recorded in the data README linked above.
 
 ## Submission checklist
