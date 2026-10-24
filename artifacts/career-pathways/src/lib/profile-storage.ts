@@ -1,4 +1,5 @@
 import { normalizeProfile, type Profile, type ProfileType } from './profile.ts';
+import { hasCurrentSkills } from './online-skills.ts';
 
 export const PROFILE_STORAGE_KEY = 'career-pathways-profile';
 export const PROFILE_DRAFT_KEY = 'career-pathways-profile-draft';
@@ -20,7 +21,7 @@ export function employmentNeedsResolution(type: ProfileType | '', experience: st
 
 export function persistConfirmedProfile(storage: WritableStorage, profile: Profile): ProfileSaveResult {
   // The shared persistence boundary must enforce confirmation independently of UI.
-  if (profile.confirmed_by_user !== true) return { ok: false };
+  if (profile.confirmed_by_user !== true || !hasCurrentSkills(profile.skills)) return { ok: false };
   try {
     storage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
     return { ok: true };

@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { PageHeading } from '@/components/page-heading';
 import { PdfExtractionPanel } from '@/components/pdf-extraction-panel';
 import { useI18n } from '@/lib/i18n';
-import { normalizeOnlineSkills } from '@/lib/online-skills';
+import { hasCurrentSkills, normalizeOnlineSkills } from '@/lib/online-skills';
 import {
   emptyProfile,
   hasPdfEndMarker,
@@ -38,8 +38,8 @@ const baseFields: { key: TextKey; label: string; hint: string; multiline?: boole
   { key: 'interests_and_hobbies', label: 'Interests & Hobbies', hint: 'What topics or activities interest you? Enter None if you prefer.', multiline: true },
 ];
 
-const additionalFields: { key: TextKey; label: string; hint: string; multiline?: boolean }[] = [
-  { key: 'skills', label: 'Current Skills', hint: 'Separate skills with commas (, ，), semicolons (; ；), or one skill per line. Optional list markers: - * •. Matching changes only after confirmation.', multiline: true },
+const additionalFields: { key: TextKey; label: string; hint: string; placeholder?: string; required?: boolean; multiline?: boolean }[] = [
+  { key: 'skills', label: 'Current Skills', hint: 'Separate skills with commas (, ，), semicolons (; ；), or one skill per line. Optional list markers: - * •. Matching changes only after confirmation.', placeholder: 'Enter your current skills (e.g. Python, SQL, Communication)', required: true, multiline: true },
   { key: 'role', label: 'Current or Recent Role', hint: 'For example: Community program coordinator.' },
   { key: 'name', label: 'Name (optional)', hint: 'A name you would like to use; a real name is not required.' },
   { key: 'background', label: 'Career Background', hint: 'Other context you want to retain from your existing profile.', multiline: true },
@@ -75,6 +75,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
   const [pdf, setPdf] = useState<File | null>(null);
   const [pdfError, setPdfError] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [skillsError, setSkillsError] = useState(false);
   const [saved, setSaved] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const unresolvedEmployment = employmentNeedsResolution(profileType, form.employment_experience);
@@ -120,6 +121,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     setDraftCleanupError(false);
     setSaveError(false);
     setValidationError('');
+    setSkillsError(false);
     setForm(profile ?? emptyProfile);
     setProfileType('');
     setMethod('');
@@ -144,6 +146,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     setSaveError(false);
     setSaved(false);
     setValidationError('');
+    if (key === 'skills' && hasCurrentSkills(value)) setSkillsError(false);
   };
   const updateEducation = (key: keyof Profile['education'], value: string) => {
     setForm(current => ({ ...current, education: { ...current.education, [key]: value } }));
@@ -198,23 +201,31 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     if (unresolvedEmployment) { setStep('type'); return; }
     const draft: Profile = { ...form, profile_type: profileType || 'fresh_graduate', confirmed_by_user: false };
     const missing = validateProfile(draft);
-    if (missing.length) {
-      setValidationError(t('Please enter School / University, Degree, and Major. You may enter “None” or “无” when a field does not apply.'));
-      return;
-    }
+    const hasEducationErrors = missing.some(key => key !== 'skills');
+    setSkillsError(missing.includes('skills'));
+    setValidationError(hasEducationErrors
+      ? t('Please enter School / University, Degree, and Major. You may enter “None” or “无” when a field does not apply.')
+      : '');
+    if (missing.length) return;
     setForm(draft);
-    setValidationError('');
+    setSkillsError(false);
     setSaveError(false);
     setStep('review');
   };
 
   const confirmProfile = () => {
     if (unresolvedEmployment) { setStep('type'); return; }
-    if (validateProfile(form).length) {
-      setValidationError(t('Please enter School / University, Degree, and Major. You may enter “None” or “无” when a field does not apply.'));
+    const missing = validateProfile(form);
+    if (missing.length) {
+      setSkillsError(missing.includes('skills'));
+      setValidationError(missing.some(key => key !== 'skills')
+        ? t('Please enter School / University, Degree, and Major. You may enter “None” or “无” when a field does not apply.')
+        : '');
       setStep('form');
       return;
     }
+    setSkillsError(false);
+    setValidationError('');
     const confirmed: Profile = {
       ...form,
       skills: normalizeOnlineSkills(form.skills),
@@ -255,18 +266,21 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
         setMethod('');
         setSaved(false);
         setSaveError(false);
+        setSkillsError(false);
       }
     }} data-testid="button-delete-profile"><Trash2 size={15}/>{t('Delete profile')}</button>}
   </PageHeading>;
 
-  const renderField = (field: { key: TextKey; label: string; hint: string; multiline?: boolean }) => {
+  const renderField = (field: { key: TextKey; label: string; hint: string; placeholder?: string; required?: boolean; multiline?: boolean }) => {
     const value = form[field.key];
+    const isSkills = field.key === 'skills';
     return <div key={field.key} className="profile-form-field">
-      <label className="label" htmlFor={`profile-${field.key}`}>{t(field.label)}</label>
+      <label className="label" htmlFor={`profile-${field.key}`}>{t(field.label)}{field.required && <><span className="profile-required-mark" aria-hidden="true">*</span><span className="profile-required"> {t('Required')}</span></>}</label>
       {field.multiline
-        ? <textarea id={`profile-${field.key}`} rows={3} className="field" placeholder={t(field.hint)} value={value} onChange={event => update(field.key, event.target.value)} data-testid={`input-profile-${field.key}`}/>
-        : <input id={`profile-${field.key}`} className="field" placeholder={t(field.hint)} value={value} onChange={event => update(field.key, event.target.value)} data-testid={`input-profile-${field.key}`}/>}
+        ? <textarea id={`profile-${field.key}`} rows={3} className="field" placeholder={t(field.placeholder ?? field.hint)} value={value} aria-required={field.required || undefined} aria-invalid={isSkills ? skillsError : undefined} aria-describedby={isSkills && skillsError ? 'error-profile-skills' : undefined} onChange={event => update(field.key, event.target.value)} data-testid={`input-profile-${field.key}`}/>
+        : <input id={`profile-${field.key}`} className="field" placeholder={t(field.placeholder ?? field.hint)} value={value} onChange={event => update(field.key, event.target.value)} data-testid={`input-profile-${field.key}`}/>}
       {field.key === 'skills' && <p className="profile-section-hint">{t(field.hint)}</p>}
+      {isSkills && skillsError && <p id="error-profile-skills" className="profile-error" role="alert" data-testid="error-profile-skills">{t('Please enter at least one current skill.')}</p>}
     </div>;
   };
 
@@ -326,6 +340,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
           setSaved(false);
           setSaveError(false);
           setValidationError('');
+          setSkillsError(false);
           setStep(employmentNeedsResolution(next.profile_type, next.employment_experience) ? 'type' : 'form');
         }}/>
       </div>}
@@ -369,7 +384,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     </section>}
 
     {(step === 'form' || step === 'review') && <form className="panel profile-step" onSubmit={submitForm} data-testid="form-online-profile">
-      <div className="profile-step-heading"><span className="profile-step-number">03</span><div><h2>{t(profileType === 'career_switcher' ? 'Career Switcher Profile' : 'Fresh Graduate Profile')}</h2><p>{t('Required fields are School / University, Degree, and Major. Enter None or 无 if a field does not apply. Other experience fields are optional.')}</p></div></div>
+      <div className="profile-step-heading"><span className="profile-step-number">03</span><div><h2>{t(profileType === 'career_switcher' ? 'Career Switcher Profile' : 'Fresh Graduate Profile')}</h2><p>{t('Required fields are School / University, Degree, Major, and Current Skills. Enter None or 无 for education fields that do not apply. Other experience fields are optional.')}</p></div></div>
       <div className="profile-form-section"><h3>{t('Education')}</h3><div className="profile-form-grid">
         {([
           ['school', 'School / University', 'Enter your school or university, or None.'],
@@ -460,7 +475,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
       .profile-step{margin-bottom:18px}.profile-step-heading{display:flex;align-items:flex-start;gap:13px;margin-bottom:22px}.profile-step-number{font:500 11px 'IBM Plex Mono',monospace;color:#55745d;background:#edf1e7;border-radius:9px;padding:8px 9px}.profile-step-heading h2{font:700 19px Manrope,sans-serif;color:#30483b;margin:0 0 6px}.profile-step-heading p{font-size:12px;line-height:1.55;color:#747a70;margin:0;max-width:680px}
       .profile-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.profile-choice{width:100%;display:flex;align-items:center;text-align:left;gap:12px;border:1px solid #dfe2d8;background:#fffdf8;border-radius:13px;padding:16px;color:#30483b;cursor:pointer;min-height:82px}.profile-choice:hover,.profile-choice[aria-pressed="true"]{border-color:#6a876f;background:#f4f6ef;box-shadow:0 0 0 2px #6a876f1c}.profile-choice>span:nth-child(2){flex:1}.profile-choice strong,.profile-choice small{display:block}.profile-choice strong{font-size:14px;margin-bottom:5px}.profile-choice small{font-size:11px;line-height:1.45;color:#737a70}.profile-choice-icon{width:36px;height:36px;flex:none;border-radius:11px;background:#edf1e8;color:#54745b;display:grid;place-items:center}
       .profile-pdf-flow{margin-top:20px}.profile-dropzone{min-height:190px;border:1px dashed #a9b6a6;background:#fafaf5;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;padding:20px;color:#4c6552}.profile-dropzone.has-file{border-style:solid;background:#f5f7f0}.profile-dropzone strong{font-size:13px}.profile-dropzone>span:not(.profile-choice-icon){font-size:11px;color:#7d8379}.profile-file-row{display:flex;align-items:center;gap:11px;padding:12px;margin-top:12px;border:1px solid #dfe3da;border-radius:10px;background:#fffdf8;color:#4e6955}.profile-file-row div{flex:1;min-width:0}.profile-file-row strong,.profile-file-row small{display:block;overflow-wrap:anywhere}.profile-file-row strong{font-size:12px}.profile-file-row small{font-size:10px;color:#7d8379;margin-top:3px}.profile-icon-button{width:34px;height:34px;border:1px solid #e1e2d9;background:white;color:#667064;border-radius:8px;display:grid;place-items:center;cursor:pointer}.profile-parser-note,.profile-confirm-note{display:flex;align-items:flex-start;gap:9px;border-radius:10px;background:#f5f2e8;color:#78694e;padding:12px 13px;margin-top:13px}.profile-parser-note svg,.profile-confirm-note svg{flex:none;margin-top:1px}.profile-parser-note p,.profile-confirm-note p{margin:0;font-size:11px;line-height:1.6}.profile-inline-notice{margin-top:14px;padding:13px;border-radius:10px;background:#fff6e8;border:1px solid #eee0c6}.profile-inline-notice p{font-size:12px;color:#705d3b;line-height:1.55;margin:0 0 10px}.profile-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:22px}.profile-actions .btn:disabled{opacity:.48;cursor:not-allowed;transform:none}
-      .profile-form-section{border-top:1px solid #e5e5dc;padding-top:18px;margin-top:20px}.profile-form-section h3,.profile-review-group h3{font:700 14px Manrope,sans-serif;color:#425747;margin:0 0 13px}.profile-section-hint{font-size:11px;line-height:1.5;color:#777e73;margin:-5px 0 14px}.profile-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 17px}.profile-form-field{min-width:0}.profile-form-field .field{font-size:13px}.profile-required{color:#a06542;font-size:10px;font-weight:600}.profile-error{font-size:12px;color:#a43e35;background:#fff4f1;border:1px solid #e9c9c2;padding:10px 12px;border-radius:9px}.profile-review-meta{display:flex;gap:8px;flex-wrap:wrap}.profile-review-group{border-top:1px solid #e5e5dc;margin-top:19px;padding-top:16px}.profile-review-row{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr);gap:12px;padding:8px 0;border-bottom:1px solid #eeeee7;font-size:12px}.profile-review-row strong{color:#586559}.profile-review-row span{color:#303f35;white-space:pre-wrap;overflow-wrap:anywhere}.profile-success{text-align:center}.profile-success-icon{margin:3px auto 10px;width:48px;height:48px;border-radius:15px;background:#eaf1e7;color:#4d7455;display:grid;place-items:center}.profile-success h2{font:700 21px Manrope;color:#30483b;margin:10px 0 7px}.profile-success>p{font-size:12px;color:#70776d;line-height:1.55}.profile-json{max-height:300px;overflow:auto;text-align:left;background:#f4f4ed;border:1px solid #e2e4d9;border-radius:10px;padding:14px;color:#475348;font:11px/1.55 'IBM Plex Mono',monospace;white-space:pre-wrap;overflow-wrap:anywhere}.profile-success .profile-actions{justify-content:center}.profile-privacy-note{font-size:10px;line-height:1.6;color:#81877b;margin:14px 0}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+      .profile-form-section{border-top:1px solid #e5e5dc;padding-top:18px;margin-top:20px}.profile-form-section h3,.profile-review-group h3{font:700 14px Manrope,sans-serif;color:#425747;margin:0 0 13px}.profile-section-hint{font-size:11px;line-height:1.5;color:#777e73;margin:-5px 0 14px}.profile-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 17px}.profile-form-field{min-width:0}.profile-form-field .field{font-size:13px}.profile-required{color:#a06542;font-size:10px;font-weight:600}.profile-required-mark{color:#dc2626;font-size:16px;font-weight:700;margin-left:5px}.profile-error{font-size:12px;color:#a43e35;background:#fff4f1;border:1px solid #e9c9c2;padding:10px 12px;border-radius:9px}.profile-review-meta{display:flex;gap:8px;flex-wrap:wrap}.profile-review-group{border-top:1px solid #e5e5dc;margin-top:19px;padding-top:16px}.profile-review-row{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr);gap:12px;padding:8px 0;border-bottom:1px solid #eeeee7;font-size:12px}.profile-review-row strong{color:#586559}.profile-review-row span{color:#303f35;white-space:pre-wrap;overflow-wrap:anywhere}.profile-success{text-align:center}.profile-success-icon{margin:3px auto 10px;width:48px;height:48px;border-radius:15px;background:#eaf1e7;color:#4d7455;display:grid;place-items:center}.profile-success h2{font:700 21px Manrope;color:#30483b;margin:10px 0 7px}.profile-success>p{font-size:12px;color:#70776d;line-height:1.55}.profile-json{max-height:300px;overflow:auto;text-align:left;background:#f4f4ed;border:1px solid #e2e4d9;border-radius:10px;padding:14px;color:#475348;font:11px/1.55 'IBM Plex Mono',monospace;white-space:pre-wrap;overflow-wrap:anywhere}.profile-success .profile-actions{justify-content:center}.profile-privacy-note{font-size:10px;line-height:1.6;color:#81877b;margin:14px 0}.sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
       @media(max-width:620px){.profile-choice-grid,.profile-form-grid{grid-template-columns:1fr}.profile-step{padding:17px}.profile-step-heading h2{font-size:17px}.profile-review-row{grid-template-columns:1fr;gap:3px}.profile-saved-strip{flex-wrap:wrap}.profile-saved-strip .tag{margin-left:0}}
     `}</style>
   </div>;

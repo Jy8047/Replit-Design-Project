@@ -71,7 +71,7 @@ test('draft restoration requires resolving retained employment before preview', 
 test('old drafts cannot override a different or newly confirmed profile', () => {
   const storage = memoryStorage();
   persistProfileDraft(storage, draft);
-  const saved = { ...emptyProfile, confirmed_by_user: true };
+  const saved = { ...emptyProfile, skills: 'Research', confirmed_by_user: true };
   assert.equal(readProfileDraft(storage, saved), null);
   persistProfileDraft(storage, { ...draft, form: saved, baseProfile: JSON.stringify(saved) });
   assert.equal(readProfileDraft(storage, saved), null);
@@ -95,8 +95,19 @@ test('invalid draft data is ignored and successful confirmation writes the expec
   const storage = memoryStorage();
   storage.setItem(PROFILE_DRAFT_KEY, 'invalid json');
   assert.equal(readProfileDraft(storage, null), null);
-  assert.deepEqual(persistConfirmedProfile(storage, { ...emptyProfile, confirmed_by_user: true }), { ok: true });
+  assert.deepEqual(persistConfirmedProfile(storage, { ...emptyProfile, skills: 'Python', confirmed_by_user: true }), { ok: true });
   assert.equal(JSON.parse(storage.getItem(PROFILE_STORAGE_KEY)!).confirmed_by_user, true);
+});
+
+test('confirmed profiles without a current skill cannot replace an existing saved profile', () => {
+  const storage = memoryStorage();
+  const saved = { ...emptyProfile, skills: 'Research', confirmed_by_user: true };
+  assert.deepEqual(persistConfirmedProfile(storage, saved), { ok: true });
+  const savedValue = storage.getItem(PROFILE_STORAGE_KEY);
+  for (const skills of ['', '   ', ',,,', ';;;', '\n']) {
+    assert.deepEqual(persistConfirmedProfile(storage, { ...saved, skills }), { ok: false });
+    assert.equal(storage.getItem(PROFILE_STORAGE_KEY), savedValue);
+  }
 });
 
 test('shared save boundary rejects unconfirmed and non-boolean confirmation without replacing saved data', () => {

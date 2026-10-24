@@ -19,3 +19,7 @@ export function normalizeOnlineSkills(raw: string): string {
   }
   return skills.join(', ');
 }
+
+export function hasCurrentSkills(raw: unknown): boolean {
+  return typeof raw === 'string' && normalizeOnlineSkills(raw).length > 0;
+}

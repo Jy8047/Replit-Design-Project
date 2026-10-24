@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   emptyProfile,
   hasPdfEndMarker,
@@ -55,19 +56,56 @@ test('preserves existing profile data when migrating from the previous simple pr
 
 test('validates required education fields while allowing explicit None values', () => {
   const missing = validateProfile(emptyProfile);
-  assert.deepEqual(missing.sort(), ['degree', 'major', 'school']);
+  assert.deepEqual(missing.sort(), ['degree', 'major', 'school', 'skills']);
 
   const explicitNone = {
     ...emptyProfile,
+    skills: 'Python',
     education: { school: 'None', degree: '无', major: 'Tidak ada', key_courses: '' },
   };
   assert.deepEqual(validateProfile(explicitNone), []);
 
   const valid = {
     ...emptyProfile,
+    skills: 'Python',
     education: { school: 'Example University', degree: 'BA', major: 'Design', key_courses: '' },
   };
   assert.deepEqual(validateProfile(valid), []);
+});
+
+test('requires at least one current skill and rejects input containing only separators', () => {
+  const completeEducation = {
+    ...emptyProfile,
+    education: { school: 'Example University', degree: 'BA', major: 'Design', key_courses: '' },
+  };
+  for (const skills of ['', '   ', ',', ',,,', ';', ';;;', '\n', '\r\n', ' , ; \n']) {
+    assert.deepEqual(validateProfile({ ...completeEducation, skills }), ['skills'], JSON.stringify(skills));
+  }
+  for (const skills of ['Python', 'Python, SQL']) {
+    assert.deepEqual(validateProfile({ ...completeEducation, skills }), []);
+  }
+});
+
+test('PDF drafts without extracted skills remain editable and pass after manual skill entry', () => {
+  const pdfDraft = normalizeProfile({
+    ...emptyProfile,
+    input_method: 'pdf_upload',
+    education: { school: 'Example University', degree: 'BA', major: 'Design', key_courses: '' },
+    confirmed_by_user: false,
+  })!;
+  assert.deepEqual(validateProfile(pdfDraft), ['skills']);
+  assert.deepEqual(validateProfile({ ...pdfDraft, skills: 'Python, SQL' }), []);
+});
+
+test('Current Skills required copy is present for English, Simplified Chinese and Bahasa Melayu', () => {
+  const source = readFileSync(new URL('./i18n.tsx', import.meta.url), 'utf8');
+  for (const entry of [
+    "'Required': ['必填', 'Wajib'],",
+    "'Enter your current skills (e.g. Python, SQL, Communication)': ['请输入你目前掌握的技能，例如 Python、SQL、沟通能力', 'Masukkan kemahiran semasa anda, contohnya Python, SQL dan komunikasi'],",
+    "'Please enter at least one current skill.': ['请至少输入一项当前技能。', 'Sila masukkan sekurang-kurangnya satu kemahiran semasa.'],",
+  ]) {
+    assert.ok(source.includes(entry), `Missing translation entry: ${entry}`);
+  }
 });
 
 test('rejects missing, non-PDF, wrong-MIME, empty, and oversized uploads', () => {

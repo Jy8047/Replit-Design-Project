@@ -1,3 +1,5 @@
+import { hasCurrentSkills } from './online-skills.ts';
+
 export type ProfileType = 'fresh_graduate' | 'career_switcher';
 export type ProfileInputMethod = 'pdf_upload' | 'online_form';
 
@@ -91,6 +93,7 @@ export function validateProfile(profile: Profile): string[] {
     if (!value.trim()) missing.push(key);
     else if (!explicitNone.test(value.trim()) && value.trim().length < 2) missing.push(key);
   }
+  if (!hasCurrentSkills(profile.skills)) missing.push('skills');
   return missing;
 }
 
