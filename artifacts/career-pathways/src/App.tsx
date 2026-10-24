@@ -255,6 +255,36 @@ function Router() {
   </Switch></Shell></RoutedErrorBoundary>;
 }
 function App() {
-  return <I18nProvider><QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router/></WouterRouter><Toaster/></TooltipProvider></QueryClientProvider></I18nProvider>;
+  const [splashPhase, setSplashPhase] = useState<'visible' | 'fading' | 'done'>('visible');
+
+  useEffect(() => {
+    let fadeTimer = 0;
+    const holdTimer = window.setTimeout(() => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        setSplashPhase('done');
+        return;
+      }
+
+      setSplashPhase('fading');
+      fadeTimer = window.setTimeout(() => setSplashPhase('done'), 560);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(holdTimer);
+      window.clearTimeout(fadeTimer);
+    };
+  }, []);
+
+  return <I18nProvider><QueryClientProvider client={queryClient}><TooltipProvider>
+    <div inert={splashPhase !== 'done' ? true : undefined}>
+      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router/></WouterRouter>
+      <Toaster/>
+    </div>
+    {splashPhase !== 'done' && <div className={`entry-splash${splashPhase === 'fading' ? ' entry-splash--fading' : ''}`} aria-hidden={splashPhase === 'fading' || undefined} role={splashPhase === 'visible' ? 'status' : undefined} aria-label={splashPhase === 'visible' ? `${PRODUCT_NAME}. ${PRODUCT_TAGLINE}` : undefined} data-testid="entry-splash">
+      <div className="entry-splash__card">
+        <img src="/logo.png" alt={`${PRODUCT_NAME} — ${PRODUCT_TAGLINE}`} width={390} height={390} fetchPriority="high" />
+      </div>
+    </div>}
+  </TooltipProvider></QueryClientProvider></I18nProvider>;
 }
 export default App;
