@@ -105,6 +105,14 @@ const headingKinds: Readonly<Record<string, CvSectionKind>> = {
   "个人简介": "summary",
 };
 
+function normalizedSectionHeading(value: string): string {
+  return value.normalize("NFKC").toLowerCase().replace(/[\s\u200b\ufeff]+/gu, "");
+}
+
+const headingKindsByNormalizedKey = new Map(
+  Object.entries(headingKinds).map(([heading, kind]) => [normalizedSectionHeading(heading), kind]),
+);
+
 function splitLines(text: string): { line: string; start: number; end: number; next: number }[] {
   const lines: { line: string; start: number; end: number; next: number }[] = [];
   const newline = /\r\n?|\n/gu;
@@ -126,8 +134,7 @@ function headingFromLine(line: string): { kind: CvSectionKind; heading: string; 
   const rawHeading = (colon >= 0 ? prefixRemoved.slice(0, colon) : prefixRemoved)
     .replace(/[|｜—–-]+\s*$/u, "")
     .trim();
-  const key = rawHeading.toLowerCase().replace(/\s+/gu, " ");
-  const kind = headingKinds[key];
+  const kind = headingKindsByNormalizedKey.get(normalizedSectionHeading(rawHeading));
   if (!kind) return null;
   return {
     kind,
@@ -146,6 +153,7 @@ const profileFieldLabels: Readonly<Record<string, string>> = {
   keycourses: "Key Courses",
   skills: "Skills",
   currentskills: "Skills",
+  technicalskills: "Skills",
   internship: "Internship Experience",
   internshipexperience: "Internship Experience",
   academicexperience: "Academic Experience",
@@ -188,9 +196,13 @@ function splitSkillColumnSuffix(line: string): { left: string; skill: string } |
 }
 
 function splitInlineHeadings(line: string): string[] {
+  const headingWhitespace = "[\\s\\u200b\\ufeff]*";
   const headingAlternation = Object.keys(headingKinds)
     .sort((left, right) => right.length - left.length)
-    .map(heading => heading.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"))
+    .map(heading => heading
+      .split(/\s+/u)
+      .map(word => word.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"))
+      .join(headingWhitespace))
     .join("|");
   const pattern = new RegExp(`(^|[|｜]|\\s{2,})(${headingAlternation})(?=$|\\s|[:：]|[|｜])`, "giu");
   const result: string[] = [];

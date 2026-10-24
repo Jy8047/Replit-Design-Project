@@ -8,6 +8,7 @@ import {
 } from "./cv-fixtures.ts";
 import { extractPdfText, MAX_CV_PDF_BYTES } from "../src/lib/pdf-extraction.ts";
 import { createCvExtractionRouter } from "../src/routes/cv-extraction.ts";
+import { extractSections, normalizeCvText } from "../src/lib/cv-smart-mapping.ts";
 
 // These tests allow loopback HTTP only, never outbound fetch/inference.
 mock.method(globalThis, "fetch", () => { throw new Error("No external fetch is permitted in CV tests"); });
@@ -128,6 +129,26 @@ WORK EXPERIENCE Northstar Analytics | Data Intern | 2023-2024`;
     assert.deepEqual(response.body.profile.skills.split(", "), ["Python", "SQL", "React"]);
     assert.match(response.body.profile.employment_experience, /Northstar Analytics/u);
     assert.equal(response.body.profile.background, "");
+  });
+});
+
+test("HTTP PDF extraction normalizes a collapsed TechnicalSkills heading end to end", async () => {
+  const text = `Synthetic Candidate
+TechnicalSkills:
+Python, SQL, Machine Learning
+EDUCATION
+Example University`;
+  await withApi(async post => {
+    const response = await post(await makePdf(text), "profile_type=fresh_graduate&mapping_mode=demo");
+    assert.equal(response.status, 200);
+    assert.match(response.body.text, /TechnicalSkills:/u);
+
+    const normalized = normalizeCvText(response.body.text);
+    assert.match(normalized, /Skills:\s*\nPython, SQL, Machine Learning/u);
+    assert.equal(extractSections(normalized).some(section => section.kind === "skills"), true);
+    assert.equal(response.body.profile.skills, "Python, SQL, Machine Learning");
+    assert.equal(response.body.profile.mapping_provenance, "simulated");
+    assert.equal(response.body.profile.confirmed_by_user, false);
   });
 });
 

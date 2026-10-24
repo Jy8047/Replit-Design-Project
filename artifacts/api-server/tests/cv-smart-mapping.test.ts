@@ -173,6 +173,45 @@ WORK EXPERIENCE Northstar Analytics | Data Intern | 2023–2024`;
   assert.equal(result.confirmed_by_user, false);
 });
 
+test("recognizes Technical Skills headings with collapsed and Unicode whitespace", () => {
+  const headings = [
+    "Technical Skills",
+    "Technical   Skills",
+    "Technical\tSkills",
+    "Technical\nSkills",
+    "Technical\u00a0Skills",
+    "Technical\u2003Skills",
+    "Technical Skills:",
+    "TechnicalSkills",
+    "TechnicalSkills:",
+  ];
+  for (const heading of headings) {
+    const text = `Synthetic Candidate\n${heading}\nPython, SQL, Machine Learning\nEDUCATION\nExample University`;
+    const normalized = normalizeCvText(text);
+    assert.equal(extractSections(normalized).some(section => section.kind === "skills"), true, heading);
+    const result = mapCvSmart(text, "fresh_graduate");
+    assert.deepEqual(result.skills.split(", "), ["Python", "SQL", "Machine Learning"], heading);
+    assert.equal(typeof result.skills, "string", heading);
+    assert.equal(result.mapping_provenance, "simulated", heading);
+  }
+});
+
+test("technical skills lists accept inline values and bullets but stop at adjacent sections", () => {
+  const inline = mapCvSmart(
+    "Synthetic Candidate\nTechnical Skills: Python, SQL, Java\nEDUCATION\nExample University",
+    "fresh_graduate",
+  );
+  assert.equal(inline.skills, "Python, SQL, Java");
+
+  const bullets = mapCvSmart(
+    "Synthetic Candidate\nTechnical Skills\n• Python\n• Machine Learning\n• Data Analysis\nEDUCATION\nExample University\nWORK EXPERIENCE\nUsed Java",
+    "fresh_graduate",
+  );
+  assert.equal(bullets.skills, "Python, Machine Learning, Data Analysis");
+  assert.equal(bullets.skills.includes("Java"), false);
+  assert.equal(bullets.employment_experience.includes("Used Java"), true);
+});
+
 test("maps an explicitly labelled table row to profile fields", () => {
   const text = `Jordan Miller
 School | Degree | Major | Skills

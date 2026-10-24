@@ -63,3 +63,14 @@ successfully mapped resume, suppressing the no-usable-fields recovery path.
 
 **How to apply:** Keep a regression case with unlabeled narrative text and assert
 that it produces an actionable mapping failure rather than a false name field.
+
+Resolve section headings through normalized keys for known headings only. This
+should tolerate collapsed or varied whitespace without removing spaces from
+profile values such as multi-word skills.
+
+**Why:** PDF text extraction can collapse separators inside headings; global
+whitespace removal would corrupt legitimate skill names and evidence spans.
+
+**How to apply:** Test each heading variant through normalization and section
+recognition, plus at least one generated PDF through the actual extraction API;
+also assert that extraction stops before adjacent sections.
