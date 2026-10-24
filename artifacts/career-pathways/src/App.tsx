@@ -1,3 +1,4 @@
+import MarketSignalPanel from './components/market-signal-panel';
 import { type ReactNode, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -327,7 +328,7 @@ function Router() {
    return <RoutedErrorBoundary><Shell hasProfile={Boolean(profile)}><PlanningStyles/><nav aria-label={t('Career exploration steps')} className="journey-nav" style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:11,marginBottom:24}}>{[['/profile','1. Profile'],['/skills','2. Skills radar'],['/roles','3. Role matches'],['/roadmap','4. Learning plan'],['/impact','5. SDG mapping']].map(([href,label])=><Link href={href} key={href} data-testid={`link-journey-${href.slice(1)}`}>{t(label)}</Link>)}</nav><Switch>
    <Route path="/"><Home profile={profile}/></Route>
    <Route path="/profile"><ProfilePage profile={profile} onSave={saveProfile} onDelete={deleteProfile}/></Route>
-   <Route path="/skills"><SkillsPage dataset={dataset}/></Route>
+   <Route path="/skills"><><MarketSignalPanel /><SkillsPage dataset={dataset}/></></Route>
    <Route path="/roles"><RolesPage dataset={dataset} profileSkills={profile?.skills??''} onChooseOccupation={chooseOccupation}/></Route>
    <Route path="/roadmap"><DatasetFeedback dataset={dataset}/><PersonalisedRoadmapPage {...selectionProps} records={dataset.records} profileSkills={profile?.skills??''}/></Route>
    <Route path="/impact"><DatasetFeedback dataset={dataset}/><OccupationImpactPage {...selectionProps}/></Route>
