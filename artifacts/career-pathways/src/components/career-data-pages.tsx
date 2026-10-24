@@ -36,7 +36,7 @@ import { CatalogAttribution, OccupationCatalogDetails } from './occupation-catal
 import { PageHeading } from '@/components/page-heading';
 import { localizeContent, useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
-import { fetchOccupationHistoryWithRetries } from '@/lib/occupation-history-client';
+import { fetchBlsHistoryWithArchiveFallback } from '@/lib/occupation-history-client';
 import {
   Dialog,
   DialogContent,
@@ -245,10 +245,12 @@ export function CareerSkillsPage({
     sourceUrl: string;
     refreshedAt: string;
     points: { year: number; employment: number }[];
+    sourceMode: 'live' | 'archive';
+    publicationDate?: string;
   } | null>(null);
-  const [historyState, setHistoryState] = useState<'idle' | 'loading' | 'retrying' | 'ready' | 'empty' | 'unavailable' | 'error'>('idle');
-  const [historyRetryCount, setHistoryRetryCount] = useState(0);
+  const [historyState, setHistoryState] = useState<'idle' | 'loading' | 'retrying' | 'ready' | 'archive' | 'empty' | 'unavailable' | 'error'>('idle');
   const [historyRefresh, setHistoryRefresh] = useState(0);
+  const [historyRetryCount, setHistoryRetryCount] = useState(0);
   const confirmedSkills = readConfirmedProfileSkills();
   const profileValues = confirmedSkills.length ? profileDimensions(confirmedSkills) : null;
   const profileRadarData = profileValues
@@ -295,43 +297,21 @@ export function CareerSkillsPage({
     setHistoryState('loading');
     setHistoryRetryCount(0);
     const url = `${import.meta.env.BASE_URL}api/occupations/history?occupationCode=${encodeURIComponent(occupationCode)}&refresh=${historyRefresh}`;
-    void fetchOccupationHistoryWithRetries(url, {
+    const archiveUrl = `${import.meta.env.BASE_URL}data/bls-oews-history.json`;
+    void fetchBlsHistoryWithArchiveFallback(url, archiveUrl, occupationCode, {
       signal: controller.signal,
       onRetry: (attempt) => {
         if (controller.signal.aborted) return;
         setHistoryRetryCount(attempt);
         setHistoryState('retrying');
       },
-    })
-      .then((body) => {
-        if (!body || typeof body !== 'object' || Array.isArray(body)) {
-          throw new Error('BLS_RESPONSE_INVALID');
-        }
-        const payload = body as Record<string, unknown>;
-        const points = payload.points;
-        if (
-          typeof payload.occupationCode !== 'string' ||
-          typeof payload.socCode !== 'string' ||
-          typeof payload.sourceName !== 'string' ||
-          typeof payload.sourceUrl !== 'string' ||
-          typeof payload.refreshedAt !== 'string' ||
-          !Array.isArray(points) ||
-          points.some((point: unknown) => {
-            if (!point || typeof point !== 'object' || Array.isArray(point)) return true;
-            const value = point as Record<string, unknown>;
-            return !Number.isInteger(value.year) ||
-              typeof value.employment !== 'number' ||
-              !Number.isFinite(value.employment);
-          })
-        ) {
-          throw new Error('BLS_RESPONSE_INVALID');
-        }
-        return payload as NonNullable<typeof history>;
       })
       .then((body) => {
         if (controller.signal.aborted) return;
         setHistory(body);
-        setHistoryState(body.points.length ? 'ready' : 'empty');
+        setHistoryState(body.sourceMode === 'archive'
+          ? 'archive'
+          : body.points.length ? 'ready' : 'empty');
       })
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -519,9 +499,12 @@ export function CareerSkillsPage({
               )}
               {historyState === 'error' && (
                 <div role="alert" data-testid="error-occupation-history" className="panel">
-                  <p style={{ marginTop: 0 }}>{t('The BLS service is temporarily unavailable, and no verified offline history is available for this occupation. No values are shown; try again later.')}</p>
+                  <p style={{ marginTop: 0 }}>{t('The BLS live service is unavailable and no verified local archive contains this occupation. No substitute values are shown.')}</p>
+                  <a href="https://www.bls.gov/oes/tables.htm" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginBottom: 12 }}>
+                    {t('Open the official BLS OEWS tables and downloads')} <ArrowUpRight size={14} />
+                  </a>
                   <button className="btn" type="button" onClick={() => setHistoryRefresh(value => value + 1)} data-testid="button-retry-occupation-history">
-                    {t('Try again')} <RefreshCw size={14} />
+                    {t('Refresh for latest data')} <RefreshCw size={14} />
                   </button>
                 </div>
               )}
@@ -535,17 +518,29 @@ export function CareerSkillsPage({
                   {t('BLS did not return historical employment observations for this occupation.')}
                 </div>
               )}
-              {historyState === 'ready' && history && (
+              {(historyState === 'ready' || historyState === 'archive') && history && (
                 <>
+                  {history.sourceMode === 'archive' && (
+                    <div role="status" className="panel" data-testid="status-occupation-history-archive">
+                      {t('Showing archived BLS data published {date}; the official live service is temporarily unavailable.', {
+                        date: history.publicationDate ?? '',
+                      })}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                     <p style={{ margin: 0, fontSize: 12, color: '#6e776b' }}>
                       {t('Source')}: {history.sourceName} · {t('BLS occupation group')} {history.socCode} · {t('Last checked')}{' '}
                       {new Intl.DateTimeFormat(tag, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(history.refreshedAt))}
                     </p>
                     <button className="btn" type="button" onClick={() => setHistoryRefresh(value => value + 1)} data-testid="button-refresh-occupation-history">
-                      <RefreshCw size={14} /> {t('Refresh data')}
+                      <RefreshCw size={14} /> {t('Refresh for latest data')}
                     </button>
                   </div>
+                  {history.sourceMode === 'archive' && (
+                    <a href={history.sourceUrl} target="_blank" rel="noopener noreferrer" data-testid="link-occupation-history-archive-source">
+                      {t('Open the official BLS OEWS tables and downloads')} <ArrowUpRight size={14} />
+                    </a>
+                  )}
                   {history.points.length >= 2 ? (
                     <div data-testid="chart-occupation-history" style={{ width: '100%', height: 320, marginTop: 4 }}>
                       <ResponsiveContainer width="100%" height="100%">

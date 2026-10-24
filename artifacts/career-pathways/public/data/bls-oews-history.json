@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "templateOnly": true,
+  "sourceName": "U.S. Bureau of Labor Statistics — Occupational Employment and Wage Statistics (OEWS)",
+  "officialDownloadPage": "https://www.bls.gov/oes/tables.htm",
+  "downloadInstructions": [
+    "Download the national annual OEWS employment estimates from the official BLS OEWS tables page.",
+    "Add one record per six-digit SOC occupation. Keep annual employment estimates only; do not substitute wages, projections, or neighboring occupations.",
+    "Record the official release/table URL, its publication date, and the date the file was retrieved.",
+    "Include only values verified against that BLS release. Omit suppressed or unavailable observations.",
+    "After replacing this template with verified records, set templateOnly to false."
+  ],
+  "recordSchema": {
+    "socCode": "Six-digit SOC code in NN-NNNN format, matching the occupation's O*NET code prefix.",
+    "occupationTitle": "Exact occupation title used in the selected BLS OEWS release.",
+    "sourceName": "U.S. Bureau of Labor Statistics — OEWS.",
+    "sourceUrl": "Direct official BLS release or table URL for this record.",
+    "publicationDate": "Actual BLS publication date in YYYY-MM-DD format.",
+    "retrievedAt": "Actual download/verification timestamp in ISO 8601 format.",
+    "recordStatus": "Must be verified only after checking every value against the cited BLS source.",
+    "points": [
+      {
+        "year": "integer calendar year from the BLS annual table",
+        "employment": "non-negative integer annual employment estimate from BLS"
+      }
+    ]
+  },
+  "records": []
+}
