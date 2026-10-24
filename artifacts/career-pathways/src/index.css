@@ -103,6 +103,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .skills-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .trend-down{background:#fbf2ef;color:#875b4e;border-color:#ead3ca}.trend-up{background:#eff9f8;color:#18736f;border-color:#d4e9e7}
 .profile-page{max-width:1000px}
+.profile-review-dialog{overscroll-behavior:contain}
+@media (orientation:landscape) and (max-height:360px){
+  .profile-review-dialog{max-height:calc(100dvh - 16px)!important;overflow-y:auto!important}
+  .profile-review-dialog>div:first-child,
+  .profile-review-dialog>[data-testid="review-profile-summary"],
+  .profile-review-dialog>.profile-actions{flex:0 0 auto}
+  .profile-review-dialog>[data-testid="review-profile-summary"]{min-height:auto!important;overflow:visible!important}
+}
 .profile-saved-strip{border-color:#cfe7e3!important;background:#eff9f8!important;color:#176d69!important;border-radius:12px!important}
 .profile-step{margin-bottom:18px}
 .profile-step-heading{display:flex;align-items:flex-start;gap:13px;margin-bottom:22px}

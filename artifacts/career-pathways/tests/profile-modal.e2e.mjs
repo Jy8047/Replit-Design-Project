@@ -21,7 +21,7 @@ const copy = {
 
 let journeys = 0;
 await withProfileBrowser(async b => {
-  const { cdp, evaluate: ev, wait, present, click, setValue } = b;
+  const { cdp, evaluate: ev, wait, present, click, setValue, setViewport } = b;
   const stored = () => ev(`JSON.parse(localStorage.getItem('${savedKey}'))`);
   const closed = () => wait(`!document.querySelector('[data-testid="dialog-profile-review"]')`);
   const navigate = async path => {
@@ -52,10 +52,7 @@ await withProfileBrowser(async b => {
   for (const locale of ['en', 'zh', 'ms']) {
     for (const type of ['fresh_graduate', 'career_switcher']) {
       const mobile = locale !== 'en';
-      await cdp('Emulation.setDeviceMetricsOverride', {
-        width: mobile ? 390 : 1280, height: mobile ? 844 : 900,
-        deviceScaleFactor: 1, mobile,
-      });
+      await setViewport({ width: mobile ? 390 : 1280, height: mobile ? 844 : 900, mobile });
       const old = {
         ...emptyProfile, profile_type: type, input_method: 'pdf_upload',
         mapping_provenance: 'simulated', confirmed_by_user: true,
@@ -105,6 +102,43 @@ await withProfileBrowser(async b => {
       assert.ok(layout.left >= 0 && layout.right <= layout.width + 1);
       assert.ok(layout.top >= 0 && layout.bottom <= layout.height + 1);
       assert.ok(layout.scroll && layout.footer, JSON.stringify(layout));
+      if (locale === 'en' && type === 'career_switcher') {
+        for (const viewport of [{ width: 320, height: 180 }, { width: 568, height: 320 }]) {
+          await click('button-review-cancel');
+          await closed();
+          await setViewport({ ...viewport, mobile: true });
+          await open();
+          const reach = async target => {
+            const result = await ev(`(() => {
+              const dialog=document.querySelector('[data-testid="dialog-profile-review"]');
+              const element=${target};
+              element.scrollIntoView({block:'center',inline:'nearest'});
+              const d=dialog.getBoundingClientRect(), r=element.getBoundingClientRect();
+              const viewport={width:visualViewport.width,height:visualViewport.height};
+              return {visible:r.height>0&&r.top>=d.top-1&&r.bottom<=d.bottom+1
+                  &&r.left>=-1&&r.right<=viewport.width+1&&r.top>=-1&&r.bottom<=viewport.height+1,
+                dialog:{left:d.left,right:d.right,top:d.top,bottom:d.bottom},viewport,scrollTop:dialog.scrollTop,
+                scrollable:dialog.scrollHeight>dialog.clientHeight,overflowY:getComputedStyle(dialog).overflowY};
+            })()`);
+            assert.ok(result.visible, `${viewport.width}×${viewport.height}: target must be reachable in the dialog (${JSON.stringify(result)})`);
+            assert.ok(result.dialog.left >= 0 && result.dialog.right <= result.viewport.width + 1
+              && result.dialog.top >= 0 && result.dialog.bottom <= result.viewport.height + 1,
+            `${viewport.width}×${viewport.height}: dialog must stay within the visible viewport`);
+            assert.ok(result.scrollable && ['auto', 'scroll'].includes(result.overflowY),
+              `${viewport.width}×${viewport.height}: dialog must provide a scroll path`);
+          };
+          await ev(`document.querySelector('[data-testid="dialog-profile-review"]').scrollTop=0`);
+          await reach(`document.querySelector('[data-testid="dialog-profile-review"] h2')`);
+          await reach(`Array.from(document.querySelectorAll('[data-testid="review-profile-summary"] .profile-review-row')).find(row=>row.textContent.includes('Fictional School'))`);
+          await reach(`document.querySelector('[data-testid="button-review-cancel"]')`);
+          await reach(`document.querySelector('[data-testid="button-confirm-profile"]')`);
+          console.log(`PASS profile review reachability (${viewport.width}×${viewport.height})`);
+        }
+        await click('button-review-cancel');
+        await closed();
+        await setViewport({ width: 1280, height: 900, mobile: false });
+        await open();
+      }
       if (type === 'career_switcher' && locale !== 'ms') {
         const shot = await cdp('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
         const path = `/tmp/profile-review-modal-${mobile ? 'mobile' : 'desktop'}.png`;

@@ -414,7 +414,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     </form>}
 
     <Dialog open={step === 'review'} onOpenChange={open => { if (!open) setStep('form'); }}>
-      <DialogContent closeLabel={t('Close')} closeTestId="button-review-close" className="flex w-[calc(100%-2rem)] max-w-2xl flex-col gap-3 overflow-hidden p-0" data-testid="dialog-profile-review">
+      <DialogContent closeLabel={t('Close')} closeTestId="button-review-close" className="profile-review-dialog flex w-[calc(100%-2rem)] max-w-2xl flex-col gap-3 overflow-y-auto p-0" data-testid="dialog-profile-review">
         <div className="px-6 pt-6 pr-12">
           <DialogHeader><DialogTitle>{t('Review Your Profile')}</DialogTitle><DialogDescription>{t('Please review your information before confirming.')}</DialogDescription></DialogHeader>
         </div>

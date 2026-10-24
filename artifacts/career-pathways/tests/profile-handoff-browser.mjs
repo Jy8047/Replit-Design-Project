@@ -58,6 +58,8 @@ export async function withProfileBrowser(run) {
       throw new Error(`Timed out: ${expression}`);
     };
     const selector = id => `[data-testid="${id}"]`;
+    const setViewport = ({ width, height, mobile = true, deviceScaleFactor = 1 }) =>
+      cdp('Emulation.setDeviceMetricsOverride', { width, height, mobile, deviceScaleFactor });
     const present = id => wait(`!!document.querySelector('${selector(id)}')`);
     const click = async id => {
       await present(id);
@@ -81,7 +83,7 @@ export async function withProfileBrowser(run) {
       await cdp('DOM.setFileInputFiles', { nodeId: node.nodeId, files: [file] });
       await present(expected);
     };
-    await run({ cdp, evaluate, wait, present, click, setValue, upload, errors, requests });
+    await run({ cdp, evaluate, wait, present, click, setValue, setViewport, upload, errors, requests });
   } finally {
     socket?.close();
     chrome.kill('SIGTERM');
