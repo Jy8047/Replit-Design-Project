@@ -208,6 +208,50 @@ function SettingsPage({onReset}:{onReset:()=>void}) {
    <div style={{marginTop:19,fontSize:11,color:'#8a9085',lineHeight:1.7,maxWidth:740}}>{t('Profiles are stored in this browser. Clearing browser storage removes them; there is no profile cloud sync.')}</div>
  </>;
 }
+
+const DECODE_GLYPHS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>/\\|';
+const DECODE_DURATION_MS = 2500;
+const BRAND_HOLD_MS = 3000;
+const SPLASH_FADE_MS = 560;
+
+function EntrySplashBrand({ reducedMotion, decoding }: { reducedMotion: boolean; decoding: boolean }) {
+  const [displayName, setDisplayName] = useState(() =>
+    reducedMotion || !decoding ? PRODUCT_NAME : DECODE_GLYPHS.slice(0, PRODUCT_NAME.length),
+  );
+
+  useEffect(() => {
+    if (reducedMotion || !decoding) {
+      setDisplayName(PRODUCT_NAME);
+      return;
+    }
+
+    const startTime = performance.now();
+    let frame = 0;
+    const interval = window.setInterval(() => {
+      frame += 1;
+      const progress = Math.min((performance.now() - startTime) / DECODE_DURATION_MS, 1);
+      const revealedCharacters = Math.floor(progress * PRODUCT_NAME.length);
+      const nextName = PRODUCT_NAME.split('').map((character, index) => {
+        if (character === ' ' || index < revealedCharacters || progress === 1) return character;
+        const glyphIndex = (index * 7 + frame * 11) % DECODE_GLYPHS.length;
+        return DECODE_GLYPHS[glyphIndex];
+      }).join('');
+
+      setDisplayName(nextName);
+      if (progress === 1) window.clearInterval(interval);
+    }, 50);
+
+    return () => window.clearInterval(interval);
+  }, [decoding, reducedMotion]);
+
+  const splitAt = PRODUCT_NAME.lastIndexOf(' ');
+
+  return <div className="entry-splash__brand" aria-hidden="true">
+    <span className="entry-splash__word">{displayName.slice(0, splitAt)}</span>
+    <span className="entry-splash__ai">{displayName.slice(splitAt + 1)}</span>
+  </div>;
+}
+
 function Router() {
   const { t } = useI18n();
  const [profile,setProfile]=useState<Profile|null>(()=>readProfile());
@@ -255,34 +299,64 @@ function Router() {
   </Switch></Shell></RoutedErrorBoundary>;
 }
 function App() {
-  const [splashPhase, setSplashPhase] = useState<'visible' | 'fading' | 'done'>('visible');
+  const [splashPhase, setSplashPhase] = useState<'visible' | 'holding' | 'fading' | 'done'>('visible');
+  const [reducedMotion, setReducedMotion] = useState(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
 
   useEffect(() => {
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateMotionPreference = () => setReducedMotion(motionPreference.matches);
+    motionPreference.addEventListener('change', updateMotionPreference);
+    return () => motionPreference.removeEventListener('change', updateMotionPreference);
+  }, []);
+
+  useEffect(() => {
+    let holdTimer = 0;
     let fadeTimer = 0;
-    const holdTimer = window.setTimeout(() => {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const beginFade = () => {
+      if (reducedMotion) {
         setSplashPhase('done');
         return;
       }
 
       setSplashPhase('fading');
-      fadeTimer = window.setTimeout(() => setSplashPhase('done'), 560);
-    }, 3000);
+      fadeTimer = window.setTimeout(() => setSplashPhase('done'), SPLASH_FADE_MS);
+    };
+
+    if (reducedMotion) {
+      setSplashPhase('holding');
+      holdTimer = window.setTimeout(beginFade, BRAND_HOLD_MS);
+    } else {
+      const decodeTimer = window.setTimeout(() => {
+        setSplashPhase('holding');
+        holdTimer = window.setTimeout(beginFade, BRAND_HOLD_MS);
+      }, DECODE_DURATION_MS);
+
+      return () => {
+        window.clearTimeout(decodeTimer);
+        window.clearTimeout(holdTimer);
+        window.clearTimeout(fadeTimer);
+      };
+    }
 
     return () => {
       window.clearTimeout(holdTimer);
       window.clearTimeout(fadeTimer);
     };
-  }, []);
+  }, [reducedMotion]);
 
   return <I18nProvider><QueryClientProvider client={queryClient}><TooltipProvider>
     <div inert={splashPhase !== 'done' ? true : undefined}>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router/></WouterRouter>
       <Toaster/>
     </div>
-    {splashPhase !== 'done' && <div className={`entry-splash${splashPhase === 'fading' ? ' entry-splash--fading' : ''}`} aria-hidden={splashPhase === 'fading' || undefined} role={splashPhase === 'visible' ? 'status' : undefined} aria-label={splashPhase === 'visible' ? `${PRODUCT_NAME}. ${PRODUCT_TAGLINE}` : undefined} data-testid="entry-splash">
-      <div className="entry-splash__card">
-        <img src="/logo.png" alt={`${PRODUCT_NAME} — ${PRODUCT_TAGLINE}`} width={390} height={390} fetchPriority="high" />
+    {splashPhase !== 'done' && <div className={`entry-splash${splashPhase === 'fading' ? ' entry-splash--fading' : ''}`} aria-hidden={splashPhase === 'fading' || undefined} role={splashPhase === 'visible' || splashPhase === 'holding' ? 'status' : undefined} aria-label={splashPhase === 'visible' || splashPhase === 'holding' ? PRODUCT_NAME : undefined} data-testid="entry-splash">
+      <div className="entry-splash__particles" aria-hidden="true">
+        <span/><span/><span/><span/><span/><span/>
+      </div>
+      <div className="entry-splash__core" aria-label={PRODUCT_NAME}>
+        <EntrySplashBrand reducedMotion={reducedMotion} decoding={splashPhase === 'visible' && !reducedMotion}/>
       </div>
     </div>}
   </TooltipProvider></QueryClientProvider></I18nProvider>;
