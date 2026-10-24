@@ -1,14 +1,16 @@
 # Submission materials
 
 These are copies of the files supplied for the SDC Hackathon submission. The
-PDF and PPTX contents have not been edited; each copy was checked against its
-source attachment using SHA-256.
+PDF and PPTX contents have not been edited. The Preliminary PDF was copied
+byte-for-byte from the supplied attachment and its title and content were
+checked. The supplied Google Drive URL was not independently verified because
+it redirects to Google sign-in; verification applies only to the attachment.
 
 | Local file | Supplied source attachment | Status |
 |---|---|---|
 | `Replit_Proof_of_Use_1792860592734.pdf` | `attached_assets/Replit_Proof_of_Use_1792860592734.pdf` | Present; unchanged copy |
 | `SDC2026_Freshteam_TechDeclaration_1792861118518.pdf` | `attached_assets/SDC2026_Freshteam_TechDeclaration_1792861118518.pdf` | Present; unchanged copy |
-| `SDC_Hackathon__Fresh_team_Preliminary_1792863184030.pdf` | `attached_assets/SDC_Hackathon__Fresh_team_Preliminary_1792863184030.pdf` | Present; unchanged copy |
+| `SDC2026_Fresh_team_preliminary_1792868544917.pdf` | `attached_assets/SDC2026_Fresh_team_preliminary_1792868544917.pdf` | Present; copied byte-for-byte (SHA-256); title/content checked; Drive URL not independently verified (Google sign-in redirect) |
 | `PivotPathway_slide_1792863184029.pptx` | `attached_assets/PivotPathway_slide_1792863184029.pptx` | Present; unchanged copy |
 
 ## Review before submission or public sharing

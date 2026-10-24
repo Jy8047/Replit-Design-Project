@@ -260,7 +260,7 @@ are recorded in the data README linked above.
 ## Submission checklist
 
 - [x] Project overview, actual architecture, current tech stack, and run/test commands documented.
-- [x] Supplied Replit Proof of Use, Technical Tools Declaration, Preliminary PDF, and PPTX copied unchanged to `submission/`.
+- [x] Supplied Replit Proof of Use, Technical Tools Declaration, and PPTX copied unchanged to `submission/`; the [Preliminary PDF](submission/SDC2026_Fresh_team_preliminary_1792868544917.pdf) matches the supplied attachment byte-for-byte, and its title/content were checked. The supplied Drive URL redirects to Google sign-in and was not independently verified.
 - [x] Live Demo URL and Slide Deck URL copied exactly from the supplied instructions.
 - [x] Demo Video remains **Pending — link to be provided**.
 - [x] RunPod Endpoint status is **Not applied**.
