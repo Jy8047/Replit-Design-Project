@@ -298,7 +298,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
       <button type="button" className="btn" onClick={discardDraft} data-testid="button-discard-profile-draft">{t('Discard draft')}</button>
     </div>}
     {draftCleanupError && <p className="profile-error" role="alert" data-testid="error-profile-draft-cleanup">{t('The temporary draft could not be removed. Your entries have been kept. Check browser storage permissions before trying again.')}</p>}
-    {form.mapping_provenance === 'simulated' && <div className="profile-inline-notice" role="note" data-testid="profile-simulated-provenance"><p>{t('This profile contains a simulated rule-mapped draft, not a real GLM-5.3 result. Confirmation records your review; it does not turn the simulation into a verified AI result.')}</p></div>}
+    {form.mapping_provenance === 'simulated' && <div className="profile-inline-notice" role="note" data-testid="profile-simulated-provenance"><p>{t('This profile contains a simulated rule-mapped draft, not AI output. Confirmation records your review; it does not turn the simulation into verified facts.')}</p></div>}
     {profile && <div className="profile-saved-strip" data-testid="status-profile-saved-summary">
       <ShieldCheck size={17}/><span>{t(profile.confirmed_by_user ? 'A confirmed profile is saved in this browser only. You can edit it at any time.' : 'This profile was saved earlier. Review and confirm it to mark the details as checked by you.')}</span>
       {profile.confirmed_by_user && <span className="tag"><Check size={12}/>{t('Profile saved')}</span>}
@@ -419,7 +419,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
           <DialogHeader><DialogTitle>{t('Review Your Profile')}</DialogTitle><DialogDescription>{t('Please review your information before confirming.')}</DialogDescription></DialogHeader>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-6" data-testid="review-profile-summary">
-          {form.mapping_provenance === 'simulated' && <div className="profile-inline-notice" role="note" data-testid="dialog-simulated-provenance"><p>{t('This profile contains a simulated rule-mapped draft, not a real GLM-5.3 result. Confirmation records your review; it does not turn the simulation into a verified AI result.')}</p></div>}
+          {form.mapping_provenance === 'simulated' && <div className="profile-inline-notice" role="note" data-testid="dialog-simulated-provenance"><p>{t('This profile contains a simulated rule-mapped draft, not AI output. Confirmation records your review; it does not turn the simulation into verified facts.')}</p></div>}
           <div className="profile-review-meta"><span className="tag">{t(profileType === 'career_switcher' ? 'Career Switcher' : 'Fresh Graduate')}</span><span className="tag" data-testid="text-profile-input-method">{t(form.input_method === 'pdf_upload' ? 'PDF upload' : 'Online form')}</span></div>
           <div className="profile-review-group"><h3>{t('Profile Type')}</h3>
             <ReviewRow label="Profile Type" value={t(profileType === 'career_switcher' ? 'Career Switcher' : profileType === 'fresh_graduate' ? 'Fresh Graduate' : '')} t={t}/>
@@ -468,7 +468,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
       </div>
     </section>}
 
-    <p className="profile-privacy-note">{t('Confirmed profiles are saved on this device. PDF extraction and optional simulated mapping run on this app server. This public demo does not send CV text to RunPod. Avoid unnecessary sensitive details.')}</p>
+    <p className="profile-privacy-note">{t('Confirmed profiles are saved on this device. PDF text extraction and optional rule-based simulation run on this app server. No external AI service is used. Avoid unnecessary sensitive details.')}</p>
     {saved && <span className="sr-only" data-testid="status-profile-saved">{t('Saved locally')}</span>}
     <style>{`
       .profile-page{max-width:920px}.profile-saved-strip{display:flex;align-items:center;gap:9px;padding:11px 14px;border:1px solid #dce5d9;background:#f1f5ec;color:#4b6651;border-radius:11px;margin:-8px 0 18px;font-size:12px}.profile-saved-strip .tag{margin-left:auto;gap:5px}

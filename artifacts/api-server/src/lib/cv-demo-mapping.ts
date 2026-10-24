@@ -1,5 +1,5 @@
 import type { CvProfile } from "@workspace/api-zod";
-import { validateExtractedProfile, type ProfileType } from "./runpod-glm-profile.ts";
+import { validateExtractedProfile, type ProfileType } from "./cv-profile.ts";
 
 const fields = [
   "internship_experience", "academic_experience", "professional_certificates",

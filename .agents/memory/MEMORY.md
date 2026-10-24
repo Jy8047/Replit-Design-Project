@@ -1,6 +1,6 @@
 - [Provisional project name](provisional-project-name.md) — The project name is undecided; keep the title editable and removable.
 - [Evidence and consent](domain-evidence-constraints.md) — Evidence, source checks, paid-service consent, and the confirmation boundary for profile drafts.
-- [Runpod scope](runpod-scope.md) — No-login CV demo; simulated mapping stays labelled and public requests must never reach paid inference.
+- [Runpod scope](runpod-scope.md) — Team decision: no GPU, RunPod, or GLM; keep PDF extraction local and mapping explicitly simulated.
 - [PDF worker verification](pdf-worker-verification.md) — Verify real extraction through the bundled API; source-only parser tests can miss deployment failures.
 - [Security scan evidence](security-scan-evidence.md) — Validate the actual findings collection and completion flags; absent properties do not establish a clean scan.
 - [Catalog/codegen compatibility](catalog-codegen-compatibility.md) — Keep generator runtime targets explicit; catalog auto-detection can silently select incompatible majors.

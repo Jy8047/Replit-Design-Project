@@ -4,15 +4,9 @@ import { useI18n } from '@/lib/i18n';
 import type { Profile, ProfileType } from '@/lib/profile';
 
 const messages: Record<string, string> = {
-  LIVE_MAPPING_BLOCKED: 'Real GLM-5.3 mapping is blocked in this public demo. Use local extraction or simulated mapping.',
+  LIVE_MAPPING_BLOCKED: 'External model mapping is not available in this project. Use local extraction or simulated mapping.',
   OCR_REQUIRED: 'No extractable text was found. OCR is required but is not implemented. Use the online form.',
-  LIVE_DISABLED: 'PDF text extraction succeeded. Live RunPod mapping is disabled; no text was sent to RunPod.',
-  KEY_MISSING: 'PDF text extraction succeeded, but the server has no RunPod key configured.',
-  AUTH_ERROR: 'RunPod authentication failed. Ask the project owner to check the server configuration.',
   RATE_LIMITED: 'The request limit was reached. Do not retry repeatedly; try the online form.',
-  UPSTREAM_TIMEOUT: 'RunPod timed out. A request may already have been billed. It was not retried automatically.',
-  UPSTREAM_ERROR: 'RunPod could not complete the request. No profile was changed.',
-  MALFORMED_RESPONSE: 'RunPod returned an unusable response. No profile was changed.',
   INVALID_PROFILE: 'The extracted profile failed schema or text-evidence checks. No profile was changed.',
   TEXT_TOO_LARGE: 'The extracted text exceeds the processing limit. Use a shorter CV or the online form.',
   ENCRYPTED_PDF: 'Encrypted or password-protected PDFs are not supported. Use an unencrypted PDF.',
@@ -71,7 +65,7 @@ export function PdfExtractionPanel({ file, onUseDraft, onOnline }: {
     }
   };
   return <div className="profile-pdf-flow" data-testid="pdf-extraction-panel">
-    <div className="profile-inline-notice" role="note" data-testid="public-demo-notice"><p>{t('Public demo: real GLM-5.3 calls are blocked. No login is required. Local extraction and simulated mapping do not contact RunPod.')}</p></div>
+    <div className="profile-inline-notice" role="note" data-testid="public-demo-notice"><p>{t('This project does not use an AI model or GPU service. Local PDF extraction and rule-based simulation are available; no external model service is called.')}</p></div>
     <div className="profile-parser-note"><p>{t('PDF bytes are sent to this app server for text extraction only. Files and raw text are not saved on the server. OCR is not implemented. Nothing changes your confirmed profile until you confirm.')}</p></div>
     <label className="profile-form-field">{t('Profile Type')}
       <select value={type} disabled={busy} onChange={event => { setType(event.target.value as ProfileType); setResult(null); }} data-testid="select-pdf-profile-type">
@@ -80,7 +74,7 @@ export function PdfExtractionPanel({ file, onUseDraft, onOnline }: {
       </select>
     </label>
     <p><label><input type="checkbox" checked={consent} disabled={busy} onChange={event => setConsent(event.target.checked)} data-testid="checkbox-pdf-consent"/> {t('I agree to send this PDF to the app server for text extraction. Use a fictional CV for testing.')}</label></p>
-    <p><label><input type="checkbox" checked={demo} disabled={busy} onChange={event => { setDemo(event.target.checked); setResult(null); }} data-testid="checkbox-demo-mapping"/> {t('Enable simulated mapping (rules only, not AI). Copy explicitly labelled PDF lines into an editable draft; no RunPod request is made.')}</label></p>
+    <p><label><input type="checkbox" checked={demo} disabled={busy} onChange={event => { setDemo(event.target.checked); setResult(null); }} data-testid="checkbox-demo-mapping"/> {t('Enable simulated mapping (rules only, not AI). Copy explicitly labelled PDF lines into an editable draft; no external service is used.')}</label></p>
     {demo && <p>{t('Demo format: use one English label per line, for example School: Fictional University, Degree: Bachelor, Major: Computing, Skills: Python, SQL. Unknown narrative is not mapped and missing fields stay empty.')}</p>}
     <div className="profile-actions">
       <button type="button" className="btn btn-primary" disabled={!file || !consent || busy} onClick={() => void parse()} data-testid="button-parse-pdf">{t(busy ? 'Extracting…' : 'Continue / Parse CV')}</button>
@@ -92,7 +86,7 @@ export function PdfExtractionPanel({ file, onUseDraft, onOnline }: {
       {messages[result.mapping] && result.status !== 'OCR_REQUIRED' && <p>{t(messages[result.mapping])}</p>}
       {result.text && <details open><summary>{t('Extracted PDF text (not saved)')}</summary><div className="profile-extracted-text" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12, lineHeight: 1.6 }} data-testid="pdf-extracted-text">{result.text}</div></details>}
       {result.profile && <>
-        <p data-testid="simulated-mapping-label">{t('SIMULATED MAPPING — not a real GLM-5.3 result. Values are copied by simple label rules, not AI. Review and edit every field before confirmation.')}</p>
+        <p data-testid="simulated-mapping-label">{t('SIMULATED MAPPING — not AI output. Values are copied by simple label rules. Review and edit every field before confirmation.')}</p>
         <button type="button" className="btn btn-primary" onClick={() => onUseDraft(result.profile!)} data-testid="button-use-pdf-draft">{t('Review and edit extracted draft')}</button>
       </>}
     </div>}

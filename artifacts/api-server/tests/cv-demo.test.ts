@@ -32,8 +32,8 @@ test("repeated labels use first value and all explicit employment stays visible 
     assert.equal(result.employment_experience, "Fictional work");
   }
 });
-test("public router has no live model dependency or credentials/configuration reads", async () => {
+test("public router has no external model dependency, network call, or credential/configuration reads", async () => {
   const source = await readFile(new URL("../src/routes/cv-extraction.ts", import.meta.url), "utf8");
-  assert.doesNotMatch(source, /createGlmProfileClient|serverGlmSettings|process\.env|deps\.map/);
+  assert.doesNotMatch(source, /process\.env|fetch\s*\(|https?:\/\//);
   assert.match(source, /LIVE_MAPPING_BLOCKED/);
 });

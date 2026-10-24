@@ -126,8 +126,8 @@ pnpm --filter @workspace/career-pathways exec node --experimental-strip-types te
 
 ## 7. 未完成能力与安全边界
 
-- **GLM-5.3 尚未接通公开流程**。准备好的客户端不等于实测模型能力；公开入口付费映射被拒绝，真实调用保持禁用。规则模拟必须标明 simulated，不得改称“真实 AI 成功”。
-- **真实 OCR 尚未实现**。只支持文字型 PDF；OCR_REQUIRED 是明确限制。离线 OCR 适配器的测试通过不代表图像识别已实现。
+- **本项目不使用 GPU、RunPod 或 GLM-5.3**。先前未接线的客户端与离线 OCR fixture 已移除；PDF 技能映射仅按明确字段标签做规则模拟，必须标为 simulated，不得描述为 AI 成功。
+- **真实 OCR 尚未实现**。只支持文字型 PDF；OCR_REQUIRED 是明确限制。扫描版 PDF 不会由 OCR 处理。
 - PDF API 仍匿名；同意头、CORS 和限流都不是认证。已有应用入口约 30 秒绝对截止、10 MiB 声明及实际字节限制、禁压缩、解析取消和并发回收，见 [PDF 上传防护](pdf-upload-protection.md)。
 - 计时不覆盖完整请求头到达应用之前的慢连接／代理缓冲；单进程全局名额可被一人耗尽，JS 堆限制不是整体 RSS 硬上限。平台访问保护、公网抗压和恶意 PDF 内存峰值未验证；界面 Private workspace 文案不能证明私有访问。
 - 最新依赖记录：**严重 0、高危 1、中危 3、低危 1**。剩余高危为 sandbox 的 braces 3.0.3（GHSA-vfj7-8cjw-p6xm，无已知修复版）；中危为 fast-copy 4.0.3、postcss-selector-parser 6.0.10、ts-deepmerge 7.0.3，低危为 esbuild 0.27.3。ts-deepmerge 是生产传递依赖，不能把剩余项一概说成开发风险。详细修复版本、路径和理由见依赖安全复核；旧交接报告的 20 高危计数是历史值。

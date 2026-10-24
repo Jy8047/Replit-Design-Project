@@ -108,9 +108,9 @@
 ## API安全及资源风险
 
 - 无应用身份认证，匿名本地提取仍可用。同意头、CORS、跨站检查、限流不算鉴权。
-- 公开路由不连接真实模型；map_profile=true在解析前返回403/LIVE_MAPPING_BLOCKED。
-  serverGlmSettings固定disabled且不读取凭据，改环境开关不能恢复公开付费调用。
-- 开发和生产环境RUNPOD_LIVE_ENABLED均未设置，保持默认关闭；没有改动开关。
+- 验收时公开路由不连接真实模型；map_profile=true在解析前返回403/LIVE_MAPPING_BLOCKED。
+  当时的 GLM 客户端硬编码为 disabled、不读取凭据；后续清理已移除该客户端和配置读取代码。
+- 当时开发和生产环境没有设置 RUNPOD_LIVE_ENABLED；当前代码不读取该开关。Replit Secrets 中旧密钥的存在状态未检查，也未删除。
 - 文件10MiB、30页、60000字符、worker15秒、两并发、每进程每分钟10次。
   worker空环境、关闭嵌入JS执行、不转发解析日志；不持久化PDF或原始正文。
 - 256MiB是JS老生代堆上限，不是完整RSS上限；worker不是操作系统沙箱。

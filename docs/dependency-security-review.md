@@ -88,7 +88,7 @@
 | 高危 GHSA-vfj7-8cjw-p6xm | braces 3.0.3 → 未知 | sandbox 传递开发依赖。注册表最新版仍为 3.0.3，扫描无修复版本；fast-glob 3.3.3、micromatch 4.0.8 也仍保留该链。固定模式限制了当前暴露，但不认定安全；不未经验证替换文件发现库或伪造本地修复 |
 | 中危 GHSA-jggr-w7fw-pc2j | fast-copy 4.0.3 → 4.1.0 | API 的开发依赖 pino-pretty → fast-copy；当前开发日志确实会运行，生产配置不启用 pretty transport。深层对象复制可栈耗尽，当前请求日志只保留有限字段。明确有兼容候选，不声称无法升级；本轮集中处理原 20 高危，低优先级待后续验证修复 |
 | 中危 GHSA-rj75-hqrm-r3gf | postcss-selector-parser 6.0.10 → 7.1.6 | 主前端开发依赖 tailwindcss/typography → parser。恶意平坦选择器可能耗 CPU；实际 CSS 构建路径存在，当前输入为可信仓库。跨主版本，需要 typography／样式回归，未擅自强制替换 |
-| 中危 GHSA-87mf-gv2c-c62c | ts-deepmerge 7.0.3 → 8.0.0 | **生产传递依赖**：API → runpod-sdk → xior → ts-deepmerge。恶意键覆盖可导致异常；当前代码仅类型导入 SDK，公开路由不连接它，未实测未来 SDK 在线合并路径。跨主版本不能未经验证强升；未来若启用 SDK 必须先复核，不能把生产依赖说成全部安全 |
+| 中危 GHSA-87mf-gv2c-c62c | ts-deepmerge 7.0.3 → 8.0.0 | **历史扫描路径，已移除**：当时 API → runpod-sdk → xior → ts-deepmerge 为生产传递依赖，但 SDK 只用于未接线的离线 fixture 类型。本轮移除该 SDK 和 fixture 后重新安装锁文件；当前依赖路径需以最新扫描结果为准，不把旧扫描结果视为当前状态 |
 | 低危 GHSA-g7r4-m6w7-qqqr | esbuild 0.27.3 → 0.28.1 | API 直接开发依赖，亦为 Vite、Orval、Drizzle/tsx 等传递依赖，现有共享 override 固定 0.27.3。此告警针对 Windows serve 模式；当前 Linux 用于打包，未发现应用调用其 serve API。跨 0.x minor 涉及共享工具链，暂保留，不声称包已修复 |
 
 待处理不等于忽略。若内部交付要求零高危，本次仍不满足；若接受固定可信构建输入和已知剩余风险，可有条件内部交接，不能签署公网安全保证。

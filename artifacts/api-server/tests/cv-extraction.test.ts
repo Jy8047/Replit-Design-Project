@@ -107,9 +107,9 @@ test("paid-mode requests and spoofed identity/config headers are blocked before 
   let extractionCalls = 0;
   await withApi(async post => {
     for (const headers of [
-      { "X-CV-Consent": "runpod-text" },
+      { "X-CV-Consent": "external-ai" },
       { "X-CV-Consent": "local-extraction", "Authorization": "Bearer fictional-forged-token" },
-      { "X-CV-Consent": "runpod-text", "X-Replit-User-Id": "fictional-owner", "RUNPOD_LIVE_ENABLED": "true" },
+      { "X-CV-Consent": "external-ai", "X-Replit-User-Id": "fictional-owner" },
     ]) {
       const response = await post(Buffer.from("not a PDF"), "profile_type=fresh_graduate&map_profile=true&mapping_mode=demo", headers);
       assert.equal(response.status, 403);
