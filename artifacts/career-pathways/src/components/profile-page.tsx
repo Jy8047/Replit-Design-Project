@@ -275,7 +275,7 @@ export function ProfilePage({ profile, onSave, onDelete }: Props) {
     const value = form[field.key];
     const isSkills = field.key === 'skills';
     return <div key={field.key} className="profile-form-field">
-      <label className="label" htmlFor={`profile-${field.key}`}>{t(field.label)}{field.required && <><span className="profile-required-mark" aria-hidden="true">*</span><span className="profile-required"> {t('Required')}</span></>}</label>
+      <label className="label" htmlFor={`profile-${field.key}`}>{t(field.label)}{field.required && <span className="profile-required"> · {t('required')}</span>}</label>
       {field.multiline
         ? <textarea id={`profile-${field.key}`} rows={3} className="field" placeholder={t(field.placeholder ?? field.hint)} value={value} aria-required={field.required || undefined} aria-invalid={isSkills ? skillsError : undefined} aria-describedby={isSkills && skillsError ? 'error-profile-skills' : undefined} onChange={event => update(field.key, event.target.value)} data-testid={`input-profile-${field.key}`}/>
         : <input id={`profile-${field.key}`} className="field" placeholder={t(field.placeholder ?? field.hint)} value={value} onChange={event => update(field.key, event.target.value)} data-testid={`input-profile-${field.key}`}/>}
