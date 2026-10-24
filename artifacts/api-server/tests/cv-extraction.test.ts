@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { request as httpRequest } from "node:http";
 import { once } from "node:events";
 import express from "express";
-import { makePdf, makeMultiColumnPdf, encryptedPdf } from "./cv-fixtures.ts";
+import {
+  makePdf, makeMultiColumnPdf, makeUnusualReadingOrderPdf, makePdfPages, encryptedPdf,
+} from "./cv-fixtures.ts";
 import { extractPdfText, MAX_CV_PDF_BYTES } from "../src/lib/pdf-extraction.ts";
 import { createCvExtractionRouter } from "../src/routes/cv-extraction.ts";
 
@@ -105,7 +107,7 @@ test("HTTP demo maps explicit actual PDF lines and preserves employment, never r
   });
 });
 
-test("HTTP demo maps a synthetic multi-column PDF to a partial, unconfirmed profile", async () => {
+test("HTTP demo maps simple labelled PDF lines to a partial, unconfirmed profile", async () => {
   const text = `Jordan Miller | jordan.miller@example.test | +60 12-345 6789
 EDUCATION University of Malaya | 2020-2024 | Bachelor of Science in Computer Science
 SKILLS Python | SQL | React
@@ -149,6 +151,74 @@ test("HTTP demo maps separate text columns without merging adjacent field values
     assert.equal(response.body.profile.employment_experience, "");
     assert.equal(response.body.profile.personal_experience, "");
     assert.equal(response.body.profile.background, "");
+  });
+});
+
+test("HTTP demo maps a real generated table-like PDF through explicit column labels", async () => {
+  const text = `Jordan Miller
+School | Degree | Major | Skills
+Fictional University | Bachelor of Science | Data Science | Python, SQL`;
+  await withApi(async post => {
+    const response = await post(await makePdf(text), "profile_type=fresh_graduate&mapping_mode=demo");
+    assert.equal(response.status, 200);
+    assert.equal(response.body.profile.education.school, "Fictional University");
+    assert.equal(response.body.profile.education.degree, "Bachelor of Science");
+    assert.equal(response.body.profile.education.major, "Data Science");
+    assert.equal(response.body.profile.skills, "Python, SQL");
+    assert.equal(response.body.profile.confirmed_by_user, false);
+  });
+});
+
+test("HTTP demo maps reordered sections and wrapped education in a generated PDF", async () => {
+  const text = `Jordan Miller
+SKILLS
+Python
+SQL
+EDUCATION
+Example Institute
+Bachelor of Science
+in Computer Science`;
+  await withApi(async post => {
+    const response = await post(await makePdf(text), "profile_type=fresh_graduate&mapping_mode=demo");
+    assert.equal(response.status, 200);
+    assert.equal(response.body.profile.education.school, "Example Institute");
+    assert.equal(response.body.profile.education.degree, "Bachelor of Science");
+    assert.equal(response.body.profile.education.major, "Computer Science");
+    assert.equal(response.body.profile.skills, "Python, SQL");
+  });
+});
+
+test("HTTP demo handles a PDF whose content stream lists the skills column before the name", async () => {
+  await withApi(async post => {
+    const response = await post(
+      await makeUnusualReadingOrderPdf(),
+      "profile_type=fresh_graduate&mapping_mode=demo",
+    );
+    assert.equal(response.status, 200);
+    assert.ok(response.body.text.indexOf("SKILLS") < response.body.text.indexOf("Jordan Miller"));
+    assert.equal(response.body.profile.name, "");
+    assert.equal(response.body.profile.education.school, "Example Institute");
+    assert.equal(response.body.profile.education.major, "Computer Science");
+    assert.equal(response.body.profile.skills, "Python, SQL");
+  });
+});
+
+test("HTTP demo carries source-backed fields across actual PDF pages", async () => {
+  const pages = [
+    "Jordan Miller",
+    "EDUCATION\nExample Institute\nBachelor of Science\nin Computer Science",
+    "SKILLS\nPython\nSQL\nWORK EXPERIENCE\nNorthstar Analytics | Data Intern | 2023-2024",
+  ];
+  await withApi(async post => {
+    const response = await post(await makePdfPages(pages), "profile_type=career_switcher&mapping_mode=demo");
+    assert.equal(response.status, 200);
+    assert.equal(response.body.pages, 3);
+    assert.equal(response.body.profile.name, "Jordan Miller");
+    assert.equal(response.body.profile.education.school, "Example Institute");
+    assert.equal(response.body.profile.education.major, "Computer Science");
+    assert.equal(response.body.profile.skills, "Python, SQL");
+    assert.match(response.body.profile.employment_experience, /Northstar Analytics/u);
+    assert.equal(response.body.profile.confirmed_by_user, false);
   });
 });
 

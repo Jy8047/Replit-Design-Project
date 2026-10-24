@@ -53,3 +53,13 @@ create false majors or skills while appearing to improve coverage.
 Before claiming support for arbitrary layouts, test a redacted, user-approved
 sample; if reading order itself is lost, evaluate coordinate-aware extraction
 separately rather than weakening source-evidence checks.
+
+Treat a name as optional when reading order is uncertain. Only accept a
+plausible identity line before the first recognized section; never promote a
+sentence, skill, school, or section value into a name just to make a draft pass.
+
+**Why:** A broad “first nonempty line” rule can make arbitrary prose look like a
+successfully mapped resume, suppressing the no-usable-fields recovery path.
+
+**How to apply:** Keep a regression case with unlabeled narrative text and assert
+that it produces an actionable mapping failure rather than a false name field.

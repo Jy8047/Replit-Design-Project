@@ -90,6 +90,15 @@ test("basics extracts email and phone while choosing the first eligible name lin
   );
 });
 
+test("prose, skills, section labels and institution names are not accepted as names", () => {
+  assert.equal(extractBasics("Fictional narrative without recognizable profile fields.").name, "");
+  assert.equal(extractBasics("SKILLS\nPython\nEDUCATION\nUniversity of Malaya").name, "");
+  assert.throws(
+    () => mapCvSmart("Fictional narrative without recognizable profile fields.", "fresh_graduate"),
+    error => error instanceof CvError && error.code === "INVALID_PROFILE",
+  );
+});
+
 test("education extraction handles school, degree, major, labeled major and graduation year", () => {
   assert.deepEqual(
     extractEducation("EDUCATION\nExample Institute\nB.S. in Computer Science\nGraduated 2024"),
@@ -102,6 +111,18 @@ test("education extraction handles school, degree, major, labeled major and grad
     },
   );
   assert.equal(extractEducation("大学：虚构大学\n硕士\n专业：数据科学").major, "数据科学");
+});
+
+test("maps Chinese headings and fields without treating the headings as profile values", () => {
+  const result = mapCvSmart(
+    "李明\n教育经历\n虚构大学\n学士\n专业：计算机科学\n技能\nPython、结构化查询语言",
+    "fresh_graduate",
+  );
+  assert.equal(result.name, "李明");
+  assert.equal(result.education.school, "虚构大学");
+  assert.equal(result.education.degree, "学士");
+  assert.equal(result.education.major, "计算机科学");
+  assert.equal(result.skills, "Python, SQL");
 });
 
 test("section extraction returns source offsets and stops each body at the next known heading", () => {

@@ -391,10 +391,25 @@ export function extractBasics(text: string): CvBasics {
     return digits.length >= 7 && digits.length <= 15
       && !/^(?:19|20)\d{2}[-/](?:19|20)\d{2}$/u.test(candidate.trim());
   })?.trim() ?? "";
-  const name = splitLines(text).map(({ line }) => line.trim()).find(line => {
-    if (!line || /[@|｜]/u.test(line) || /\d{6,}/u.test(line) || /[:：]/u.test(line)) return false;
-    return !headingFromLine(line)
-      && !/^(?:resume|cv|curriculum vitae|personal profile|profile|contact details?)$/iu.test(line);
+  const lines = splitLines(text).map(({ line }) => line.trim()).filter(Boolean);
+  const firstSection = lines.findIndex(line => Boolean(headingFromLine(line)));
+  const nameCandidates = firstSection < 0 ? lines : lines.slice(0, firstSection);
+  const name = nameCandidates.find(line => {
+    if (!line || /[@|｜:：,.!?;；，、]/u.test(line) || /\d/u.test(line)) return false;
+    if (schoolPattern.test(line) || degreeStartPattern.test(line) || resolveSkillPhrase(line)) return false;
+    const words = line.split(/\s+/u);
+    if (/^[\p{Script=Han}]{2,4}$/u.test(line)) return true;
+    if (words.length < 2 || words.length > 4) return false;
+    const nonNameWords = new Set([
+      "a", "an", "and", "as", "by", "for", "from", "in", "looking", "none",
+      "not", "of", "or", "profile", "provided", "resume", "seeking", "summary",
+      "the", "to", "with", "without", "work", "skills", "education", "experience",
+      "projects", "student", "intern", "engineer", "analyst", "manager", "developer",
+    ]);
+    return words.every(word =>
+      /^[\p{L}][\p{L}'’\-]*$/u.test(word)
+      && !nonNameWords.has(word.toLowerCase()),
+    );
   }) ?? "";
   return { name, email, phone };
 }

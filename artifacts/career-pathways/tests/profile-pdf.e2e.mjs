@@ -23,7 +23,12 @@ try {
     const { cdp, evaluate, wait, present, click, setValue, upload } = browser;
     await cdp('Page.navigate', { url: 'http://127.0.0.1:80/profile' });
     await present('button-profile-method-pdf');
-    const previousProfile = { ...fictionalProfile('career_switcher'), confirmed_by_user: true, mapping_provenance: 'simulated' };
+    const previousProfile = {
+      ...fictionalProfile('career_switcher'),
+      skills: 'Research',
+      confirmed_by_user: true,
+      mapping_provenance: 'simulated',
+    };
     await evaluate(`localStorage.clear();sessionStorage.clear();localStorage.setItem('career-pathways-profile', ${JSON.stringify(JSON.stringify(previousProfile))})`);
     await cdp('Page.navigate', { url: 'http://127.0.0.1:80/profile' });
     await present('button-profile-method-pdf');
@@ -68,6 +73,15 @@ try {
     assert.equal(saved.input_method, 'pdf_upload');
     assert.equal(saved.education.school, 'University of Malaya');
     assert.equal(saved.skills, 'Python, SQL, React');
+    await cdp('Page.navigate', { url: 'http://127.0.0.1:80/roles' });
+    await present('card-role-0');
+    const firstScore = await evaluate(`Number(document.querySelector('[data-testid="text-match-score-0"]').textContent.match(/\\d+/)?.[0] ?? 0)`);
+    assert.ok(firstScore > 0);
+    assert.equal(await evaluate(`Array.from(document.querySelectorAll('[data-testid^="card-role-"]')).some(card => {
+      const skills = card.querySelector('.role-lists > div:first-child')?.textContent ?? '';
+      return /Python|SQL|React/u.test(skills);
+    })`), true);
+    assert.equal(await evaluate(`!!document.querySelector('[data-testid="status-role-skill-dimension-empty"]')`), false);
     assert.deepEqual(browser.errors, []);
     assert.equal(browser.requests.some(url => /runpod|glm/i.test(url)), false);
   });
