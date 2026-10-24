@@ -67,6 +67,21 @@ describe('skill dimensions', () => {
     assert.equal(dimensionOf('unclassified hobby'), 'collab');
   });
 
+  it('classifies the real occupation catalog labels called out for fallback review', () => {
+    assert.equal(dimensionOf('Programming'), 'tech');
+    assert.equal(dimensionOf('R'), 'tech');
+    assert.equal(dimensionOf('Mathematics'), 'data');
+    assert.equal(dimensionOf('Google Analytics'), 'data');
+    assert.equal(dimensionOf('Adobe Photoshop'), 'design');
+    assert.equal(dimensionOf('Management of Personnel Resources'), 'collab');
+    assert.equal(dimensionOf('Medicine and Dentistry'), 'collab');
+    assert.equal(dimensionOf('Chemistry'), 'data');
+  });
+
+  it('prioritizes collaboration keywords when a label also contains a design keyword', () => {
+    assert.equal(dimensionOf('Communications and Media'), 'collab');
+  });
+
   it('exports every explicitly listed skill in the dimension lookup table', () => {
     for (const dimension of DIMENSION_IDS) {
       for (const skill of SKILLS_BY_DIMENSION[dimension]) {

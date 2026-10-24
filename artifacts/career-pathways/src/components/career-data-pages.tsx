@@ -17,7 +17,14 @@ import {
   type DatasetResult,
 } from '@/lib/career-data';
 import { OCCUPATION_INSIGHTS, parseSkills } from '@/lib/career-matching';
-import { DIMENSION_IDS, DIMENSION_NAMES, roleDimensions } from '@/lib/skill-dimensions';
+import { normalizeProfile } from '@/lib/profile';
+import { PROFILE_STORAGE_KEY } from '@/lib/profile-storage';
+import {
+  DIMENSION_IDS,
+  DIMENSION_NAMES,
+  profileDimensions,
+  roleDimensions,
+} from '@/lib/skill-dimensions';
 import { CatalogAttribution, OccupationCatalogDetails } from './occupation-catalog-details';
 import { PageHeading } from '@/components/page-heading';
 import { localizeContent, useI18n } from '@/lib/i18n';
@@ -91,6 +98,17 @@ export function DatasetFeedback({ dataset }: { dataset: DatasetState }) {
       )}
     </>
   );
+}
+
+function readConfirmedProfileSkills(): string[] {
+  try {
+    const stored = window.localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (!stored) return [];
+    const profile = normalizeProfile(JSON.parse(stored));
+    return profile?.confirmed_by_user === true ? parseSkills(profile.skills) : [];
+  } catch {
+    return [];
+  }
 }
 
 function RecordProvenance({ record }: { record: CareerRecord }) {
@@ -182,6 +200,15 @@ export function CareerSkillsPage({
   dataset: DatasetState;
 }) {
   const { t, locale } = useI18n();
+  const confirmedSkills = readConfirmedProfileSkills();
+  const profileValues = confirmedSkills.length ? profileDimensions(confirmedSkills) : null;
+  const profileRadarData = profileValues
+    ? DIMENSION_IDS.map((dimension) => ({
+        dimension: DIMENSION_NAMES[dimension][locale],
+        value: profileValues[dimension],
+      }))
+    : [];
+  const hasProfileRadarData = profileRadarData.some((point) => point.value > 0);
   const groups = new Map<string, { skill: string; records: CareerRecord[] }>();
   for (const record of dataset.records) {
     const key = record.skill.toLocaleLowerCase();
@@ -208,6 +235,57 @@ export function CareerSkillsPage({
         title={t('Future Skills Radar')}
         description={t('Source-backed associations and synthetic examples are shown separately. No market forecast is provided for the sourced occupations.')}
       />
+      <section className="panel" data-testid="profile-skill-radar" style={{ marginBottom: 17 }}>
+        {hasProfileRadarData ? (
+          <>
+            <h2 style={{ margin: '18px 20px 0', fontSize: 18, color: '#30483b' }}>
+              {t('My skill profile')}
+            </h2>
+            <div style={{ width: '100%', height: 300, padding: '0 8px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={profileRadarData} outerRadius="68%">
+                  <PolarGrid stroke="#dce2d7" />
+                  <PolarAngleAxis
+                    dataKey="dimension"
+                    tick={{ fill: '#637064', fontSize: 11 }}
+                  />
+                  <PolarRadiusAxis
+                    angle={30}
+                    domain={[0, 100]}
+                    tickCount={5}
+                    tick={{ fill: '#858d82', fontSize: 9 }}
+                    axisLine={false}
+                  />
+                  <Radar
+                    name={t('My skill profile')}
+                    dataKey="value"
+                    stroke="#30483b"
+                    fill="#78977e"
+                    fillOpacity={0.42}
+                    strokeWidth={2}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+            <p style={{ margin: '0 20px 17px', fontSize: 11, lineHeight: 1.5, color: '#737a70' }}>
+              {t('Dimensions illustrate coverage after skill categorization; this is not an ability assessment.')}
+            </p>
+          </>
+        ) : (
+          <div style={{ padding: '18px 20px' }}>
+            <p
+              role="status"
+              data-testid="status-profile-skill-radar-empty"
+              style={{ margin: '0 0 12px', fontSize: 13, color: '#737a70' }}
+            >
+              {t('Go to My Profile first to enter skills before generating your skill profile.')}
+            </p>
+            <Link href="/profile" className="btn btn-primary" data-testid="link-profile-skill-radar">
+              {t('Go to My Profile')} <ArrowUpRight size={14} />
+            </Link>
+          </div>
+        )}
+      </section>
       <DatasetFeedback dataset={dataset} />
       <section className="panel" style={{ marginBottom: 17 }}>
         <div className="eyebrow">{t('Dataset status')}</div>
@@ -360,7 +438,7 @@ export function CareerRolesPage({
             <>
               <div style={{ padding: '18px 20px 0' }}>
                 <h2 style={{ margin: 0, fontSize: 18, color: '#30483b' }}>
-                  {t('Skill dimension coverage')}
+                  {t('Role requirements vs. your skills')}
                 </h2>
                 <p style={{ margin: '5px 0 0', fontSize: 12, color: '#737a70' }}>
                   {t('Based on the top-ranked role')}: {localizeContent(radarMatch!.occupation, locale)}

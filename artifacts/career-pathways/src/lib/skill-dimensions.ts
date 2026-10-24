@@ -100,9 +100,79 @@ const skillAliases: Readonly<Record<string, string>> = {
   '结构化查询语言': 'SQL',
 };
 
+const fallbackKeywords = {
+  collab: [
+    'management',
+    'administration',
+    'personnel',
+    'negotiation',
+    'coordination',
+    'communication',
+    'customer',
+    'sales',
+    'teaching',
+    'training',
+    'service',
+    'leadership',
+    'time management',
+  ],
+  data: [
+    'statistic',
+    'mathematics',
+    'math',
+    'analy',
+    'research',
+    'data',
+    'arcgis',
+    'gis',
+    'excel',
+    'spreadsheet',
+    'econom',
+    'account',
+    'financ',
+    'biology',
+    'chemistry',
+    'physics',
+  ],
+  tech: [
+    'program',
+    'software',
+    'computer',
+    'network',
+    'linux',
+    'python',
+    'java',
+    'javascript',
+    'type',
+    'react',
+    'engineering',
+    'technology',
+    'autocad',
+    'revit',
+    'sql',
+    'database',
+  ],
+  design: [
+    'design',
+    'adobe',
+    'photoshop',
+    'illustrator',
+    'fine arts',
+    'media',
+    'content',
+    'seo',
+    'marketing',
+    'brand',
+  ],
+} as const;
+
 function canonicalSkill(skill: string): string {
   const normalized = normalizeSkill(skill);
   return skillAliases[normalized] ?? skill.trim();
+}
+
+function includesKeyword(skill: string, keywords: readonly string[]): boolean {
+  return keywords.some((keyword) => skill.includes(keyword));
 }
 
 /**
@@ -115,12 +185,19 @@ export function dimensionOf(skill: string): DimensionId {
   const explicit = explicitLookup.get(canonical);
   if (explicit) return explicit;
 
-  if (/\b(sql|data)\b/.test(normalized)) return 'data';
-  if (/\b(python|js|javascript|typescript|react|linux)\b/.test(normalized)) return 'tech';
-  if (/\b(design|content|seo)\b/.test(normalized)) return 'design';
-  if (/\b(communication|coordination|listening)\b/.test(normalized)) return 'collab';
+  if (includesKeyword(normalized, fallbackKeywords.data)) return 'data';
+  if (
+    includesKeyword(normalized, fallbackKeywords.tech)
+    || /(?:^|[^a-z0-9])r(?:$|[^a-z0-9])/.test(normalized)
+  ) return 'tech';
+  // Collaboration has priority over design's "communicat" family (for example,
+  // "Communications and Media" remains collab because it hits communication).
+  if (includesKeyword(normalized, fallbackKeywords.collab)) return 'collab';
+  if (includesKeyword(normalized, fallbackKeywords.design) || normalized.includes('communicat')) {
+    return 'design';
+  }
 
-  // Unknown terms are conservatively grouped under collaboration; no skill is inferred.
+  // 这是展示归类，不是技能推断；未命中标签仅归入 collab 供展示。
   return 'collab';
 }
 
