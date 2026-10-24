@@ -55,7 +55,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .journey-nav a { color:#168984; text-decoration:none; font-size:11px; font-weight:600; border:1px solid #dce5eb; background:#fff; border-radius:999px; padding:6px 10px; }
 .journey-nav a:hover { border-color:#16A6A0; background:#eaf8f6; }
 .content { max-width:1380px; padding:34px clamp(18px,4vw,54px) 62px; margin:0 auto; }
-.brand-mark { width:36px;height:36px;border-radius:11px;background:#16A6A0;color:white;display:grid;place-items:center; box-shadow:0 5px 12px #0d747345; }
+.brand-mark { width:36px;height:36px;flex:0 0 36px;object-fit:contain;display:block; }
 .nav-link { display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#b9c8d5;text-decoration:none;font-size:13px;font-weight:500;transition:background .18s,color .18s; }
 .nav-link:hover,.nav-link.active { background:#203a55;color:#fff; }
 .nav-link.active { box-shadow:inset 3px 0 #16A6A0; }

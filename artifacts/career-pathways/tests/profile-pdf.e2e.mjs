@@ -8,10 +8,17 @@ import { withProfileBrowser } from './profile-handoff-browser.mjs';
 
 const directory = await mkdtemp(join(tmpdir(), 'pivotpath-synthetic-cv-'));
 const pdfPath = join(directory, 'fictional-complex-layout.pdf');
+const simplePdfPath = join(directory, 'fictional-simple-layout.pdf');
 const emptyMappingPath = join(directory, 'fictional-unmappable-text.pdf');
+const text = `Jordan Miller | jordan.miller@example.test | +60 12-345 6789
+EDUCATION University of Malaya | 2020-2024 | Bachelor of Science in Computer Science
+SKILLS Python | SQL | React
+`;
+
 try {
   await writeFile(pdfPath, await makeMultiColumnPdf());
-  await writeFile(emptyMappingPath, await makePdf('SKILLS'));
+  await writeFile(simplePdfPath, await makePdf(text));
+  await writeFile(emptyMappingPath, await makePdf('Fictional narrative without recognizable profile fields.'));
   await withProfileBrowser(async browser => {
     const { cdp, evaluate, wait, present, click, setValue, upload } = browser;
     await cdp('Page.navigate', { url: 'http://127.0.0.1:80/profile' });
@@ -21,12 +28,13 @@ try {
     await cdp('Page.navigate', { url: 'http://127.0.0.1:80/profile' });
     await present('button-profile-method-pdf');
     await click('button-profile-method-pdf');
-    await upload(pdfPath);
+    await upload(simplePdfPath);
     await click('checkbox-pdf-consent');
 
     await click('button-parse-pdf');
     await present('pdf-mapping-not-requested');
     assert.equal(await evaluate(`!!document.querySelector('[data-testid="button-use-pdf-draft"]')`), false);
+    assert.equal(await evaluate(`document.querySelector('[data-testid="pdf-extracted-text"]').textContent.includes('EDUCATION University of Malaya')`), true);
 
     await upload(emptyMappingPath);
     await click('checkbox-pdf-consent');

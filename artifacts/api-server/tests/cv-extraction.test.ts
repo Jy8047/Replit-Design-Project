@@ -105,6 +105,30 @@ test("HTTP demo maps explicit actual PDF lines and preserves employment, never r
   });
 });
 
+test("HTTP demo maps a synthetic multi-column PDF to a partial, unconfirmed profile", async () => {
+  const text = `Jordan Miller | jordan.miller@example.test | +60 12-345 6789
+EDUCATION University of Malaya | 2020-2024 | Bachelor of Science in Computer Science
+SKILLS Python | SQL | React
+WORK EXPERIENCE Northstar Analytics | Data Intern | 2023-2024`;
+  await withApi(async post => {
+    const response = await post(await makePdf(text), "profile_type=career_switcher&mapping_mode=demo");
+    assert.equal(response.status, 200);
+    assert.equal(response.body.status, "TEXT_EXTRACTED");
+    assert.match(response.body.text, /EDUCATION University of Malaya/u);
+    assert.equal(response.body.mapping, "SIMULATED");
+    assert.equal(response.body.mapping_provenance, "simulated");
+    assert.equal(response.body.profile.mapping_method, "rules-v2");
+    assert.equal(response.body.profile.confirmed_by_user, false);
+    assert.equal(response.body.profile.name, "Jordan Miller");
+    assert.equal(response.body.profile.education.school, "University of Malaya");
+    assert.equal(response.body.profile.education.degree, "Bachelor of Science");
+    assert.equal(response.body.profile.education.major, "Computer Science");
+    assert.deepEqual(response.body.profile.skills.split(", "), ["Python", "SQL", "React"]);
+    assert.match(response.body.profile.employment_experience, /Northstar Analytics/u);
+    assert.equal(response.body.profile.background, "");
+  });
+});
+
 test("HTTP demo maps separate text columns without merging adjacent field values", async () => {
   await withApi(async post => {
     const response = await post(await makeMultiColumnPdf(), "profile_type=career_switcher&mapping_mode=demo");

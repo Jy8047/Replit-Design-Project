@@ -72,7 +72,7 @@ function Shell({ children, hasProfile }: { children: ReactNode; hasProfile: bool
   return <div className="app-shell">
     <aside className={`sidebar ${menuOpen ? 'open' : ''}`} aria-label={t('Main navigation')}>
       <div style={{display:'flex',alignItems:'center',gap:11,padding:'0 10px 27px'}}>
-         <div className="brand-mark"><Compass size={19}/></div>
+         <img className="brand-mark" src="/logo.png" alt="PivotPath AI logo" width={36} height={36} />
          <div><div style={{font:'700 15px Manrope',letterSpacing:'-.03em'}}>{PRODUCT_NAME}</div><div style={{fontSize:10,color:'#bdcbd8',marginTop:2,lineHeight:1.5}}>{t(PRODUCT_TAGLINE)}</div></div>
          <button className="mobile-menu" style={{marginLeft:'auto',color:'#f2f7fa',borderColor:'#536b81'}} onClick={()=>setMenuOpen(false)} aria-label={t('Close menu')} data-testid="button-close-menu"><X size={17}/></button>
       </div>
