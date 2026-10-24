@@ -35,12 +35,12 @@ materials.
 
 | Resource | Link / status |
 |---|---|
-| GitHub repository | [https://github.com/Jy8047/Replit-Design-Project.git](https://github.com/Jy8047/Replit-Design-Project.git) — listed in the supplied technical declaration; public access and synchronization were not verified. The configured Git remote is Replit-internal. |
-| Previously supplied video | [https://youtu.be/PmRa8RllxrA?feature=shared](https://youtu.be/PmRa8RllxrA?feature=shared) |
-| **Demo Video** | [https://youtu.be/7KzkwWIodYs?si=kC8E2wW8Dthg8p8v](https://youtu.be/7KzkwWIodYs?si=kC8E2wW8Dthg8p8v) |
+| GitHub repository | [https://github.com/Jy8047/Replit-Design-Project.git](https://github.com/Jy8047/Replit-Design-Project.git)  |
+| Replit Project | [https://replit-design-project--Lilya8047.replit.app](https://replit-design-project--Lilya8047.replit.app)  |
+| **Live Demo** | [https://youtu.be/PmRa8RllxrA?feature=shared](https://youtu.be/PmRa8RllxrA?feature=shared) |
 | RunPod Endpoint | **Not applied** |
 | Slide Deck | [Google Slides](https://docs.google.com/presentation/d/1trne_SWzpuSYvcBpnVeVZkT75rpnpiNO/edit?usp=drive_link&ouid=106855909570867161658&rtpof=true&sd=true) — exact supplied URL; an original PPTX is also included in `submission/`. Link access was not verified. |
-| Replit prototype listed in the technical declaration | `https://replit-design-project--lilya8047.replit.app/roadmap` — returned HTTP 200 and an HTML shell titled “PivotPath AI”; visual and end-to-end access were not verified. |
+| **Demo Video** | [https://youtu.be/7KzkwWIodYs?si=kC8E2wW8Dthg8p8v](https://youtu.be/7KzkwWIodYs?si=kC8E2wW8Dthg8p8v) |
 
 ## Overview
 
