@@ -204,7 +204,7 @@ export function CareerSkillsPage({
   const profileValues = confirmedSkills.length ? profileDimensions(confirmedSkills) : null;
   const profileRadarData = profileValues
     ? DIMENSION_IDS.map((dimension) => ({
-        dimension: DIMENSION_NAMES[dimension][locale],
+        dimension: t(DIMENSION_NAMES[dimension]),
         value: profileValues[dimension],
       }))
     : [];
@@ -394,7 +394,7 @@ export function CareerRolesPage({
     : null;
   const radarData = dimensionCoverage
     ? DIMENSION_IDS.map((dimension) => ({
-        dimension: DIMENSION_NAMES[dimension][locale],
+        dimension: t(DIMENSION_NAMES[dimension]),
         required: dimensionCoverage.required[dimension],
         matched: dimensionCoverage.matched[dimension],
       }))

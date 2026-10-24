@@ -10,16 +10,26 @@ import {
   roleDimensions,
 } from './skill-dimensions.ts';
 
-const zeroVector = { data: 0, tech: 0, design: 0, collab: 0 };
+const zeroVector = {
+  data: 0,
+  tech: 0,
+  design: 0,
+  communication: 0,
+  management: 0,
+  domain: 0,
+};
 
 describe('skill dimensions', () => {
-  it('exports four dimensions with English, Simplified Chinese and Bahasa Melayu names', () => {
-    assert.deepEqual(DIMENSION_IDS, ['data', 'tech', 'design', 'collab']);
-    for (const dimension of DIMENSION_IDS) {
-      assert.ok(DIMENSION_NAMES[dimension].en);
-      assert.ok(DIMENSION_NAMES[dimension].zh);
-      assert.ok(DIMENSION_NAMES[dimension].ms);
-    }
+  it('exports the six localized dimension keys', () => {
+    assert.deepEqual(DIMENSION_IDS, ['data', 'tech', 'design', 'communication', 'management', 'domain']);
+    assert.deepEqual(Object.values(DIMENSION_NAMES), [
+      'Data handling',
+      'Technical',
+      'Design & content',
+      'Communication',
+      'Management & organisation',
+      'Domain knowledge',
+    ]);
   });
 
   it('returns all zeroes for empty profile and role skills', () => {
@@ -32,7 +42,9 @@ describe('skill dimensions', () => {
       data: 0,
       tech: 100,
       design: 0,
-      collab: 0,
+      communication: 0,
+      management: 0,
+      domain: 0,
     });
   });
 
@@ -49,8 +61,22 @@ describe('skill dimensions', () => {
       ['SQL'],
       { SQL: 2, Statistics: 2, Python: 4 },
     );
-    assert.deepEqual(result.required, { data: 100, tech: 100, design: 0, collab: 0 });
-    assert.deepEqual(result.matched, { data: 50, tech: 0, design: 0, collab: 0 });
+    assert.deepEqual(result.required, {
+      data: 100,
+      tech: 100,
+      design: 0,
+      communication: 0,
+      management: 0,
+      domain: 0,
+    });
+    assert.deepEqual(result.matched, {
+      data: 50,
+      tech: 0,
+      design: 0,
+      communication: 0,
+      management: 0,
+      domain: 0,
+    });
   });
 
   it('matches an aliased skill against the canonical required skill', () => {
@@ -59,27 +85,70 @@ describe('skill dimensions', () => {
     assert.equal(result.matched.tech, 0);
   });
 
-  it('uses the requested fallback keywords and defaults unknown terms to collaboration', () => {
+  it('uses the requested fallback keywords and defaults unknown terms to management', () => {
     assert.equal(dimensionOf('data engineering'), 'data');
     assert.equal(dimensionOf('Linux administration'), 'tech');
     assert.equal(dimensionOf('content strategy'), 'design');
-    assert.equal(dimensionOf('team coordination'), 'collab');
-    assert.equal(dimensionOf('unclassified hobby'), 'collab');
+    assert.equal(dimensionOf('team coordination'), 'management');
+    assert.equal(dimensionOf('unclassified hobby'), 'management');
   });
 
-  it('classifies the real occupation catalog labels called out for fallback review', () => {
+  it('classifies the highlighted real occupation labels in their six dimensions', () => {
     assert.equal(dimensionOf('Programming'), 'tech');
     assert.equal(dimensionOf('R'), 'tech');
     assert.equal(dimensionOf('Mathematics'), 'data');
     assert.equal(dimensionOf('Google Analytics'), 'data');
     assert.equal(dimensionOf('Adobe Photoshop'), 'design');
-    assert.equal(dimensionOf('Management of Personnel Resources'), 'collab');
-    assert.equal(dimensionOf('Medicine and Dentistry'), 'collab');
-    assert.equal(dimensionOf('Chemistry'), 'data');
+    assert.equal(dimensionOf('Management of Personnel Resources'), 'management');
+    assert.equal(dimensionOf('Medicine and Dentistry'), 'domain');
+    assert.equal(dimensionOf('Chemistry'), 'domain');
+    assert.equal(dimensionOf('Speaking'), 'communication');
+    assert.equal(dimensionOf('Telecommunications'), 'tech');
   });
 
-  it('prioritizes collaboration keywords when a label also contains a design keyword', () => {
-    assert.equal(dimensionOf('Communications and Media'), 'collab');
+  it('classifies at least one real catalog label in every dimension', () => {
+    assert.deepEqual(
+      Object.fromEntries([
+        ['Mathematics', 'data'],
+        ['Programming', 'tech'],
+        ['Adobe Photoshop', 'design'],
+        ['Speaking', 'communication'],
+        ['Management of Personnel Resources', 'management'],
+        ['Medicine and Dentistry', 'domain'],
+      ].map(([skill, dimension]) => [skill, dimensionOf(skill)])),
+      {
+        Mathematics: 'data',
+        Programming: 'tech',
+        'Adobe Photoshop': 'design',
+        Speaking: 'communication',
+        'Management of Personnel Resources': 'management',
+        'Medicine and Dentistry': 'domain',
+      },
+    );
+  });
+
+  it('keeps a shared role denominator across all six dimensions', () => {
+    const result = roleDimensions(
+      ['Mathematics', 'Programming', 'Medicine and Dentistry'],
+      ['Mathematics'],
+      { Mathematics: 2, Programming: 4, 'Medicine and Dentistry': 6 },
+    );
+    assert.deepEqual(result.required, {
+      data: 33.33,
+      tech: 66.67,
+      design: 0,
+      communication: 0,
+      management: 0,
+      domain: 100,
+    });
+    assert.deepEqual(result.matched, {
+      data: 33.33,
+      tech: 0,
+      design: 0,
+      communication: 0,
+      management: 0,
+      domain: 0,
+    });
   });
 
   it('exports every explicitly listed skill in the dimension lookup table', () => {

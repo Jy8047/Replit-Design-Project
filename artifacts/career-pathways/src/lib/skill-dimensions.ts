@@ -1,29 +1,21 @@
-export const DIMENSION_IDS = ['data', 'tech', 'design', 'collab'] as const;
+export const DIMENSION_IDS = [
+  'data',
+  'tech',
+  'design',
+  'communication',
+  'management',
+  'domain',
+] as const;
 export type DimensionId = (typeof DIMENSION_IDS)[number];
-export type DimensionLocale = 'en' | 'zh' | 'ms';
 export type DimensionVector = Record<DimensionId, number>;
 
-export const DIMENSION_NAMES: Readonly<Record<DimensionId, Readonly<Record<DimensionLocale, string>>>> = {
-  data: {
-    en: 'Data handling',
-    zh: '数据处理',
-    ms: 'Pengendalian data',
-  },
-  tech: {
-    en: 'Technical',
-    zh: '编程技术',
-    ms: 'Teknikal',
-  },
-  design: {
-    en: 'Design & content',
-    zh: '设计与内容',
-    ms: 'Reka bentuk & kandungan',
-  },
-  collab: {
-    en: 'Communication & collaboration',
-    zh: '沟通与协作',
-    ms: 'Komunikasi & kerjasama',
-  },
+export const DIMENSION_NAMES: Readonly<Record<DimensionId, string>> = {
+  data: 'Data handling',
+  tech: 'Technical',
+  design: 'Design & content',
+  communication: 'Communication',
+  management: 'Management & organisation',
+  domain: 'Domain knowledge',
 };
 
 export const SKILLS_BY_DIMENSION = {
@@ -38,6 +30,12 @@ export const SKILLS_BY_DIMENSION = {
     'Pattern recognition',
     'Impact measurement',
     'Qualitative research methods',
+    'Mathematics',
+    'Quality Control Analysis',
+    'Systems Analysis',
+    'Economics and Accounting',
+    'ESRI ArcGIS software',
+    'Google Analytics',
   ],
   tech: [
     'Python',
@@ -53,6 +51,16 @@ export const SKILLS_BY_DIMENSION = {
     'Incident response',
     'Risk assessment',
     'Accessibility',
+    'Programming',
+    'R',
+    'Computers and Electronics',
+    'Engineering and Technology',
+    'Autodesk AutoCAD',
+    'Autodesk Revit',
+    'MEDITECH software',
+    'Epic Systems',
+    'Telecommunications',
+    'Moodle',
   ],
   design: [
     'Learning design',
@@ -65,16 +73,59 @@ export const SKILLS_BY_DIMENSION = {
     'Facilitation',
     'Learning evaluation',
   ],
-  collab: [
+  communication: [
     'Communication',
     'Listening',
     'Writing',
+    'Speaking',
+    'Reading Comprehension',
+    'English Language',
+    'Active Listening',
+    'Social Perceptiveness',
+    'Instructing',
+    'Communications and Media',
+    'Education and Training',
+  ],
+  management: [
     'Stakeholder support',
     'Project coordination',
     'Scheduling',
     'Document organization',
     'Manual record handling',
     'Routine information processing',
+    'Administration and Management',
+    'Administrative',
+    'Management of Personnel Resources',
+    'Personnel and Human Resources',
+    'Time Management',
+    'Coordination',
+    'Negotiation',
+    'Complex Problem Solving',
+    'Critical Thinking',
+    'Judgment and Decision Making',
+    'Operations Monitoring',
+    'Customer and Personal Service',
+    'Sales and Marketing',
+    'Service Orientation',
+    'Active Learning',
+    'Learning Strategies',
+    'RETScreen',
+    'Microsoft PowerPoint',
+  ],
+  domain: [
+    'Medicine and Dentistry',
+    'Therapy and Counseling',
+    'Biology',
+    'Chemistry',
+    'Mechanical',
+    'Building and Construction',
+    'Law and Government',
+    'Geography',
+    'Psychology',
+    'Climate literacy',
+    'Transportation',
+    'Production and Processing',
+    'Science',
   ],
 } as const satisfies Record<DimensionId, readonly string[]>;
 
@@ -101,21 +152,6 @@ const skillAliases: Readonly<Record<string, string>> = {
 };
 
 const fallbackKeywords = {
-  collab: [
-    'management',
-    'administration',
-    'personnel',
-    'negotiation',
-    'coordination',
-    'communication',
-    'customer',
-    'sales',
-    'teaching',
-    'training',
-    'service',
-    'leadership',
-    'time management',
-  ],
   data: [
     'statistic',
     'mathematics',
@@ -130,8 +166,6 @@ const fallbackKeywords = {
     'econom',
     'account',
     'financ',
-    'biology',
-    'chemistry',
     'physics',
   ],
   tech: [
@@ -164,6 +198,58 @@ const fallbackKeywords = {
     'marketing',
     'brand',
   ],
+  communication: [
+    'communicat',
+    'listening',
+    'writing',
+    'speaking',
+    'language',
+    'instruct',
+    'perceptiv',
+    'reading comprehension',
+  ],
+  domain: [
+    'medicine',
+    'dentistry',
+    'therapy',
+    'counseling',
+    'biology',
+    'chemistry',
+    'mechanical',
+    'building and construction',
+    'law and government',
+    'geograph',
+    'psycholog',
+    'climate',
+    'transportation',
+    'production and processing',
+    'science',
+  ],
+  management: [
+    'management',
+    'administration',
+    'personnel',
+    'negotiation',
+    'coordination',
+    'customer',
+    'sales',
+    'teaching',
+    'training',
+    'service',
+    'leadership',
+    'time management',
+    'organization',
+    'organisation',
+    'operations',
+    'stakeholder',
+    'scheduling',
+    'record',
+    'processing',
+    'problem solving',
+    'critical thinking',
+    'judgment',
+    'decision making',
+  ],
 } as const;
 
 function canonicalSkill(skill: string): string {
@@ -177,7 +263,7 @@ function includesKeyword(skill: string, keywords: readonly string[]): boolean {
 
 /**
  * Classifies labels absent from the explicit table by keyword. Unknown labels
- * default to collab for display grouping only; this does not infer a user skill.
+ * default to management for display grouping only; this does not infer a user skill.
  */
 export function dimensionOf(skill: string): DimensionId {
   const normalized = normalizeSkill(skill);
@@ -190,19 +276,19 @@ export function dimensionOf(skill: string): DimensionId {
     includesKeyword(normalized, fallbackKeywords.tech)
     || /(?:^|[^a-z0-9])r(?:$|[^a-z0-9])/.test(normalized)
   ) return 'tech';
-  // Collaboration has priority over design's "communicat" family (for example,
-  // "Communications and Media" remains collab because it hits communication).
-  if (includesKeyword(normalized, fallbackKeywords.collab)) return 'collab';
   if (includesKeyword(normalized, fallbackKeywords.design) || normalized.includes('communicat')) {
-    return 'design';
+    if (!includesKeyword(normalized, fallbackKeywords.communication)) return 'design';
   }
+  if (includesKeyword(normalized, fallbackKeywords.communication)) return 'communication';
+  if (includesKeyword(normalized, fallbackKeywords.domain)) return 'domain';
+  if (includesKeyword(normalized, fallbackKeywords.management)) return 'management';
 
-  // 这是展示归类，不是技能推断；未命中标签仅归入 collab 供展示。
-  return 'collab';
+  // 这是展示归类，不是技能推断；未命中标签仅归入 management 供展示。
+  return 'management';
 }
 
 function emptyVector(): DimensionVector {
-  return { data: 0, tech: 0, design: 0, collab: 0 };
+  return Object.fromEntries(DIMENSION_IDS.map((dimension) => [dimension, 0])) as DimensionVector;
 }
 
 function uniqueSkills(skills: readonly string[]): string[] {
@@ -233,15 +319,13 @@ function roundPercent(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function scaleToMaximum(values: DimensionVector): DimensionVector {
-  const maximum = Math.max(...DIMENSION_IDS.map((dimension) => values[dimension]));
+function scaleToMaximum(values: DimensionVector, maximum = Math.max(...DIMENSION_IDS.map((dimension) => values[dimension]))): DimensionVector {
   if (maximum <= 0) return emptyVector();
-  return {
-    data: roundPercent((values.data / maximum) * 100),
-    tech: roundPercent((values.tech / maximum) * 100),
-    design: roundPercent((values.design / maximum) * 100),
-    collab: roundPercent((values.collab / maximum) * 100),
-  };
+  const scaled = emptyVector();
+  for (const dimension of DIMENSION_IDS) {
+    scaled[dimension] = roundPercent((values[dimension] / maximum) * 100);
+  }
+  return scaled;
 }
 
 export function profileDimensions(
@@ -292,17 +376,7 @@ export function roleDimensions(
   if (maximumRequiredShare <= 0) return { required: emptyVector(), matched: emptyVector() };
 
   return {
-    required: {
-      data: roundPercent((requiredShares.data / maximumRequiredShare) * 100),
-      tech: roundPercent((requiredShares.tech / maximumRequiredShare) * 100),
-      design: roundPercent((requiredShares.design / maximumRequiredShare) * 100),
-      collab: roundPercent((requiredShares.collab / maximumRequiredShare) * 100),
-    },
-    matched: {
-      data: roundPercent((matchedShares.data / maximumRequiredShare) * 100),
-      tech: roundPercent((matchedShares.tech / maximumRequiredShare) * 100),
-      design: roundPercent((matchedShares.design / maximumRequiredShare) * 100),
-      collab: roundPercent((matchedShares.collab / maximumRequiredShare) * 100),
-    },
+    required: scaleToMaximum(requiredShares, maximumRequiredShare),
+    matched: scaleToMaximum(matchedShares, maximumRequiredShare),
   };
 }
