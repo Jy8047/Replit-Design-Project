@@ -109,7 +109,7 @@ await withProfileBrowser(async ({ cdp, evaluate, wait, errors }) => {
       assert.ok(text.rect.right <= layout.brand.rect.right + 1, `${viewport.name}: brand segment ${index + 1} stays inside the brand row`);
     }
     assert.match(layout.logo.src, /\/logo\.png$/u, `${viewport.name}: existing logo is shown`);
-    assert.equal(layout.sphere.letterCount, 88, `${viewport.name}: one letter-built sphere is rendered`);
+    assert.equal(layout.sphere.letterCount, 120, `${viewport.name}: one letter-built sphere is rendered`);
     assert.match(layout.sphere.mask, /radial-gradient/u, `${viewport.name}: sphere leaves a clear title area`);
     assert.ok(layout.sphere.titleZIndex > layout.sphere.zIndex, `${viewport.name}: title sits in front of the sphere`);
     assert.equal(layout.sphere.animationName, 'none', `${viewport.name}: sphere is static with reduced motion`);
@@ -134,7 +134,7 @@ await withProfileBrowser(async ({ cdp, evaluate, wait, errors }) => {
     const style = getComputedStyle(document.querySelector('.entry-splash__sphere-spin'));
     return { name: style.animationName, duration: style.animationDuration };
   })()`);
-  assert.deepEqual(sphereMotion, { name: 'splash-sphere-rotate', duration: '38s' }, 'sphere rotates slowly when motion is allowed');
+  assert.deepEqual(sphereMotion, { name: 'splash-sphere-rotate', duration: '18s' }, 'sphere rotates slowly when motion is allowed');
   await wait(`!document.querySelector('[data-testid="entry-splash"]')`);
   await wait(`!!document.querySelector('[data-testid="card-home-01"]')`);
   await evaluate(`document.querySelector('[data-testid="link-future-role-matches"]').click()`);

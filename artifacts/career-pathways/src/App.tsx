@@ -214,8 +214,9 @@ const DECODE_DURATION_MS = 700;
 const BRAND_HOLD_MS = 1800;
 const SPLASH_FADE_MS = 500;
 const SPHERE_LETTERS = 'PIVOTPATHAI';
-const SPHERE_POINTS = Array.from({ length: 88 }, (_, index) => {
-  const y = 1 - ((index + 0.5) / 88) * 2;
+const SPHERE_POINT_COUNT = 120;
+const SPHERE_POINTS = Array.from({ length: SPHERE_POINT_COUNT }, (_, index) => {
+  const y = 1 - ((index + 0.5) / SPHERE_POINT_COUNT) * 2;
   const ringRadius = Math.sqrt(1 - y * y);
   const angle = Math.PI * (3 - Math.sqrt(5)) * index;
   return {
@@ -243,8 +244,8 @@ function EntrySplashSphere() {
         className="entry-splash__sphere-letter"
         key={index}
         style={{
-          opacity: 0.3 + ((point.z + 1) / 2) * 0.45,
-          transform: `translate3d(${point.x * radius * 0.88}px, ${point.y * radius * 0.88}px, ${point.z * radius * 0.88}px) translate(-50%, -50%)`,
+          opacity: 0.42 + ((point.z + 1) / 2) * 0.52,
+          transform: `translate3d(${point.x * radius * 0.94}px, ${point.y * radius * 0.94}px, ${point.z * radius * 0.94}px) translate(-50%, -50%)`,
         }}
       >{point.letter}</span>)}
     </div>
