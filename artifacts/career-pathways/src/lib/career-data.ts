@@ -269,6 +269,15 @@ export function calculateCareerMatches(
   return explainCareerMatches(profileSkills, records);
 }
 
+/** Return matches in score order for display; scoring remains in the existing engine. */
+export function rankCareerMatchesForDisplay(
+  profileSkills: string | string[],
+  records: CareerRecord[],
+): CareerMatch[] {
+  return calculateCareerMatches(profileSkills, records)
+    .sort((left, right) => right.score - left.score);
+}
+
 /** Boundary adapter only: P2's function, algorithm and return structure stay untouched. */
 export function explainCareerMatches(
   profileSkills: string | string[],
@@ -352,6 +361,24 @@ export function combineCareerDatasets(syntheticCsv: string, officialCsv: string)
     })],
     errors,
   };
+}
+
+/** Load the two runtime CSV sources without allowing a cached file to override an update. */
+export async function loadCareerDataset(
+  baseUrl: string,
+  fetcher: typeof fetch = fetch,
+): Promise<DatasetResult> {
+  const files = ['skills-occupations.csv', 'official-occupations.csv'] as const;
+  const responses = await Promise.all(
+    files.map(file => fetcher(`${baseUrl}data/${file}`, { cache: 'no-store' })),
+  );
+  for (const response of responses) {
+    if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+  }
+  const [syntheticCsv, officialCsv] = await Promise.all(
+    responses.map(response => response.text()),
+  );
+  return combineCareerDatasets(syntheticCsv, officialCsv);
 }
 
 export function formatPublicationDate(value: string): string {

@@ -20,9 +20,7 @@ import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter
 import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronRight, Compass, FileUser, Gauge, Menu, Network, RotateCcw, Settings2, ShieldCheck, Sparkles, Target, Trash2, X } from 'lucide-react';
 import { I18nProvider, useI18n, type Locale } from '@/lib/i18n';
 import { PRODUCT_NAME, PRODUCT_TAGLINE, PRODUCT_DESCRIPTION, DEMO_IMPLEMENTATION_NOTICE, BRAND_PAGE_LABELS, applyBrandMetadata } from '@/lib/brand';
-import {
-  combineCareerDatasets,
-} from '@/lib/career-data';
+import { loadCareerDataset } from '@/lib/career-data';
 
 const queryClient = new QueryClient();
 const STORAGE_PROFILE = PROFILE_STORAGE_KEY;
@@ -225,11 +223,7 @@ function Router() {
   let cancelled=false;
   const loadDataset=async()=>{
    try{
-    const responses=await Promise.all(['skills-occupations.csv','official-occupations.csv']
-      .map(file=>fetch(`${import.meta.env.BASE_URL}data/${file}`)));
-    for(const response of responses)if(!response.ok)throw new Error(`Request failed with status ${response.status}`);
-    const [syntheticCsv,officialCsv]=await Promise.all(responses.map(response=>response.text()));
-    const parsed=combineCareerDatasets(syntheticCsv,officialCsv);
+     const parsed=await loadCareerDataset(import.meta.env.BASE_URL);
     if(!cancelled)setDataset({...parsed,loading:false,loadError:''});
    }catch(error){
     if(!cancelled)setDataset({records:[],errors:[],loading:false,loadError:error instanceof Error?error.message:'Unknown loading error'});

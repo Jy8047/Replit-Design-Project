@@ -10,9 +10,9 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import {
-  calculateCareerMatches,
   explainCareerMatches,
   getVerifiedCitation,
+  rankCareerMatchesForDisplay,
   type CareerRecord,
   type DatasetResult,
 } from '@/lib/career-data';
@@ -366,15 +366,9 @@ export function CareerRolesPage({
   onChooseOccupation: (occupation: string) => void;
 }) {
   const { t, locale } = useI18n();
-  const weightedMatches = calculateCareerMatches(profileSkills, dataset.records)
-    .filter((match) => {
-      const insight = OCCUPATION_INSIGHTS[match.occupation.toLowerCase()];
-      return Boolean(insight && Object.keys(insight.skills).length > 0);
-    });
-  const totalWeightedMatches = weightedMatches.length;
-  const matches = weightedMatches
-    .sort((left, right) => right.score - left.score)
-    .slice(0, 8);
+  const rankedMatches = rankCareerMatchesForDisplay(profileSkills, dataset.records);
+  const totalMatches = rankedMatches.length;
+  const matches = rankedMatches.slice(0, 8);
   const explanations = new Map(
     explainCareerMatches(profileSkills, dataset.records, locale)
       .map((match) => [match.occupation, match]),
@@ -406,7 +400,7 @@ export function CareerRolesPage({
       <PageHeading
         kicker={t('Compare possible directions')}
         title={t('Future Role Matches')}
-        description={t('Scores use skill-weighted matches. They are not a hiring probability or a prediction.')}
+        description={t('Scores use occupation-specific skill weights where available; otherwise each required skill is weighted equally. This is not a hiring probability or prediction.')}
       />
       <DatasetFeedback dataset={dataset} />
       <div
@@ -731,10 +725,10 @@ export function CareerRolesPage({
           })}
         </div>
       )}
-      {totalWeightedMatches > 0 && (
-        <p role="status" data-testid="status-weighted-match-count" style={{ marginTop: 14, fontSize: 12, color: '#737a70' }}>
-          {t('Showing up to 8 of {total} weighted matches.', {
-            total: totalWeightedMatches,
+      {totalMatches > 0 && (
+        <p role="status" data-testid="status-role-match-count" style={{ marginTop: 14, fontSize: 12, color: '#737a70' }}>
+          {t('Showing up to 8 of {total} matches.', {
+            total: totalMatches,
           })}
         </p>
       )}

@@ -5,7 +5,9 @@ import {
   calculateCareerMatches,
   formatPublicationDate,
   getVerifiedCitation,
+  loadCareerDataset,
   parseCareerCsv,
+  rankCareerMatchesForDisplay,
   REQUIRED_CSV_HEADERS,
 } from './career-data.ts';
 
@@ -133,6 +135,63 @@ describe('parseCareerCsv', () => {
     row[6] = '"Evidence, with ""quoted"" text"';
     const result = parseCareerCsv(createCsv([row]));
     assert.equal(result.records[0].evidence, 'Evidence, with "quoted" text');
+  });
+});
+
+describe('runtime career dataset loading and display ranking', () => {
+  const officialCsv = readFileSync(
+    new URL('../../public/data/official-occupations.csv', import.meta.url),
+    'utf8',
+  );
+
+  it('reloads uncached CSV updates and ranks added and edited careers from the refreshed dataset', async () => {
+    const initialCsv = createCsv([synthetic('Legacy Career', 'Research')]);
+    const editedLegacy = synthetic('Legacy Career', 'Updated research skill');
+    editedLegacy[6] = 'Updated synthetic test evidence; not a labor-market claim.';
+    const refreshedCsv = createCsv([
+      editedLegacy,
+      synthetic('New Test Career', 'Python'),
+    ]);
+    let revision = 0;
+    const requests: { url: string; cache: RequestCache | undefined }[] = [];
+    const fetcher: typeof fetch = async (input, init) => {
+      const url = String(input);
+      requests.push({ url, cache: init?.cache });
+      const body = url.endsWith('skills-occupations.csv')
+        ? revision === 0 ? initialCsv : refreshedCsv
+        : officialCsv;
+      return new Response(body, { status: 200 });
+    };
+
+    const initial = await loadCareerDataset('/test/', fetcher);
+    revision = 1;
+    const refreshed = await loadCareerDataset('/test/', fetcher);
+
+    assert.deepEqual(initial.errors, []);
+    assert.deepEqual(refreshed.errors, []);
+    assert.equal(initial.records.some(record => record.occupation === 'New Test Career'), false);
+    assert.ok(requests.every(request => request.cache === 'no-store'));
+    assert.ok(requests.every(request => request.url.startsWith('/test/data/')));
+    const updatedLegacy = refreshed.records.find(record => record.occupation === 'Legacy Career');
+    assert.equal(updatedLegacy?.skill, 'Updated research skill');
+    assert.equal(updatedLegacy?.evidence, 'Updated synthetic test evidence; not a labor-market claim.');
+    const ranked = rankCareerMatchesForDisplay('Python', refreshed.records);
+    assert.equal(ranked[0]?.occupation, 'New Test Career');
+    assert.ok(ranked.slice(0, 8).some(match => match.occupation === 'New Test Career'));
+  });
+
+  it('rejects failed data requests and safely returns no matches for invalid datasets', async () => {
+    const unavailable: typeof fetch = async () => new Response('', { status: 503 });
+    await assert.rejects(
+      loadCareerDataset('/test/', unavailable),
+      /Request failed with status 503/,
+    );
+
+    const invalid: typeof fetch = async () => new Response('not a CSV dataset', { status: 200 });
+    const dataset = await loadCareerDataset('/test/', invalid);
+    assert.equal(dataset.records.length, 0);
+    assert.ok(dataset.errors.length > 0);
+    assert.deepEqual(rankCareerMatchesForDisplay('Python', dataset.records), []);
   });
 });
 
