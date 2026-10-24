@@ -31,7 +31,7 @@ declaration with the team; no official document was rewritten.
 
 | Label | Supplied URL |
 |---|---|
-| Previously supplied video | https://youtu.be/PmRa8RllxrA?feature=shared |
+| **Live Demo** | https://youtu.be/PmRa8RllxrA?feature=shared |
 | **Demo Video** | https://youtu.be/7KzkwWIodYs?si=kC8E2wW8Dthg8p8v |
 
 ## Review before submission or public sharing
