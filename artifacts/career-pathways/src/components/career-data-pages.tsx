@@ -1,13 +1,23 @@
 import { ArrowUpRight, Check, Lightbulb } from 'lucide-react';
 import { Link } from 'wouter';
 import {
+  Legend,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+} from 'recharts';
+import {
   calculateCareerMatches,
   explainCareerMatches,
   getVerifiedCitation,
   type CareerRecord,
   type DatasetResult,
 } from '@/lib/career-data';
-import { OCCUPATION_INSIGHTS } from '@/lib/career-matching';
+import { OCCUPATION_INSIGHTS, parseSkills } from '@/lib/career-matching';
+import { DIMENSION_IDS, DIMENSION_NAMES, roleDimensions } from '@/lib/skill-dimensions';
 import { CatalogAttribution, OccupationCatalogDetails } from './occupation-catalog-details';
 import { PageHeading } from '@/components/page-heading';
 import { localizeContent, useI18n } from '@/lib/i18n';
@@ -291,9 +301,27 @@ export function CareerRolesPage({
     explainCareerMatches(profileSkills, dataset.records, locale)
       .map((match) => [match.occupation, match]),
   );
-  const hasProfileSkills = profileSkills
-    .split(',')
-    .some((skill) => skill.trim().length > 0);
+  const hasProfileSkills = parseSkills(profileSkills).length > 0;
+  const radarMatch = matches[0];
+  const radarInsight = radarMatch
+    ? OCCUPATION_INSIGHTS[radarMatch.occupation.toLowerCase()]
+    : undefined;
+  const radarWeights = radarInsight
+    ? Object.fromEntries(
+        Object.entries(radarInsight.skills).map(([skill, insight]) => [skill, insight.weight]),
+      ) as Record<string, number>
+    : undefined;
+  const dimensionCoverage = hasProfileSkills && radarMatch?.requiredSkills.length
+    ? roleDimensions(radarMatch.requiredSkills, radarMatch.matchingSkills, radarWeights)
+    : null;
+  const radarData = dimensionCoverage
+    ? DIMENSION_IDS.map((dimension) => ({
+        dimension: DIMENSION_NAMES[dimension][locale],
+        required: dimensionCoverage.required[dimension],
+        matched: dimensionCoverage.matched[dimension],
+      }))
+    : [];
+  const hasDimensionData = radarData.some((point) => point.required > 0);
 
   return (
     <>
@@ -326,6 +354,68 @@ export function CareerRolesPage({
           <strong>{t('Score formula:')}</strong> {t('Weighted score = total weight of skills you already have ÷ total weight of skills required by the occupation.')}
         </div>
       </div>
+      {!dataset.loading && (
+        <section className="panel" data-testid="role-skill-dimension-radar" style={{ marginBottom: 17 }}>
+          {hasDimensionData ? (
+            <>
+              <div style={{ padding: '18px 20px 0' }}>
+                <h2 style={{ margin: 0, fontSize: 18, color: '#30483b' }}>
+                  {t('Skill dimension coverage')}
+                </h2>
+                <p style={{ margin: '5px 0 0', fontSize: 12, color: '#737a70' }}>
+                  {t('Based on the top-ranked role')}: {localizeContent(radarMatch!.occupation, locale)}
+                </p>
+              </div>
+              <div style={{ width: '100%', height: 300, padding: '0 8px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={radarData} outerRadius="68%">
+                    <PolarGrid stroke="#dce2d7" />
+                    <PolarAngleAxis
+                      dataKey="dimension"
+                      tick={{ fill: '#637064', fontSize: 11 }}
+                    />
+                    <PolarRadiusAxis
+                      angle={30}
+                      domain={[0, 100]}
+                      tickCount={5}
+                      tick={{ fill: '#858d82', fontSize: 9 }}
+                      axisLine={false}
+                    />
+                    <Radar
+                      name={t('Role requirements')}
+                      dataKey="required"
+                      stroke="#30483b"
+                      fill="#30483b"
+                      fillOpacity={0.2}
+                      strokeWidth={2}
+                    />
+                    <Radar
+                      name={t('Skills you have')}
+                      dataKey="matched"
+                      stroke="#78977e"
+                      fill="#a9c1ad"
+                      fillOpacity={0.5}
+                      strokeWidth={2}
+                    />
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+              <p style={{ margin: '0 20px 17px', fontSize: 11, lineHeight: 1.5, color: '#737a70' }}>
+                {t('Dimensions illustrate coverage after skill categorization; they are not an ability assessment or an employment probability.')}
+              </p>
+            </>
+          ) : (
+            <p
+              role="status"
+              data-testid="status-role-skill-dimension-empty"
+              style={{ margin: 0, padding: '20px', fontSize: 13, color: '#737a70' }}
+            >
+              {t('Add current skills to see this radar.')}
+            </p>
+          )}
+        </section>
+      )}
       <CatalogAttribution />
       {!hasProfileSkills && (
         <div
