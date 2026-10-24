@@ -22,7 +22,10 @@ try {
     for (let n = 1; n <= info.total; n++) {
       const result = await parser.getText({ partial: [n], pageJoiner: "" });
       // Use actual page text, not page-number markers (which make blank PDFs nonempty).
-      const text = result.pages.map(page => page.text).join("\n");
+      // PDF.js's partial-page path can insert NUL separators between ToUnicode-
+      // mapped glyphs. They are control artifacts, not document text; remove
+      // them so CJK and mixed-script words remain intact for classification/map.
+      const text = result.pages.map(page => page.text).join("\n").replace(/\0/gu, "");
       length += text.length;
       if (length > 60_000) throw new Error("TEXT_TOO_LARGE");
       pages.push(text);

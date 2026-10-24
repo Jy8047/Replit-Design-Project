@@ -83,13 +83,16 @@ test("over-limit Content-Length is rejected without sending body or starting ext
 
 test("chunked upload without Content-Length extracts actual PDF; identity encoding is accepted", async () => {
   await serve(async port => {
-    const pdf = await makePdf("Genuine fictional chunked upload: Rust.");
+    const pdf = await makePdf(`Genuine fictional chunked upload.
+EDUCATION: A fictional university, bachelor degree.
+I worked with Rust and Python to build projects with a small team.`);
     const { req, result } = upload(port, { "Transfer-Encoding": "chunked", "Content-Encoding": "identity" });
     req.write(pdf.subarray(0, 100));
     req.end(pdf.subarray(100));
     const response = await result;
     assert.equal(response.status, 200);
-    assert.match(response.body.text, /fictional chunked upload: Rust/);
+    assert.match(response.body.text, /fictional chunked upload/);
+    assert.match(response.body.text, /Rust/);
     assert.equal(response.body.mapping_provenance, "none");
   });
 });
@@ -145,7 +148,9 @@ test("actual app rejects compressed/mistyped bodies before its global JSON parse
     });
     assert.equal(response.status, 415);
     assert.equal(response.body.code, "UNSUPPORTED_ENCODING");
-    const normal = await post(port, await makePdf("Real local application boundary."));
+    const normal = await post(port, await makePdf(`Real local application boundary.
+EDUCATION: Fictional University, Bachelor of Science.
+I worked with Python and a team to build software projects.`));
     assert.equal(normal.status, 200);
     assert.match(normal.body.text, /Real local application boundary/);
   }, extractPdfText, undefined, actualApp);

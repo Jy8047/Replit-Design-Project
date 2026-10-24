@@ -3,9 +3,10 @@ import { ExtractCvPdfQueryParams, type CvExtractionResult } from "@workspace/api
 import { extractPdfText, MAX_CV_PDF_BYTES } from "../lib/pdf-extraction.ts";
 import { simulateCvMapping } from "../lib/cv-demo-mapping.ts";
 import { CvError } from "../lib/cv-errors.ts";
+import { classifyPdfLanguage } from "../lib/pdf-language.ts";
 
 export const CV_REQUEST_DEADLINE_MS = 30_000;
-type Dependencies = { extract: typeof extractPdfText };
+type Dependencies = { extract: typeof extractPdfText; map?: typeof simulateCvMapping };
 
 // Count actual wire-body bytes, including chunked requests. No decompression,
 // draining an endless rejected body, or buffering beyond the existing limit.
@@ -135,10 +136,15 @@ export function createCvExtractionRouter(
       processing = true;
       const extracted = await deps.extract(bytes, req.get("Content-Type"), controller.signal);
       controller.signal.throwIfAborted();
+      if (extracted.status === "TEXT_EXTRACTED") {
+        const language = classifyPdfLanguage(extracted.text);
+        if (language === "UNSUPPORTED") throw new CvError("UNSUPPORTED_LANGUAGE");
+        if (language === "INSUFFICIENT") throw new CvError("INSUFFICIENT_TEXT");
+      }
       const result: CvExtractionResult = { ...extracted, profile: null, mapping: "NOT_REQUESTED", mapping_provenance: "none" };
       if (extracted.status === "OCR_REQUIRED") result.mapping = "OCR_REQUIRED";
       else if (req.query.mapping_mode === "demo") {
-        result.profile = simulateCvMapping(extracted.text, req.query.profile_type as "fresh_graduate" | "career_switcher");
+        result.profile = (deps.map ?? simulateCvMapping)(extracted.text, req.query.profile_type as "fresh_graduate" | "career_switcher");
         result.mapping = "SIMULATED";
         result.mapping_provenance = "simulated";
       }

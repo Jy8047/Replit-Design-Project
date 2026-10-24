@@ -26,6 +26,57 @@ export async function makePdf(text = fictionalText, pages = 1, imageOnly = false
   return doc.save();
 }
 
+/** Generates a minimal fictional PDF with an explicit Unicode ToUnicode map. */
+export function makeUnicodePdf(text: string): Buffer {
+  const characters = [...text];
+  if (!characters.length || characters.some(character => character.codePointAt(0)! > 0xffff)) {
+    throw new Error("Unicode PDF fixture requires non-empty BMP text");
+  }
+  const code = (value: number) => value.toString(16).padStart(4, "0").toUpperCase();
+  const glyphCodes = new Map([...new Set(characters)].map((character, index) => [character, index + 1]));
+  const content = `BT /F0 12 Tf 40 1150 Td <${characters.map(character => code(glyphCodes.get(character)!)).join("")}> Tj ET`;
+  const mappings = [...glyphCodes].map(([character, glyph]) => `<${code(glyph)}> <${code(character.codePointAt(0)!)}>`);
+  const cmapBlocks = [];
+  for (let offset = 0; offset < mappings.length; offset += 100) {
+    const block = mappings.slice(offset, offset + 100);
+    cmapBlocks.push(`${block.length} beginbfchar\n${block.join("\n")}\nendbfchar`);
+  }
+  const cmap = `/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def
+/CMapName /Adobe-Identity-UCS def
+/CMapType 2 def
+1 begincodespacerange
+<0000> <FFFF>
+endcodespacerange
+${cmapBlocks.join("\n")}
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end`;
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 2400 1200] /Resources << /Font << /F0 5 0 R >> >> /Contents 4 0 R >>",
+    `<< /Length ${Buffer.byteLength(content)} >>\nstream\n${content}\nendstream`,
+    "<< /Type /Font /Subtype /Type0 /BaseFont /HeiseiMin-W3 /Encoding /Identity-H /DescendantFonts [6 0 R] /ToUnicode 7 0 R >>",
+    "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /HeiseiMin-W3 /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /DW 1000 >>",
+    `<< /Length ${Buffer.byteLength(cmap)} >>\nstream\n${cmap}\nendstream`,
+  ];
+  let pdf = "%PDF-1.7\n";
+  const offsets = [0];
+  for (let index = 0; index < objects.length; index++) {
+    offsets.push(Buffer.byteLength(pdf));
+    pdf += `${index + 1} 0 obj\n${objects[index]}\nendobj\n`;
+  }
+  const xrefOffset = Buffer.byteLength(pdf);
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  pdf += offsets.slice(1).map(offset => `${String(offset).padStart(10, "0")} 00000 n \n`).join("");
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return Buffer.from(pdf);
+}
+
 export async function makeMultiColumnPdf() {
   const doc = await PDFDocument.create();
   const page = doc.addPage([600, 800]);

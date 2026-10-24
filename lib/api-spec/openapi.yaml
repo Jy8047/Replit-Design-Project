@@ -61,6 +61,7 @@ paths:
         "415":
           $ref: "#/components/responses/CvError"
         "422":
+          description: Unsupported language, insufficient extracted text, or safe PDF processing error
           $ref: "#/components/responses/CvError"
         "429":
           $ref: "#/components/responses/CvError"

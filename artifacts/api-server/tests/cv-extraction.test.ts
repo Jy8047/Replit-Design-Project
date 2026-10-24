@@ -4,9 +4,11 @@ import { request as httpRequest } from "node:http";
 import { once } from "node:events";
 import express from "express";
 import {
-  makePdf, makeMultiColumnPdf, makeUnusualReadingOrderPdf, makePdfPages, encryptedPdf,
+  makePdf, makeUnicodePdf, makeMultiColumnPdf, makeUnusualReadingOrderPdf, makePdfPages, encryptedPdf,
 } from "./cv-fixtures.ts";
 import { extractPdfText, MAX_CV_PDF_BYTES } from "../src/lib/pdf-extraction.ts";
+import { CvError } from "../src/lib/cv-errors.ts";
+import { simulateCvMapping } from "../src/lib/cv-demo-mapping.ts";
 import { createCvExtractionRouter } from "../src/routes/cv-extraction.ts";
 import { extractSections, normalizeCvText } from "../src/lib/cv-smart-mapping.ts";
 
@@ -48,9 +50,13 @@ test("rejects too many pages and excessive extracted text", async () => {
   await assert.rejects(extractPdfText(await makePdf("Fictional long content ".repeat(120), 25)), { code: "TEXT_TOO_LARGE" });
 });
 
-async function withApi(run: (post: (bytes: Uint8Array, query?: string, headers?: Record<string, string>) => Promise<{ status: number; body: any; headers: any }>) => Promise<void>, extract = extractPdfText) {
+async function withApi(
+  run: (post: (bytes: Uint8Array, query?: string, headers?: Record<string, string>) => Promise<{ status: number; body: any; headers: any }>) => Promise<void>,
+  extract = extractPdfText,
+  map = simulateCvMapping,
+) {
   const app = express();
-  app.use("/api", createCvExtractionRouter({ extract }));
+  app.use("/api", createCvExtractionRouter({ extract, map }));
   const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address() as { port: number };
@@ -106,6 +112,91 @@ test("HTTP demo maps explicit actual PDF lines and preserves employment, never r
     const tooBig = await post(new Uint8Array(MAX_CV_PDF_BYTES + 1));
     assert.equal(tooBig.status, 413);
   });
+});
+
+test("HTTP language gate accepts Chinese, English and mixed text before allowing simulated mapping", async () => {
+  const testCases = [
+    ["English", `Jordan Miller
+EDUCATION: Fictional University, Bachelor of Science, 2020-2024.
+WORK EXPERIENCE: I developed Python, TypeScript and PostgreSQL projects.
+I managed a team with responsibility for data quality and reporting.
+Portfolio https://portfolio.example.test/jordan jordan@example.test`],
+    ["Chinese", "教育背景：虚构大学，计算机科学学士学位。工作经历：负责数据分析、项目管理和团队协作。掌握软件开发与数据库技术。"],
+    ["mixed", "教育背景：虚构大学，计算机科学学士学位。工作经历：负责数据分析和项目管理。\nSkills: Python, SQL. Experience with data analysis and project work."],
+  ] as const;
+  let mapperCalls = 0;
+  for (const [label, text] of testCases) {
+    await withApi(async post => {
+      const response = await post(await makePdf("fictional generated route fixture"), "profile_type=fresh_graduate&mapping_mode=demo");
+      assert.equal(response.status, 200, `${label} text should pass`);
+      assert.equal(response.body.mapping, "SIMULATED");
+      assert.ok(response.body.profile);
+    }, async () => ({ status: "TEXT_EXTRACTED", text, pages: 1 }), (...args) => {
+      mapperCalls++;
+      return simulateCvMapping(...args);
+    });
+  }
+  assert.equal(mapperCalls, testCases.length);
+});
+
+test("actual PDF worker extracts Chinese-only and mixed Unicode before the HTTP language gate", async () => {
+  const chinese = "教育背景：虚构大学，计算机科学学士学位。工作经历：负责数据分析、项目管理和团队协作。掌握软件开发与数据库技术。";
+  const mixed = `教育背景：Jordan Miller，虚构大学，计算机科学学士。
+EDUCATION: Fictional University, Bachelor of Science, 2020-2024.
+WORK EXPERIENCE: I worked with Python, SQL and PostgreSQL on data analysis projects.
+Portfolio: https://portfolio.example.test/jordan 2026`;
+  await withApi(async post => {
+    const chineseResponse = await post(makeUnicodePdf(chinese), "profile_type=fresh_graduate");
+    assert.equal(chineseResponse.status, 200);
+    assert.equal(chineseResponse.body.status, "TEXT_EXTRACTED");
+    assert.ok(chineseResponse.body.text.includes(chinese));
+    assert.equal(chineseResponse.body.profile, null);
+
+    const mixedResponse = await post(makeUnicodePdf(mixed), "profile_type=fresh_graduate&mapping_mode=demo");
+    assert.equal(mixedResponse.status, 200);
+    assert.equal(mixedResponse.body.status, "TEXT_EXTRACTED");
+    assert.ok(mixedResponse.body.text.includes("教育背景"));
+    assert.ok(mixedResponse.body.text.includes("Portfolio: https://portfolio.example.test/jordan 2026"));
+    assert.equal(mixedResponse.body.mapping, "SIMULATED");
+    assert.equal(mixedResponse.body.profile.confirmed_by_user, false);
+  });
+});
+
+test("HTTP language gate rejects unsupported or ambiguous extracted text before mapping", async () => {
+  const rejected = [
+    ["Spanish-primary", `Experiencia profesional en gestión de proyectos y análisis de datos.
+Responsable de coordinar equipos, desarrollar soluciones y trabajar con clientes.
+Educación y habilidades para una carrera profesional.`, "UNSUPPORTED_LANGUAGE"],
+    ["short/ambiguous", "Jordan Miller Python SQL 2026", "INSUFFICIENT_TEXT"],
+    ["technical vocabulary and URL noise", "TypeScript Kubernetes PostgreSQL https://example.test 2020-2024", "INSUFFICIENT_TEXT"],
+  ] as const;
+  let mapperCalls = 0;
+  for (const [label, text, code] of rejected) {
+    await withApi(async post => {
+      const response = await post(await makePdf("fictional generated route fixture"), "profile_type=fresh_graduate&mapping_mode=demo");
+      assert.equal(response.status, 422, label);
+      assert.deepEqual(response.body, { code });
+      assert.equal("profile" in response.body, false);
+    }, async () => ({ status: "TEXT_EXTRACTED", text, pages: 1 }), async () => {
+      mapperCalls++;
+      return simulateCvMapping("School: Fictional School\nDegree: Bachelor\nSkills: Python", "fresh_graduate");
+    });
+  }
+  assert.equal(mapperCalls, 0);
+});
+
+test("HTTP extraction failures remain distinct from language rejection and never map", async () => {
+  let mapperCalls = 0;
+  await withApi(async post => {
+    const response = await post(await makePdf("fictional generated route fixture"), "profile_type=fresh_graduate&mapping_mode=demo");
+    assert.equal(response.status, 422);
+    assert.deepEqual(response.body, { code: "CORRUPT_PDF" });
+    assert.equal("profile" in response.body, false);
+  }, async () => { throw new CvError("CORRUPT_PDF"); }, async () => {
+    mapperCalls++;
+    return simulateCvMapping("School: Fictional School\nDegree: Bachelor\nSkills: Python", "fresh_graduate");
+  });
+  assert.equal(mapperCalls, 0);
 });
 
 test("HTTP demo maps simple labelled PDF lines to a partial, unconfirmed profile", async () => {

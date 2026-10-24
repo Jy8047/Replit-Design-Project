@@ -2,17 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import { extractCvPdf, setBaseUrl, type CvExtractionResult } from '@workspace/api-client-react';
 import { useI18n } from '@/lib/i18n';
 import type { Profile, ProfileType } from '@/lib/profile';
+import { PDF_EXTRACTION_MESSAGES } from '@/lib/pdf-extraction-messages';
 
 const messages: Record<string, string> = {
+  ...PDF_EXTRACTION_MESSAGES,
   LIVE_MAPPING_BLOCKED: 'External model mapping is not available in this project. Use local extraction or simulated mapping.',
   OCR_REQUIRED: 'No extractable text was found. OCR is required but is not implemented. Use the online form.',
   RATE_LIMITED: 'The request limit was reached. Do not retry repeatedly; try the online form.',
   INVALID_PROFILE: 'No usable profile fields could be verified in the extracted text. Try simulated rules mapping again or switch to Fill in Online. Your confirmed profile is unchanged.',
   TEXT_TOO_LARGE: 'The extracted text exceeds the processing limit. Use a shorter CV or the online form.',
-  ENCRYPTED_PDF: 'Encrypted or password-protected PDFs are not supported. Use an unencrypted PDF.',
-  CORRUPT_PDF: 'This PDF could not be parsed. It may be damaged or unsupported.',
+  ENCRYPTED_PDF: 'Encrypted or password-protected PDFs are not supported. Use an unencrypted PDF or Fill in Online.',
+  CORRUPT_PDF: 'This PDF could not be parsed. It may be damaged or unsupported. Use Fill in Online.',
   PDF_TIMEOUT: 'PDF processing exceeded the time limit. Use a simpler PDF or the online form.',
-  PAGE_LIMIT: 'PDFs must contain between 1 and 30 pages.',
+  PAGE_LIMIT: 'PDFs must contain between 1 and 30 pages. Use Fill in Online if this PDF cannot be shortened.',
   FILE_TOO_LARGE: 'The file is larger than the 10 MB limit. Choose a smaller PDF.',
   PDF_ONLY: 'Only PDF files are accepted.',
   EMPTY_FILE: 'This PDF is empty. Choose a non-empty PDF or fill in the profile online.',

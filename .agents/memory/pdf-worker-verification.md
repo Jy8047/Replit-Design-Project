@@ -47,11 +47,14 @@ prose for inferred skills.
 
 **Why:** The current PDF worker exposes page text without layout coordinates.
 Flattened columns can join unrelated values, so aggressive reconstruction can
-create false majors or skills while appearing to improve coverage.
+create false majors or skills while appearing to improve coverage. Its
+partial-page Unicode path can also insert NUL separators between ToUnicode-
+mapped glyphs, even where whole-document extraction is clean.
 
-**How to apply:** Use synthetic generated PDFs to verify the real API route.
-Before claiming support for arbitrary layouts, test a redacted, user-approved
-sample; if reading order itself is lost, evaluate coordinate-aware extraction
+**How to apply:** Use generated ToUnicode PDFs to verify the worker's partial-
+page path, strip NUL control artifacts, and test the actual API route. Before
+claiming support for arbitrary layouts, test a redacted, user-approved sample;
+if reading order itself is lost, evaluate coordinate-aware extraction
 separately rather than weakening source-evidence checks.
 
 Treat a name as optional when reading order is uncertain. Only accept a
