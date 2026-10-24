@@ -7,7 +7,7 @@ const messages: Record<string, string> = {
   LIVE_MAPPING_BLOCKED: 'External model mapping is not available in this project. Use local extraction or simulated mapping.',
   OCR_REQUIRED: 'No extractable text was found. OCR is required but is not implemented. Use the online form.',
   RATE_LIMITED: 'The request limit was reached. Do not retry repeatedly; try the online form.',
-  INVALID_PROFILE: 'The extracted profile failed schema or text-evidence checks. No profile was changed.',
+  INVALID_PROFILE: 'No usable profile fields could be verified in the extracted text. Try simulated rules mapping again or switch to Fill in Online. Your confirmed profile is unchanged.',
   TEXT_TOO_LARGE: 'The extracted text exceeds the processing limit. Use a shorter CV or the online form.',
   ENCRYPTED_PDF: 'Encrypted or password-protected PDFs are not supported. Use an unencrypted PDF.',
   CORRUPT_PDF: 'This PDF could not be parsed. It may be damaged or unsupported.',
@@ -74,8 +74,8 @@ export function PdfExtractionPanel({ file, onUseDraft, onOnline }: {
       </select>
     </label>
     <p><label><input type="checkbox" checked={consent} disabled={busy} onChange={event => setConsent(event.target.checked)} data-testid="checkbox-pdf-consent"/> {t('I agree to send this PDF to the app server for text extraction. Use a fictional CV for testing.')}</label></p>
-    <p><label><input type="checkbox" checked={demo} disabled={busy} onChange={event => { setDemo(event.target.checked); setResult(null); }} data-testid="checkbox-demo-mapping"/> {t('Enable simulated mapping (rules only, not AI). Copy explicitly labelled PDF lines into an editable draft; no external service is used.')}</label></p>
-    {demo && <p>{t('Demo format: use one English label per line, for example School: Fictional University, Degree: Bachelor, Major: Computing, Skills: Python, SQL. Unknown narrative is not mapped and missing fields stay empty.')}</p>}
+    <p><label><input type="checkbox" checked={demo} disabled={busy} onChange={event => { setDemo(event.target.checked); setResult(null); }} data-testid="checkbox-demo-mapping"/> {t('Enable simulated mapping (rules only, not AI). Recognizable headings, bullets, labels, and clearly separated columns may create a partial editable draft; no external model is used.')}</label></p>
+    {demo && <p>{t('The rules parser supports explicit field labels and recognizable section headings, bullets, or clearly separated columns. Results may be partial; review every field and fill missing information manually.')}</p>}
     <div className="profile-actions">
       <button type="button" className="btn btn-primary" disabled={!file || !consent || busy} onClick={() => void parse()} data-testid="button-parse-pdf">{t(busy ? 'Extracting…' : 'Continue / Parse CV')}</button>
       <button type="button" className="btn" disabled={busy} onClick={onOnline} data-testid="button-switch-to-online">{t('Switch to Fill in Online')}</button>
@@ -85,6 +85,7 @@ export function PdfExtractionPanel({ file, onUseDraft, onOnline }: {
       <p role="status">{t(result.status === 'OCR_REQUIRED' ? messages.OCR_REQUIRED : 'Actual PDF text extracted. Check it against your CV; reading order and characters may be imperfect.')}</p>
       {messages[result.mapping] && result.status !== 'OCR_REQUIRED' && <p>{t(messages[result.mapping])}</p>}
       {result.text && <details open><summary>{t('Extracted PDF text (not saved)')}</summary><div className="profile-extracted-text" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontSize: 12, lineHeight: 1.6 }} data-testid="pdf-extracted-text">{result.text}</div></details>}
+      {result.status === 'TEXT_EXTRACTED' && !result.profile && result.mapping === 'NOT_REQUESTED' && <p role="status" data-testid="pdf-mapping-not-requested">{t('No editable profile draft was created because simulated mapping was not selected. Enable rules-only mapping and try again, or switch to Fill in Online. Your confirmed profile is unchanged.')}</p>}
       {result.profile && <>
         <p data-testid="simulated-mapping-label">{t('SIMULATED MAPPING — not AI output. Values are identified by local rules. Review and edit every field before confirmation.')}</p>
         <p data-testid="pdf-rules-review-hint">{t('The local rules parser identified these fields automatically. Review each one and manually fill any fields it missed.')}</p>

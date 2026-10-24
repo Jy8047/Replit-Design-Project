@@ -26,6 +26,23 @@ export async function makePdf(text = fictionalText, pages = 1, imageOnly = false
   return doc.save();
 }
 
+export async function makeMultiColumnPdf() {
+  const doc = await PDFDocument.create();
+  const page = doc.addPage([600, 800]);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const rows: Array<[number, number, string]> = [
+    [20, 760, "Jordan Miller"],
+    [20, 720, "EDUCATION"], [320, 720, "SKILLS"],
+    [20, 695, "University of Malaya"], [320, 695, "Python"],
+    [20, 670, "Bachelor of Science in Computer Science"], [320, 670, "SQL"],
+    [20, 645, "Graduated 2024"], [320, 645, "React"],
+    [20, 590, "WORK EXPERIENCE"], [320, 590, "LEADERSHIP"],
+    [20, 565, "Northstar Analytics | Data Intern | 2023-2024"], [320, 565, "Campus Data Club | Coordinator"],
+  ];
+  for (const [x, y, text] of rows) page.drawText(text, { x, y, size: 10, font });
+  return doc.save();
+}
+
 const padding = Buffer.from("28bf4e5e4e758a4164004e56fffa01082e2e00b6d0683e802f0ca9fe6453697a", "hex");
 const md5 = (bytes: Uint8Array) => createHash("md5").update(bytes).digest();
 function pad(password: string) { return Buffer.concat([Buffer.from(password), padding]).subarray(0, 32); }

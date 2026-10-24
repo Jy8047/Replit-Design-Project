@@ -37,3 +37,19 @@ disconnects start more parsing work than the concurrency budget allows.
 **How to apply:** When changing intake cancellation, test disconnection after a
 complete body as well as during upload, and prove that replacement work cannot
 reuse the cancelled parser's slot before termination settles.
+
+## Plain-text layout boundaries
+
+Normalize only clear section headings, explicit field labels, and visible table
+separators. Keep every mapped value verifiable against the original extracted
+text; leave uncertain fields blank, and never search education or experience
+prose for inferred skills.
+
+**Why:** The current PDF worker exposes page text without layout coordinates.
+Flattened columns can join unrelated values, so aggressive reconstruction can
+create false majors or skills while appearing to improve coverage.
+
+**How to apply:** Use synthetic generated PDFs to verify the real API route.
+Before claiming support for arbitrary layouts, test a redacted, user-approved
+sample; if reading order itself is lost, evaluate coordinate-aware extraction
+separately rather than weakening source-evidence checks.

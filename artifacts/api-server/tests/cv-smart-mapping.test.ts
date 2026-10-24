@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { parseCareerCsv } from "../../career-pathways/src/lib/career-data.ts";
+import { CvError } from "../src/lib/cv-errors.ts";
 import {
   CSV_SKILL_NAMES,
   CV_SKILL_VOCABULARY,
@@ -12,6 +13,7 @@ import {
   extractSections,
   extractSkills,
   mapCvSmart,
+  normalizeCvText,
 } from "../src/lib/cv-smart-mapping.ts";
 
 const dataDirectory = new URL("../../career-pathways/public/data/", import.meta.url);
@@ -120,7 +122,7 @@ test("Jordan Miller résumé-style sections and bullets map without Label: value
     "Python", "SQL", "Google Analytics", "React", "JavaScript",
   ]);
   assert.equal(result.name, "Jordan Miller");
-  assert.equal(result.education.school, "University of Malaya | 2020–2024");
+  assert.equal(result.education.school, "University of Malaya");
   assert.equal(result.education.degree, "Bachelor of Science");
   assert.equal(result.education.major, "Computer Science");
   assert.equal(result.academic_experience.includes("Graduated 2024"), true);
@@ -129,6 +131,79 @@ test("Jordan Miller résumé-style sections and bullets map without Label: value
   assert.equal(result.mapping_method, "rules-v2");
   assert.equal(result.mapping_provenance, "simulated");
   assert.equal(result.confirmed_by_user, false);
+});
+
+test("normalizes inline multi-column headings and pipe-delimited values without losing source evidence", () => {
+  const text = `Jordan Miller | jordan.miller@example.test | +60 12-345 6789
+EDUCATION University of Malaya | 2020–2024 | Bachelor of Science in Computer Science
+SKILLS Python | SQL | React
+WORK EXPERIENCE Northstar Analytics | Data Intern | 2023–2024`;
+  const normalized = normalizeCvText(text);
+  assert.match(normalized, /(?:^|\n)EDUCATION\nUniversity of Malaya\n2020–2024\nBachelor of Science in Computer Science/u);
+  assert.match(normalized, /(?:^|\n)SKILLS:\nPython\nSQL\nReact/u);
+  const result = mapCvSmart(text, "career_switcher");
+  assert.equal(result.name, "Jordan Miller");
+  assert.equal(result.education.school, "University of Malaya");
+  assert.equal(result.education.degree, "Bachelor of Science");
+  assert.equal(result.education.major, "Computer Science");
+  assert.match(result.employment_experience, /Northstar Analytics/u);
+  assert.deepEqual(result.skills.split(", "), ["Python", "SQL", "React"]);
+  assert.equal(result.mapping_provenance, "simulated");
+  assert.equal(result.confirmed_by_user, false);
+});
+
+test("maps an explicitly labelled table row to profile fields", () => {
+  const text = `Jordan Miller
+School | Degree | Major | Skills
+Fictional University | Bachelor of Science | Data Science | Python, SQL`;
+  const result = mapCvSmart(text, "fresh_graduate");
+  assert.equal(result.education.school, "Fictional University");
+  assert.equal(result.education.degree, "Bachelor of Science");
+  assert.equal(result.education.major, "Data Science");
+  assert.equal(result.skills, "Python, SQL");
+});
+
+test("handles reordered labels and a degree major wrapped onto the next line", () => {
+  const result = mapCvSmart(
+    `Jordan Miller
+SKILLS
+Python
+SQL
+EDUCATION
+Example Institute
+Bachelor of Science
+in Computer Science`,
+    "fresh_graduate",
+  );
+  assert.equal(result.education.school, "Example Institute");
+  assert.equal(result.education.degree, "Bachelor of Science");
+  assert.equal(result.education.major, "Computer Science");
+  assert.equal(result.skills, "Python, SQL");
+});
+
+test("returns partial editable data and keeps every absent field empty", () => {
+  const result = mapCvSmart("Jordan Miller\nSkills: Python", "fresh_graduate");
+  assert.equal(result.name, "Jordan Miller");
+  assert.equal(result.skills, "Python");
+  assert.deepEqual(result.education, { school: "", degree: "", major: "", key_courses: "" });
+  assert.equal(result.employment_experience, "");
+  assert.equal(result.confirmed_by_user, false);
+});
+
+test("rejects text that cannot produce any source-backed profile field", () => {
+  assert.throws(
+    () => mapCvSmart("EDUCATION\nSKILLS\nEXPERIENCE", "fresh_graduate"),
+    error => error instanceof CvError && error.code === "INVALID_PROFILE",
+  );
+});
+
+test("an invalid legacy field does not block a valid smart-mapped partial draft", () => {
+  const text = `Skills: Python
+Background: ${"fictional ".repeat(1000)}`;
+  const result = mapCvSmart(text, "fresh_graduate");
+  assert.equal(result.skills, "Python");
+  assert.equal(result.background, "");
+  assert.equal(result.mapping_provenance, "simulated");
 });
 
 test("mapCvSmart does not turn education or work-history mentions into skills", () => {

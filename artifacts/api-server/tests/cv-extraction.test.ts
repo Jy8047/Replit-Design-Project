@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { request as httpRequest } from "node:http";
 import { once } from "node:events";
 import express from "express";
-import { makePdf, encryptedPdf } from "./cv-fixtures.ts";
+import { makePdf, makeMultiColumnPdf, encryptedPdf } from "./cv-fixtures.ts";
 import { extractPdfText, MAX_CV_PDF_BYTES } from "../src/lib/pdf-extraction.ts";
 import { createCvExtractionRouter } from "../src/routes/cv-extraction.ts";
 
@@ -102,6 +102,29 @@ test("HTTP demo maps explicit actual PDF lines and preserves employment, never r
     assert.equal(scan.body.mapping_provenance, "none");
     const tooBig = await post(new Uint8Array(MAX_CV_PDF_BYTES + 1));
     assert.equal(tooBig.status, 413);
+  });
+});
+
+test("HTTP demo maps separate text columns without merging adjacent field values", async () => {
+  await withApi(async post => {
+    const response = await post(await makeMultiColumnPdf(), "profile_type=career_switcher&mapping_mode=demo");
+    assert.equal(response.status, 200);
+    assert.equal(response.body.status, "TEXT_EXTRACTED");
+    assert.match(response.body.text, /EDUCATION SKILLS/u);
+    assert.match(response.body.text, /University of Malaya Python/u);
+    assert.equal(response.body.mapping, "SIMULATED");
+    assert.equal(response.body.mapping_provenance, "simulated");
+    assert.equal(response.body.profile.mapping_method, "rules-v2");
+    assert.equal(response.body.profile.confirmed_by_user, false);
+    assert.equal(response.body.profile.name, "Jordan Miller");
+    assert.equal(response.body.profile.education.school, "University of Malaya");
+    assert.equal(response.body.profile.education.degree, "Bachelor of Science");
+    assert.equal(response.body.profile.education.major, "Computer Science");
+    assert.deepEqual(response.body.profile.skills.split(", "), ["Python", "SQL", "React"]);
+    assert.equal(response.body.profile.academic_experience, "Graduated 2024");
+    assert.equal(response.body.profile.employment_experience, "");
+    assert.equal(response.body.profile.personal_experience, "");
+    assert.equal(response.body.profile.background, "");
   });
 });
 
