@@ -7,6 +7,7 @@ import {
   type CareerRecord,
   type DatasetResult,
 } from '@/lib/career-data';
+import { OCCUPATION_INSIGHTS } from '@/lib/career-matching';
 import { CatalogAttribution, OccupationCatalogDetails } from './occupation-catalog-details';
 import { PageHeading } from '@/components/page-heading';
 import { localizeContent, useI18n } from '@/lib/i18n';
@@ -277,7 +278,15 @@ export function CareerRolesPage({
   onChooseOccupation: (occupation: string) => void;
 }) {
   const { t, locale } = useI18n();
-  const matches = calculateCareerMatches(profileSkills, dataset.records);
+  const weightedMatches = calculateCareerMatches(profileSkills, dataset.records)
+    .filter((match) => {
+      const insight = OCCUPATION_INSIGHTS[match.occupation.toLowerCase()];
+      return Boolean(insight && Object.keys(insight.skills).length > 0);
+    });
+  const totalWeightedMatches = weightedMatches.length;
+  const matches = weightedMatches
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 8);
   const explanations = new Map(
     explainCareerMatches(profileSkills, dataset.records, locale)
       .map((match) => [match.occupation, match]),
@@ -401,7 +410,7 @@ export function CareerRolesPage({
                 </div>
                 <div
                   style={{
-                    minWidth: 94,
+                    minWidth: 132,
                     textAlign: 'center',
                     background: '#eff1e8',
                     borderRadius: 13,
@@ -424,6 +433,17 @@ export function CareerRolesPage({
                   >
                     {t('SKILL OVERLAP')}
                   </div>
+                  <div
+                    style={{ fontSize: 11, color: '#526457', marginTop: 9 }}
+                    data-testid={`text-match-confidence-${index}`}
+                  >
+                    {t('Confidence')}: {Math.round(match.confidence * 100)}%
+                  </div>
+                  <p
+                    style={{ fontSize: 10, color: '#737a70', lineHeight: 1.45, margin: '5px 0 0' }}
+                  >
+                    {t('The more completely you enter your skills, the higher the confidence.')}
+                  </p>
                 </div>
               </div>
               {match.catalog && <OccupationCatalogDetails metadata={match.catalog} />}
@@ -542,6 +562,13 @@ export function CareerRolesPage({
             );
           })}
         </div>
+      )}
+      {totalWeightedMatches > 0 && (
+        <p role="status" data-testid="status-weighted-match-count" style={{ marginTop: 14, fontSize: 12, color: '#737a70' }}>
+          {t('Showing up to 8 of {total} weighted matches.', {
+            total: totalWeightedMatches,
+          })}
+        </p>
       )}
       <style>{`@media(max-width:560px){.role-lists{grid-template-columns:1fr!important;gap:16px!important}}`}</style>
     </>
