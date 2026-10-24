@@ -365,6 +365,21 @@ const translations: Record<string, [string, string]> = {
   'Public collection of user-research methods and practical guides.': ['用户研究方法和实用指南的公开集合。', 'Koleksi awam kaedah penyelidikan pengguna dan panduan praktikal.'],
   'Public tutorials about charts, maps, and tables.': ['关于图表、地图和表格的公开教程。', 'Tutorial awam tentang carta, peta dan jadual.'],
   'Public guide to planning, organizing, drafting, and revising writing.': ['关于规划、组织、起草和修改写作内容的公开指南。', 'Panduan awam untuk merancang, menyusun, mendraf dan menyemak penulisan.'],
+  'scenario.why': ['三种情景基于不同的 AI 采用与劳动力调整假设，并非三个确定的未来，也不代表发生概率。', 'Senario ini menggunakan andaian berbeza tentang penggunaan AI dan penyesuaian tenaga kerja, bukan masa depan pasti atau kebarangkalian yang ditetapkan.'],
+  'scenario.assumption.low': ['AI 逐步采用，工具主要辅助员工；培训与新任务支持岗位需求。', 'Penggunaan AI beransur-ansur; alat membantu pekerja, manakala latihan dan tugas baharu menyokong permintaan.'],
+  'scenario.assumption.moderate': ['AI 采用速度不一，部分重复性任务被自动化；新岗位抵消一部分替代影响。', 'Penggunaan AI tidak sekata; sebahagian tugas rutin diautomasi, manakala jawatan baharu mengimbangi sebahagian penggantian.'],
+  'scenario.assumption.high': ['自动化更快、再培训较慢；在新机会出现前，重复性岗位面临更大压力。', 'Automasi lebih pantas dan latihan semula lebih perlahan; jawatan rutin menghadapi tekanan lebih tinggi sebelum peluang baharu muncul.'],
+  'uncertainty.sources': ['AI 能力与成本、企业采用速度、经济需求与政策、培训可获得性，以及新任务和岗位产生的速度。样本较小、数据覆盖不完整，也会增加不确定性。', 'Keupayaan dan kos AI; penggunaan oleh majikan; permintaan ekonomi dan dasar; akses latihan; serta kelajuan kemunculan tugas dan jawatan baharu. Sampel kecil dan liputan sumber tidak lengkap menambah ketidakpastian.'],
+  'scenario.estimateDisclaimer': ['所有预测均为估算，不代表确定的未来结果。', 'Semua unjuran ialah anggaran dan bukan hasil masa hadapan yang pasti.'],
+  'scenario.placeholderDisclaimer': ['情景曲线仅用于展示布局，不是预测，也未连接真实未来数据。', 'Laluan senario ini hanya penanda susun atur—bukan ramalan dan tidak disambungkan kepada data masa hadapan sebenar.'],
+  'scenario.interpolation': ['年度示例点采用线性插值连接到示例终点，不是经过校准的预测结果，也不是统计置信区间。', 'Titik contoh tahunan diinterpolasi secara linear ke nilai akhir ilustrasi. Ia bukan hasil ramalan yang ditentukur atau selang keyakinan.'],
+  'provenance.sampleNotCensus': ['样本，不是普查', 'Sampel, bukan banci'],
+  'provenance.contextNotForecast': ['官方 SDG 指标不是就业预测。', 'Penunjuk SDG rasmi bukan ramalan pekerjaan.'],
+  'provenance.sourceLinked': ['每条记录都保留原始网址和日期。', 'Setiap item mengekalkan URL dan tarikh asal.'],
+  'dataEntry.manualScoreDisclaimer': ['人工录入的展示分数，不是个人能力或简历评估。', 'Skor paparan yang dimasukkan secara manual; bukan penilaian peribadi.'],
+  'sdg4.explanation': ['数字学习岗位可通过可负担的在线培训，扩大实用技能与包容性教育的获取机会。', 'Peranan pembelajaran digital boleh meluaskan akses kepada kemahiran praktikal dan pendidikan inklusif melalui latihan dalam talian yang mampu milik.'],
+  'sdg7.explanation': ['清洁能源数据技能可以帮助团队监测能源使用，并识别采用可再生能源的机会。', 'Kemahiran data tenaga bersih membantu pasukan memantau penggunaan tenaga dan mengenal pasti peluang penggunaan tenaga boleh baharu.'],
+  'sdg9.explanation': ['这类岗位所需的云端协作技能与 SDG 9“产业、创新和基础设施”相关，能够提升当地微型、小型和中型企业的数字化采用率。', 'Berkaitan dengan SDG 9, Industri, Inovasi dan Infrastruktur, kemahiran kolaborasi awan yang diperlukan untuk peranan ini boleh meningkatkan kadar penggunaan digital dalam perusahaan mikro, kecil dan sederhana tempatan.'],
 };
 
 const contentTranslations: Record<string, [string, string]> = {

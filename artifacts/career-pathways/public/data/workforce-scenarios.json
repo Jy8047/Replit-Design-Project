@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "note": "示例情景数据，来自 SDG Workforce Atlas 原型；仅供演示，不是预测，也不是马来西亚劳动力市场实测数据。",
+  "years": [
+    { "year": 2026, "lowAI": 9, "moderateAI": 9, "highAI": 9 },
+    { "year": 2027, "lowAI": 10, "moderateAI": 8.5, "highAI": 7.5 },
+    { "year": 2028, "lowAI": 11, "moderateAI": 8, "highAI": 6 },
+    { "year": 2029, "lowAI": 12, "moderateAI": 7.5, "highAI": 4.5 },
+    { "year": 2030, "lowAI": 13, "moderateAI": 7, "highAI": 3 }
+  ],
+  "scenarios": [
+    { "id": "low", "labelEn": "Low AI impact", "labelZh": "低 AI 冲击情景", "labelMs": "Impak AI rendah" },
+    { "id": "moderate", "labelEn": "Medium AI impact", "labelZh": "中 AI 冲击情景", "labelMs": "Impak AI sederhana" },
+    { "id": "high", "labelEn": "High AI impact", "labelZh": "高 AI 冲击情景", "labelMs": "Impak AI tinggi" }
+  ],
+  "source": {
+    "name": "Team-provided illustrative sample (not a forecast)",
+    "publishedAt": "2026-10-23",
+    "url": null,
+    "referenceApis": [
+      { "name": "Remotive public API", "url": "https://remotive.com/api/remote-jobs?limit=60", "usedFor": "remote posting sample (optional, runtime network)" },
+      { "name": "World Bank indicators", "url": "https://api.worldbank.org/v2/country/WLD/indicator/SL.UEM.TOTL.ZS?format=json", "usedFor": "macro context indicators (optional)" }
+    ]
+  },
+  "sdgExplanationKeys": [4, 7, 8, 9, 10, 12, 13]
+}
