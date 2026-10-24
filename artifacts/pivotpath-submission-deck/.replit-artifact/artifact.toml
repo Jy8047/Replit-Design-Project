@@ -1,0 +1,28 @@
+kind = "slides"
+previewPath = "/pivotpath-submission-deck/"
+title = "PivotPath AI Submission Deck"
+description = "Editable Replit import of the team-provided PivotPath AI presentation, preserved separately from the original PPTX submission file."
+version = "1.0.0"
+id = "artifacts/pivotpath-submission-deck"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/pivotpath-submission-deck/" ]
+localPort = 19328
+
+[services.development]
+run = "pnpm --filter @workspace/pivotpath-submission-deck run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pivotpath-submission-deck", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/pivotpath-submission-deck/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19328"
+BASE_PATH = "/pivotpath-submission-deck/"

@@ -1,0 +1,66 @@
+[
+  {
+    "id": "ba86a04a-0c39-421a-adb9-5d7a57d058ef",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide1.tsx",
+    "title": "PivotPath AI",
+    "description": "Cover slide for the supplied SDC Hackathon presentation.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "71e8a8eb-20cb-46e7-9ad7-57bcffba72c2",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide2.tsx",
+    "title": "Product Capabilities",
+    "description": "The supplied deck's summary of product capabilities.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "364eebf0-bb27-44fc-9e1b-89785796aecc",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide3.tsx",
+    "title": "Three Languages, One Standard of Advice",
+    "description": "The supplied deck's language-support section.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "21b46390-2a52-4cf6-b5d3-84005ab9303b",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide4.tsx",
+    "title": "Career Categories",
+    "description": "The supplied deck's occupation coverage section.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "d35914e0-9677-4d34-8e50-a069e07caed5",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide5.tsx",
+    "title": "SDG Alignment",
+    "description": "The supplied deck's SDG contribution section.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "4c2319fe-77f7-4c89-a4b3-8d406bdc5a7b",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide6.tsx",
+    "title": "The Report",
+    "description": "The supplied deck's example report and scenario view.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "ca868854-37c2-4e3b-8722-f8c77cc73429",
+    "position": 7,
+    "filepath": "src/pages/slides/Slide7.tsx",
+    "title": "Acknowledgements",
+    "description": "The supplied deck's technical and partner acknowledgements.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a0583eed-e26c-4ba7-9c0a-622bc3f227f0",
+    "position": 8,
+    "filepath": "src/pages/slides/Slide8.tsx",
+    "title": "Thank You",
+    "description": "Closing slide from the supplied presentation.",
+    "speakerNotes": ""
+  }
+]
