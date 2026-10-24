@@ -2,11 +2,12 @@ import { ArrowUpRight, Check, Lightbulb } from 'lucide-react';
 import { Link } from 'wouter';
 import {
   calculateCareerMatches,
+  explainCareerMatches,
   getVerifiedCitation,
   type CareerRecord,
   type DatasetResult,
 } from '@/lib/career-data';
-import { matchCareers } from '@/lib/career-matching';
+import { CatalogAttribution, OccupationCatalogDetails } from './occupation-catalog-details';
 import { PageHeading } from '@/components/page-heading';
 import { localizeContent, useI18n } from '@/lib/i18n';
 
@@ -24,7 +25,7 @@ export function DatasetFeedback({ dataset }: { dataset: DatasetState }) {
         role="status"
         data-testid="status-dataset-loading"
       >
-        {t('Loading the local demonstration dataset…')}
+        {t('Loading occupation and demonstration datasets…')}
       </div>
     );
   }
@@ -83,7 +84,7 @@ export function DatasetFeedback({ dataset }: { dataset: DatasetState }) {
 
 function RecordProvenance({ record }: { record: CareerRecord }) {
   const { t, locale, tag } = useI18n();
-  const directionLabel = t(record.trendDirection.charAt(0).toUpperCase() + record.trendDirection.slice(1));
+  const directionLabel = record.catalog ? t('Market trend unknown') : t(record.trendDirection.charAt(0).toUpperCase() + record.trendDirection.slice(1));
   const citation = getVerifiedCitation(record);
 
   return (
@@ -112,7 +113,7 @@ function RecordProvenance({ record }: { record: CareerRecord }) {
           {directionLabel} ·{' '}
           {record.recordStatus === 'synthetic'
             ? t('synthetic example')
-            : t('marked verified in dataset')}
+            : record.catalog ? t('Verified occupation association') : t('marked verified in dataset')}
         </span>
       </div>
       <p
@@ -123,7 +124,9 @@ function RecordProvenance({ record }: { record: CareerRecord }) {
           margin: 0,
         }}
       >
-        {localizeContent(record.evidence, locale)}
+        {record.catalog
+          ? t('Source verification covers the occupation–competency association only. No demand trend has been verified.')
+          : localizeContent(record.evidence, locale)}
       </p>
       {citation ? (
         <div
@@ -178,8 +181,11 @@ export function CareerSkillsPage({
   const skillGroups = Array.from(groups.values()).sort((left, right) =>
     left.skill.localeCompare(right.skill),
   );
-  const counts = { rising: 0, declining: 0, stable: 0 };
-  for (const record of dataset.records) counts[record.trendDirection] += 1;
+  const counts = { rising: 0, declining: 0, stable: 0, unknown: 0 };
+  for (const record of dataset.records) {
+    if (record.catalog) counts.unknown += 1;
+    else counts[record.trendDirection] += 1;
+  }
   const verifiedCount = dataset.records.filter(
     (record) => record.recordStatus === 'verified',
   ).length;
@@ -189,7 +195,7 @@ export function CareerSkillsPage({
       <PageHeading
         kicker={t('Explore changing work')}
         title={t('Future Skills Radar')}
-        description={t('Review the direction and evidence attached to each dataset record. The included records are synthetic examples, not a forecast or live labor-market data.')}
+        description={t('Source-backed associations and synthetic examples are shown separately. No market forecast is provided for the sourced occupations.')}
       />
       <DatasetFeedback dataset={dataset} />
       <section className="panel" style={{ marginBottom: 17 }}>
@@ -219,6 +225,7 @@ export function CareerSkillsPage({
             {t('Declining examples')} · {counts.declining}
           </span>
           <span className="tag">{t('Stable examples')} · {counts.stable}</span>
+          <span className="tag">{t('Unknown trend records')} · {counts.unknown}</span>
           <span className="tag">
             {t('{n} rows marked verified in dataset', { n: verifiedCount })}
           </span>
@@ -227,6 +234,7 @@ export function CareerSkillsPage({
           {t('Verification labels and citations come from the CSV. The app checks citation fields and date format, but does not independently validate the source or its claims.')}
         </p>
       </section>
+      <CatalogAttribution />
       {dataset.records.length > 0 && (
         <div className="skills-list">
           {skillGroups.map(({ skill, records }, index) => (
@@ -271,7 +279,7 @@ export function CareerRolesPage({
   const { t, locale } = useI18n();
   const matches = calculateCareerMatches(profileSkills, dataset.records);
   const explanations = new Map(
-    matchCareers(profileSkills, dataset.records, {}, locale === 'ms' ? 'bm' : locale).matches
+    explainCareerMatches(profileSkills, dataset.records, locale)
       .map((match) => [match.occupation, match]),
   );
   const hasProfileSkills = profileSkills
@@ -309,6 +317,7 @@ export function CareerRolesPage({
           <strong>{t('Score formula:')}</strong> {t('Weighted score = total weight of skills you already have ÷ total weight of skills required by the occupation.')}
         </div>
       </div>
+      <CatalogAttribution />
       {!hasProfileSkills && (
         <div
           style={{
@@ -367,7 +376,7 @@ export function CareerRolesPage({
                     <span className="eyebrow">
                       {t('RANK {n}', { n: String(index + 1).padStart(2, '0') })}
                     </span>
-                    <span className="tag">{t('Synthetic role-skill mapping')}</span>
+                    <span className="tag">{t(match.catalog ? 'Verified association; unknown market trend' : 'Synthetic role-skill mapping')}</span>
                   </div>
                   <h2
                     style={{
@@ -417,6 +426,7 @@ export function CareerRolesPage({
                   </div>
                 </div>
               </div>
+              {match.catalog && <OccupationCatalogDetails metadata={match.catalog} />}
               <section
                 aria-label={t('Why this match')}
                 style={{

@@ -2,6 +2,8 @@ import {
   calculateCareerMatches,
   type CareerRecord,
 } from './career-data.ts';
+import { getOccupationMetadata, type LocalizedText } from './occupation-catalog.ts';
+import { SDG_LABELS } from './career-matching.ts';
 
 export interface LearningResource {
   status: 'verified' | 'unverified';
@@ -36,6 +38,7 @@ export interface ScenarioResult {
   risingSkills: string[];
   stableSkills: string[];
   decliningSkills: string[];
+  unknownTrendSkills: string[];
 }
 
 export interface GoalMapping {
@@ -46,6 +49,7 @@ export interface GoalMapping {
   relevantSkills: string[];
   rationale: string;
   relationship: 'potential' | 'conditional';
+  localizedRationale?: LocalizedText;
 }
 
 export interface WorkforceScenarioYear {
@@ -368,7 +372,14 @@ const goalMappings: GoalMapping[] = [
 ];
 
 export function getOccupationGoalMappings(occupation: string): GoalMapping[] {
-  return goalMappings.filter((mapping) => mapping.occupation === occupation);
+  const original = goalMappings.filter((mapping) => mapping.occupation === occupation);
+  if (original.length) return original;
+  return getOccupationMetadata(occupation)?.sdgs.map(sdg => ({
+    goalNumber: sdg.goal, goalTitle: SDG_LABELS[sdg.goal].en,
+    officialUrl: `https://sdgs.un.org/goals/goal${sdg.goal}`,
+    occupation, relevantSkills: sdg.skills, rationale: sdg.rationale.en,
+    localizedRationale: sdg.rationale, relationship: 'conditional',
+  })) ?? [];
 }
 
 export const scenarioAssumptions: ScenarioAssumption[] = [
@@ -405,14 +416,15 @@ export function calculateScenarioResults(
         (record) => record.occupation === match.occupation,
       );
       const risingSkills = occupationRecords
-        .filter((record) => record.trendDirection === 'rising')
+        .filter((record) => !record.catalog && record.trendDirection === 'rising')
         .map((record) => record.skill);
       const stableSkills = occupationRecords
-        .filter((record) => record.trendDirection === 'stable')
+        .filter((record) => !record.catalog && record.trendDirection === 'stable')
         .map((record) => record.skill);
       const decliningSkills = occupationRecords
-        .filter((record) => record.trendDirection === 'declining')
+        .filter((record) => !record.catalog && record.trendDirection === 'declining')
         .map((record) => record.skill);
+      const unknownTrendSkills = occupationRecords.filter(record => record.catalog).map(record => record.skill);
       const matched = new Set(
         match.matchingSkills.map((skill) =>
           skill.normalize('NFKC').toLocaleLowerCase(),
@@ -421,7 +433,8 @@ export function calculateScenarioResults(
       const weightedTotal =
         risingSkills.length * weights.rising +
         stableSkills.length * weights.stable +
-        decliningSkills.length * weights.declining;
+        decliningSkills.length * weights.declining +
+        unknownTrendSkills.length;
       const weightedMatched =
         risingSkills.filter((skill) =>
           matched.has(skill.normalize('NFKC').toLocaleLowerCase()),
@@ -434,7 +447,8 @@ export function calculateScenarioResults(
         decliningSkills.filter((skill) =>
           matched.has(skill.normalize('NFKC').toLocaleLowerCase()),
         ).length *
-          weights.declining;
+          weights.declining +
+        unknownTrendSkills.filter(skill => matched.has(skill.normalize('NFKC').toLocaleLowerCase())).length;
       const scenarioIndex = weightedTotal
         ? Math.round((weightedMatched / weightedTotal) * 100)
         : 0;
@@ -447,6 +461,7 @@ export function calculateScenarioResults(
         risingSkills,
         stableSkills,
         decliningSkills,
+        unknownTrendSkills,
       };
     })
     .sort(

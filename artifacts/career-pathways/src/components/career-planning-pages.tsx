@@ -412,7 +412,7 @@ export function OccupationImpactPage(props: SelectionProps) {
       {mappings.map(mapping => <article className="panel" key={mapping.goalNumber} data-testid={`card-occupation-sdg-${mapping.goalNumber}`}>
         <span className="tag">SDG {mapping.goalNumber} · {t(`${mapping.relationship} alignment`)}</span>
         <h2 className="planning-title" style={{ marginTop: 12 }}>{localizeContent(mapping.goalTitle, locale)}</h2>
-        <p className="planning-note">{localizeContent(mapping.rationale, locale)}</p>
+        <p className="planning-note">{mapping.localizedRationale?.[locale] ?? localizeContent(mapping.rationale, locale)}</p>
         <strong style={{ fontSize: 12 }}>{t('Relevant skills')}</strong>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, margin: '9px 0 14px' }}>{mapping.relevantSkills.map(skill => <span className="tag" key={skill}>{localizeContent(skill, locale)}</span>)}</div>
         <a href={mapping.officialUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-un-goal-${mapping.goalNumber}`}>{t('Read the official UN goal')} <ExternalLink size={12} /></a>
@@ -449,6 +449,7 @@ export function FutureScenarioPage({ scenario, onScenarioChange, records, profil
     locale === 'zh' ? item.labelZh : locale === 'ms' ? item.labelMs : item.labelEn;
   return <>
     <PageHeading kicker={t('Test assumptions, not predictions')} title={t('Future Scenarios')} description={t('Choose a what-if lens and see how it changes the interpretation and ranking of your skill overlap. Your original overlap score is preserved.')} />
+    {records.some(record => record.catalog) && <div className="planning-notice">{t('Source-backed occupations have no verified demand trend. They receive neutral scenario weights; an unchanged scenario result is not evidence of market stability.')}</div>}
     <div className="planning-notice"><strong>{t('Estimates only.')}</strong> {t('These synthetic scenarios do not predict AI adoption, hiring odds, or employment outcomes. The included skill directions are synthetic too.')}</div>
     <section className="panel" aria-labelledby="scenario-curves-title" data-testid="section-scenario-curves" style={{ marginBottom: 18 }}>
       <h2 id="scenario-curves-title" className="planning-title">{t('2026–2030 illustrative scenario curves')}</h2>
@@ -522,6 +523,7 @@ export function FutureScenarioPage({ scenario, onScenarioChange, records, profil
         <h2 className="planning-title" style={{ marginTop: 9 }}>{localizeContent(result.occupation, locale)}</h2>
         <p data-testid={`text-scenario-index-${index}`}><strong>{result.scenarioIndex}%</strong> {t('scenario-weighted overlap estimate')} · {t('Original overlap')} {result.overlapScore}% · {t('Change')} {result.adjustment > 0 ? '+' : ''}{result.adjustment} {t('points')}</p>
         <p className="planning-note">{t('More-emphasised skills:')} {result.risingSkills.map(skill => localizeContent(skill, locale)).join(', ') || t('None listed')}<br />{t('Baseline skills:')} {result.stableSkills.map(skill => localizeContent(skill, locale)).join(', ') || t('None listed')}<br />{t('Less-emphasised skills:')} {result.decliningSkills.map(skill => localizeContent(skill, locale)).join(', ') || t('None listed')}</p>
+        {result.unknownTrendSkills.length > 0 && <p className="planning-note">{t('Unknown-direction skills (neutral scenario weight):')} {result.unknownTrendSkills.map(skill => localizeContent(skill, locale)).join(', ')}</p>}
       </article>)}
     </div>
     <Link href="/roles" className="btn" style={{ marginTop: 18 }} data-testid="link-scenario-roles">{t('Return to original role matches')} <ArrowRight size={14} /></Link>

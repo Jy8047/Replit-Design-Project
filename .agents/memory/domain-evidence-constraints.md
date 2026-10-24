@@ -10,6 +10,20 @@ SDG alignments are intended contributions, not measured outcomes. Scenario
 assumptions must remain inspectable and labelled estimates, not predictions.
 Do not introduce paid services or API keys without the user's consent.
 
+Occupational classification and competency evidence do not establish market
+demand. Keep verification of an occupation–competency association separate from
+trend verification. A neutral compatibility value must not become a claim that
+demand is stable. Check actual skill-data availability; a taxonomy may list a
+title without providing the competency ratings needed to support it.
+
+**Why:** The team approved broader source-backed career coverage while explicitly
+prohibiting unverified trend claims. Public O*NET tables can contain a valid
+occupation title without the corresponding rated skill records.
+
+**How to apply:** Verify each association against its source rows, distinguish
+release dates from observation/check dates, and omit unsupported candidates
+rather than borrowing a neighbouring occupation's skills.
+
 **Why:** The user explicitly set these trust and consent requirements for the
 SDC Hackathon Domain 1 application.
 

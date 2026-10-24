@@ -1,4 +1,8 @@
-import { matchCareersForProfile } from './career-matching.ts';
+import { matchCareers, OCCUPATION_INSIGHTS, type CareerMatch as EngineMatch } from './career-matching.ts';
+import {
+  catalogErrors, getOccupationMetadata, occupationCatalog, type OccupationMetadata,
+} from './occupation-catalog.ts';
+import { normalizeCatalogProfileSkills } from './occupation-skill-aliases.ts';
 
 export const REQUIRED_CSV_HEADERS = [
   'occupation',
@@ -23,6 +27,7 @@ export interface CareerRecord {
   publicationDate: string;
   evidence: string;
   recordStatus: RecordStatus;
+  catalog?: OccupationMetadata;
 }
 
 export interface DatasetResult {
@@ -30,12 +35,9 @@ export interface DatasetResult {
   errors: string[];
 }
 
-export interface CareerMatch {
-  occupation: string;
-  requiredSkills: string[];
-  matchingSkills: string[];
-  missingSkills: string[];
-  score: number;
+export interface CareerMatch extends EngineMatch {
+  catalog?: OccupationMetadata;
+  trendEvidenceStatus?: 'unknown' | 'synthetic';
 }
 
 function parseCsvRows(text: string): string[][] {
@@ -264,7 +266,92 @@ export function calculateCareerMatches(
   profileSkills: string | string[],
   records: CareerRecord[],
 ): CareerMatch[] {
-  return matchCareersForProfile(profileSkills, records);
+  return explainCareerMatches(profileSkills, records);
+}
+
+/** Boundary adapter only: P2's function, algorithm and return structure stay untouched. */
+export function explainCareerMatches(
+  profileSkills: string | string[],
+  records: CareerRecord[],
+  locale: 'en' | 'zh' | 'ms' = 'en',
+): CareerMatch[] {
+  const insights = { ...OCCUPATION_INSIGHTS };
+  for (const record of records) {
+    const meta = record.catalog;
+    if (meta && !insights[record.occupation.toLowerCase()]) {
+      insights[record.occupation.toLowerCase()] = {
+        occupation: record.occupation,
+        labels: { en: meta.labels.en, zh: meta.labels.zh, bm: meta.labels.ms },
+        sdgTags: meta.sdgs.map(mapping => mapping.goal),
+        skills: {}, // Explicitly retain P2's default equal weights, not source ratings.
+      };
+    }
+  }
+  const rows = records.map(record => ({
+    occupation: record.occupation, skill: record.skill,
+    trend_direction: record.trendDirection,
+  }));
+  const input = records.some(record => record.catalog)
+    ? normalizeCatalogProfileSkills(profileSkills) : profileSkills;
+  const result = matchCareers(input, rows, insights, locale === 'ms' ? 'bm' : locale);
+  return result.matches.map(match => {
+    const roleRecords = records.filter(record => record.occupation === match.occupation);
+    const meta = roleRecords.find(record => record.catalog)?.catalog;
+    const synthetic = roleRecords.every(record => record.recordStatus === 'synthetic');
+    const disclaimer = meta ? {
+      en: 'Market trend unknown. Source verification covers competencies, not demand. Learning hours are app estimates.',
+      zh: '市场趋势未知。来源核验仅覆盖职业能力关联，不代表需求；学习工时为程序估算。',
+      ms: 'Trend pasaran tidak diketahui. Pengesahan sumber meliputi kompetensi, bukan permintaan. Jam pembelajaran ialah anggaran aplikasi.',
+    } : {
+      en: 'Direction is a synthetic example, not a measured market trend. Learning hours are app estimates.',
+      zh: '方向为合成示例，不是已测量的市场趋势；学习工时为程序估算。',
+      ms: 'Arah ialah contoh sintetik, bukan trend pasaran terukur. Jam pembelajaran ialah anggaran aplikasi.',
+    };
+    return {
+      ...match, catalog: meta,
+      trendEvidenceStatus: meta ? 'unknown' : synthetic ? 'synthetic' : undefined,
+      reasons: meta || synthetic ? [...match.reasons.slice(0, -1), disclaimer[locale]] : match.reasons,
+    };
+  });
+}
+
+/** Reject official rows whose metadata cannot substantiate their exact association. */
+export function combineCareerDatasets(syntheticCsv: string, officialCsv: string): DatasetResult {
+  const original = parseCareerCsv(syntheticCsv);
+  const official = parseCareerCsv(officialCsv);
+  const errors = [...original.errors, ...official.errors, ...catalogErrors];
+  const accepted: CareerRecord[] = [];
+  for (const record of official.records) {
+    const meta = getOccupationMetadata(record.occupation);
+    const skill = meta?.skills.find(skill => skill.name === record.skill);
+    const source = occupationCatalog.sources.find(source => source.file === skill?.sourceFile);
+    if (!meta || !skill || record.recordStatus !== 'verified' ||
+        record.publicationDate !== occupationCatalog.publishedOn ||
+        source?.url !== record.sourceUrl || record.trendDirection !== 'stable' ||
+        !record.evidence.includes(meta.onetCode)) {
+      errors.push(`Unsubstantiated official association: ${record.occupation} / ${record.skill}.`);
+      continue;
+    }
+    accepted.push({ ...record, catalog: meta });
+  }
+  const originalNames = new Set(original.records.map(record => record.occupation.toLowerCase()));
+  const incomplete = new Set<string>();
+  for (const meta of occupationCatalog.occupations) {
+    const roleSkills = new Set(accepted.filter(row => row.occupation === meta.occupation).map(row => row.skill));
+    if (meta.skills.some(skill => !roleSkills.has(skill.name))) {
+      errors.push(`Incomplete official occupation omitted: ${meta.occupation}.`);
+      incomplete.add(meta.occupation);
+    }
+  }
+  return {
+    records: [...original.records, ...accepted.filter(record => {
+      if (incomplete.has(record.occupation)) return false;
+      if (!originalNames.has(record.occupation.toLowerCase())) return true;
+      errors.push(`Official occupation duplicates an existing role: ${record.occupation}.`);
+      return false;
+    })],
+    errors,
+  };
 }
 
 export function formatPublicationDate(value: string): string {

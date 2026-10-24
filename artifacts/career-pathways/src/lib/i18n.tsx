@@ -1,10 +1,36 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { getOccupationMetadata } from './occupation-catalog.ts';
+import { localizedCatalogSkill } from './occupation-skill-aliases.ts';
 
 export type Locale = 'en' | 'zh' | 'ms';
 const STORAGE_KEY = 'career-pathways-locale';
 const localeTag: Record<Locale, string> = { en: 'en', zh: 'zh-CN', ms: 'ms-MY' };
 
 const translations: Record<string, [string, string]> = {
+  'Loading occupation and demonstration datasets…': ['正在加载职业资料与演示数据…', 'Memuatkan data pekerjaan dan demonstrasi…'],
+  'Source-backed associations and synthetic examples are shown separately. No market forecast is provided for the sourced occupations.': ['来源支持的职业能力关联与合成示例分别标注。已核验职业资料不提供市场预测。', 'Perkaitan kompetensi bersumber dan contoh sintetik dilabel berasingan. Tiada ramalan pasaran bagi pekerjaan bersumber.'],
+  'Verified occupation association': ['已核验职业能力关联', 'Perkaitan kompetensi pekerjaan disahkan'],
+  'Market trend unknown': ['市场趋势未知', 'Trend pasaran tidak diketahui'],
+  'Unknown trend records': ['趋势未知的记录', 'Rekod trend tidak diketahui'],
+  'Source verification covers the occupation–competency association only. No demand trend has been verified.': ['来源核验仅覆盖职业与能力的关联，尚未核验需求趋势。', 'Pengesahan sumber hanya meliputi perkaitan pekerjaan dan kompetensi. Trend permintaan belum disahkan.'],
+  'Sourced subset: O*NET 31.0 Database, USDOL/ETA. Selection, translations and SDG interpretations are app-authored; no endorsement.': ['来源子集：O*NET 31.0 数据库，USDOL/ETA。筛选、翻译与 SDG 解释由项目编写，不代表来源机构认可。', 'Subset bersumber: Pangkalan Data O*NET 31.0, USDOL/ETA. Pemilihan, terjemahan dan tafsiran SDG oleh aplikasi; tiada pengendorsan.'],
+  'Release': ['版本发布', 'Terbitan'],
+  'Source checked': ['来源核查', 'Sumber disemak'],
+  'Preparation level {n}': ['准备程度 {n} 级', 'Tahap persediaan {n}'],
+  'Little to some preparation': ['较少至一定准备', 'Sedikit hingga beberapa persediaan'],
+  'Medium preparation': ['中等准备', 'Persediaan sederhana'],
+  'Considerable preparation': ['较充分准备', 'Persediaan yang banyak'],
+  'Extensive preparation': ['广泛深入准备', 'Persediaan meluas'],
+  'US occupation reference; preparation is not an eligibility check. Local qualifications, licensing and experience must be checked separately.': ['美国职业参考资料；准备程度不等于资格审核。当地学历、执照与经验要求需另行核查。', 'Rujukan pekerjaan AS; tahap persediaan bukan semakan kelayakan. Kelayakan, lesen dan pengalaman tempatan perlu disemak berasingan.'],
+  'Occupation description and entry preparation — original English source': ['职业描述与入门准备——英文原始资料', 'Huraian pekerjaan dan persediaan kemasukan — sumber asal bahasa Inggeris'],
+  'Experience': ['经验', 'Pengalaman'],
+  'Preparation data date': ['准备资料日期', 'Tarikh data persediaan'],
+  'Explained SDG contributions': ['SDG 贡献及关联理由', 'Sumbangan SDG dan penjelasan'],
+  'Official occupation reference': ['官方职业参考资料', 'Rujukan pekerjaan rasmi'],
+  'Representative competencies include knowledge and software examples, not a complete list of employer requirements. New roles use default equal skill weights; estimated learning hours are not qualification requirements.': ['代表性能力包括知识领域和软件示例，并非雇主要求的完整清单。新增职业使用默认等权；预计学习工时不是资格要求。', 'Kompetensi contoh merangkumi pengetahuan dan perisian, bukan senarai lengkap keperluan majikan. Pekerjaan baharu menggunakan wajaran sama lalai; anggaran jam pembelajaran bukan syarat kelayakan.'],
+  'Verified association; unknown market trend': ['已核验关联；市场趋势未知', 'Perkaitan disahkan; trend pasaran tidak diketahui'],
+  'Unknown-direction skills (neutral scenario weight):': ['趋势未知技能（情景权重中性）：', 'Kemahiran berarah tidak diketahui (wajaran senario neutral):'],
+  'Source-backed occupations have no verified demand trend. They receive neutral scenario weights; an unchanged scenario result is not evidence of market stability.': ['来源支持的职业没有已核验需求趋势，因此采用中性情景权重；情景结果不变不代表市场稳定。', 'Pekerjaan bersumber tiada trend permintaan disahkan. Wajaran senario neutral digunakan; keputusan tidak berubah bukan bukti kestabilan pasaran.'],
   'PDF upload': ['PDF 上传', 'Muat naik PDF'],
   'This project does not use an AI model or GPU service. Local PDF extraction and rule-based simulation are available; no external model service is called.': ['本项目不使用 AI 模型或 GPU 服务。可使用本地 PDF 文字提取和规则模拟，不会调用外部模型服务。', 'Projek ini tidak menggunakan model AI atau perkhidmatan GPU. Pengekstrakan teks PDF setempat dan simulasi berasaskan peraturan tersedia; tiada perkhidmatan model luaran dipanggil.'],
   'External model mapping is not available in this project. Use local extraction or simulated mapping.': ['本项目不提供外部模型映射。请使用本地提取或规则模拟。', 'Pemetaan model luaran tidak tersedia dalam projek ini. Gunakan pengekstrakan setempat atau pemetaan simulasi.'],
@@ -496,6 +522,10 @@ export function translate(source: string, locale: Locale, values?: Record<string
 }
 
 export function localizeContent(source: string, locale: Locale): string {
+  const occupation = getOccupationMetadata(source);
+  if (occupation) return occupation.labels[locale];
+  const catalogSkill = localizedCatalogSkill(source, locale);
+  if (catalogSkill !== source) return catalogSkill;
   const duration = source.match(/^(\d+–\d+) (hours|weeks) · estimate$/);
   if (duration && locale !== 'en') {
     const unit = duration[2] === 'hours' ? (locale === 'zh' ? '小时' : 'jam') : (locale === 'zh' ? '周' : 'minggu');
