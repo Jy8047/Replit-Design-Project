@@ -4,3 +4,4 @@
 - [PDF worker verification](pdf-worker-verification.md) — Test the bundled API and validate matched source spellings before canonicalizing skill aliases.
 - [Security scan evidence](security-scan-evidence.md) — Validate the actual findings collection and completion flags; absent properties do not establish a clean scan.
 - [Catalog/codegen compatibility](catalog-codegen-compatibility.md) — Keep generator runtime targets explicit; catalog auto-detection can silently select incompatible majors.
+- [Mobile viewport testing](viewport-test-emulation.md) — In Chromium mobile emulation, hidden page content can distort `innerWidth`; assert against visible viewport and the tested component.
