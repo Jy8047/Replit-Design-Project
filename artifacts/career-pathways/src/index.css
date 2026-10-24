@@ -53,7 +53,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 @keyframes splash-sphere-rotate { from { transform:rotateY(0deg) rotateX(-8deg); } to { transform:rotateY(360deg) rotateX(-8deg); } }
 .entry-splash__identity { position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,1.8vw,14px);width:min(100%,680px);min-width:0; }
 .entry-splash__logo-crop { --logo-window:clamp(40px,9vw,96px);position:relative;display:block;flex:none;width:var(--logo-window);height:var(--logo-window);overflow:hidden; }
-.entry-splash__logo-crop img { position:absolute;display:block;width:calc(var(--logo-window)*2.5);height:calc(var(--logo-window)*2.5);max-width:none;left:calc(var(--logo-window)*-.86);top:calc(var(--logo-window)*-.45);mix-blend-mode:multiply; }
+.entry-splash__logo-crop img { position:absolute;display:block;width:calc(var(--logo-window)*2.8);height:calc(var(--logo-window)*2.8);max-width:none;left:calc(var(--logo-window)*-1.02);top:calc(var(--logo-window)*-.56);mix-blend-mode:multiply; }
 .entry-splash__brand { position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:.08em .16em;width:100%;max-width:100%;min-width:0;text-align:center;white-space:normal;overflow-wrap:anywhere;font:800 clamp(1rem,8.4vw,5.2rem)/1.04 'Manrope','DM Sans',sans-serif;letter-spacing:-.065em;transform:translateY(clamp(6px,1.3vw,16px)); }
 .entry-splash__word,.entry-splash__ai { min-width:0;overflow-wrap:anywhere; }
 .entry-splash__word { color:#14283f; }

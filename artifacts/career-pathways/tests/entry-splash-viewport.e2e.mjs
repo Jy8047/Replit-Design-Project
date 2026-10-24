@@ -144,11 +144,13 @@ await withProfileBrowser(async ({ cdp, evaluate, wait, errors }) => {
   assert.deepEqual(sphereMotion, { name: 'splash-sphere-rotate', duration: '18s' }, 'sphere rotates slowly when motion is allowed');
   const identityLayout = await evaluate(`(() => {
     const frame = document.querySelector('.entry-splash__logo-crop').getBoundingClientRect();
+    const image = document.querySelector('.entry-splash__logo-crop img').getBoundingClientRect();
     const brand = document.querySelector('.entry-splash__brand').getBoundingClientRect();
-    return { logoSize: frame.width, brandGap: brand.top - frame.bottom };
+    return { logoSize: frame.width, imageSize: image.width, brandGap: brand.top - frame.bottom };
   })()`);
   assert.equal(identityLayout.logoSize, 96, 'desktop logo is enlarged');
-  assert.ok(identityLayout.brandGap >= 20, 'brand name is visibly spaced below the larger logo');
+  assert.ok(Math.abs(identityLayout.imageSize - 268.8) < 0.5, 'only the logo image is enlarged inside its fixed crop');
+  assert.ok(Math.abs(identityLayout.brandGap - 30) < 0.5, 'brand name position remains unchanged');
   await wait(`!document.querySelector('[data-testid="entry-splash"]')`);
   await wait(`!!document.querySelector('[data-testid="card-home-01"]')`);
   await evaluate(`document.querySelector('[data-testid="link-future-role-matches"]').click()`);
