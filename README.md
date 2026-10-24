@@ -36,10 +36,10 @@ materials.
 | Resource | Link / status |
 |---|---|
 | GitHub repository | [https://github.com/Jy8047/Replit-Design-Project.git](https://github.com/Jy8047/Replit-Design-Project.git) — listed in the supplied technical declaration; public access and synchronization were not verified. The configured Git remote is Replit-internal. |
-| Live Demo | [https://youtu.be/PmRa8RllxrA?feature=shared](https://youtu.be/PmRa8RllxrA?feature=shared) — supplied link; it redirected to YouTube with HTTP 200, but video playback was not verified. |
+| Demo Video 1 | [https://youtu.be/PmRa8RllxrA?feature=shared](https://youtu.be/PmRa8RllxrA?feature=shared) — supplied link; playback and sharing permissions were not verified. |
+| Demo Video 2 | [https://youtu.be/7KzkwWIodYs?si=kC8E2wW8Dthg8p8v](https://youtu.be/7KzkwWIodYs?si=kC8E2wW8Dthg8p8v) — supplied link; playback and sharing permissions were not verified. |
 | RunPod Endpoint | **Not applied** |
 | Slide Deck | [Google Slides](https://docs.google.com/presentation/d/1trne_SWzpuSYvcBpnVeVZkT75rpnpiNO/edit?usp=drive_link&ouid=106855909570867161658&rtpof=true&sd=true) — exact supplied URL; an original PPTX is also included in `submission/`. Link access was not verified. |
-| Demo Video | **Pending — link to be provided** |
 | Replit prototype listed in the technical declaration | `https://replit-design-project--lilya8047.replit.app/roadmap` — returned HTTP 200 and an HTML shell titled “PivotPath AI”; visual and end-to-end access were not verified. |
 
 ## Overview
@@ -232,7 +232,7 @@ inference flow, or RunPod proof-of-use document.
   with the current implementation before final judging.
 - Independently verify or replace the user-supplied occupation-history archive.
 - Confirm public access and synchronization for the GitHub repository and
-  provide the Demo Video link.
+  demo video links.
 - Consider OCR or a live model only after the team chooses and declares a
   supported, authorized implementation.
 - Add server-side persistence only if the team needs cross-device profiles and
@@ -261,9 +261,8 @@ are recorded in the data README linked above.
 
 - [x] Project overview, actual architecture, current tech stack, and run/test commands documented.
 - [x] Supplied Replit Proof of Use, Technical Tools Declaration, and PPTX copied unchanged to `submission/`; the [Preliminary PDF](submission/SDC2026_Fresh_team_preliminary_1792868544917.pdf) matches the supplied attachment byte-for-byte, and its title/content were checked. The supplied Drive URL redirects to Google sign-in and was not independently verified.
-- [x] Live Demo URL and Slide Deck URL copied exactly from the supplied instructions.
-- [x] Demo Video remains **Pending — link to be provided**.
+- [x] Demo Video 1, Demo Video 2, and Slide Deck URLs listed exactly as supplied.
 - [x] RunPod Endpoint status is **Not applied**.
 - [ ] Update the official Tech Tools Declaration to disclose current BLS and World Bank API calls and reconcile other differences; do not alter its signature or date without the team.
 - [ ] Review the preliminary PDF and presentation claims against current behavior before final submission.
-- [ ] Confirm public GitHub access/synchronization and provide the Demo Video URL.
+- [ ] Confirm public GitHub access/synchronization and demo video link access.

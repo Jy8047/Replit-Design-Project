@@ -31,8 +31,9 @@ it redirects to Google sign-in; verification applies only to the attachment.
   Review for account or billing details before placing it in a public
   repository.
 - The supplied Replit prototype URL returned HTTP 200 and an HTML shell, but
-  visual and end-to-end behavior were not verified. The supplied Live Demo and
-  Google Slides URLs responded with HTTP 200/redirects; video playback and
-  sharing permissions were not verified.
+  visual and end-to-end behavior were not verified. The two supplied demo video
+  URLs are listed in the root README; video playback and sharing permissions
+  were not verified. The supplied Google Slides URL responded with HTTP
+  200/redirects; link access was not verified.
 
 No RunPod proof document is included. RunPod status: **Not applied**.
