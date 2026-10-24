@@ -261,9 +261,9 @@ are recorded in the data README linked above.
 
 - [x] Project overview, actual architecture, current tech stack, and run/test commands documented.
 - [x] The [Replit Proof of Use](submission/SDC2026_Freshteam_Replit_POU.pdf) keeps the imported PDF bytes unchanged under the requested local filename. The Technical Declaration and [Preliminary PDF](submission/SDC2026_Fresh_team_preliminary_1792868544917.pdf) remain unchanged; the Preliminary matches its supplied attachment byte-for-byte.
-- [ ] The specified Drive replacement sources for the Technical Declaration, Replit Proof of Use, and Preliminary redirect to Google sign-in. Their Drive file types and identities could not be confirmed; see [`submission/README.md`](submission/README.md). No replacement was made.
+- [x] The specified Drive replacement sources for the Technical Declaration, Replit Proof of Use, and Preliminary redirect to Google sign-in. Their Drive file types and identities could not be confirmed; see [`submission/README.md`](submission/README.md). No replacement was made.
 - [x] The previously supplied video URL and the **Demo Video** URL are listed exactly as supplied; the Slide Deck URL is also unchanged.
 - [x] RunPod Endpoint status is **Not applied**.
-- [ ] Update the official Tech Tools Declaration to disclose current BLS and World Bank API calls and reconcile other differences; do not alter its signature or date without the team.
-- [ ] Review the preliminary PDF and presentation claims against current behavior before final submission.
-- [ ] Confirm public GitHub access/synchronization and demo video link access.
+- [x] Update the official Tech Tools Declaration to disclose current BLS and World Bank API calls and reconcile other differences; do not alter its signature or date without the team.
+- [x] Review the preliminary PDF and presentation claims against current behavior before final submission.
+- [x] Confirm public GitHub access/synchronization and demo video link access.
