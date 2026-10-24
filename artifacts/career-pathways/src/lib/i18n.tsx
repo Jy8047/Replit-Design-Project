@@ -421,6 +421,7 @@ const translations: Record<string, [string, string]> = {
   'BLS OEWS source': ['BLS OEWS 来源', 'Sumber BLS OEWS'],
   'Loading historical employment data…': ['正在加载历史就业数据…', 'Memuatkan data pekerjaan sejarah…'],
   'Historical employment data could not be loaded. Check your connection and try again.': ['无法加载历史就业数据。请检查网络连接后重试。', 'Data pekerjaan sejarah tidak dapat dimuatkan. Semak sambungan anda dan cuba lagi.'],
+  'The BLS service is temporarily unavailable, and no verified offline history is available for this occupation. No values are shown; try again later.': ['BLS 服务暂时不可用，且此职业没有经过核验的离线历史数据。当前不显示数值，请稍后重试。', 'Perkhidmatan BLS tidak tersedia buat sementara waktu dan tiada sejarah luar talian yang disahkan untuk pekerjaan ini. Tiada nilai dipaparkan; cuba lagi kemudian.'],
   'No O*NET occupation code is available for this record, so BLS history cannot be matched safely.': ['此记录没有 O*NET 职业代码，因此无法安全匹配 BLS 历史数据。', 'Rekod ini tiada kod pekerjaan O*NET, jadi sejarah BLS tidak dapat dipadankan dengan selamat.'],
   'BLS did not return historical employment observations for this occupation.': ['BLS 未返回该职业的历史就业观测数据。', 'BLS tidak memulangkan pemerhatian pekerjaan sejarah bagi pekerjaan ini.'],
   'Source': ['来源', 'Sumber'],

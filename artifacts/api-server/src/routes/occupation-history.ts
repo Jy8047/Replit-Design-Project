@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-const BLS_API_URL = "https://api.bls.gov/publicAPI/v2/timeseries/data/";
+const BLS_API_URL = "https://api.bls.gov/publicAPI/v1/timeseries/data/";
 const BLS_SOURCE_URL = "https://www.bls.gov/oes/tables.htm";
 const CACHE_TTL_MS = 6 * 60 * 60 * 1_000;
 const REQUEST_TIMEOUT_MS = 8_000;

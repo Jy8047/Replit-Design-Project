@@ -35,6 +35,7 @@ import {
 import { CatalogAttribution, OccupationCatalogDetails } from './occupation-catalog-details';
 import { PageHeading } from '@/components/page-heading';
 import { localizeContent, useI18n } from '@/lib/i18n';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Dialog,
   DialogContent,
@@ -491,13 +492,14 @@ export function CareerSkillsPage({
                 </p>
               )}
               {historyState === 'loading' && (
-                <div role="status" data-testid="status-occupation-history-loading" className="panel">
+                <div role="status" data-testid="status-occupation-history-loading" className="panel" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Spinner aria-hidden="true" />
                   {t('Loading historical employment data…')}
                 </div>
               )}
               {historyState === 'error' && (
                 <div role="alert" data-testid="error-occupation-history" className="panel">
-                  <p style={{ marginTop: 0 }}>{t('Historical employment data could not be loaded. Check your connection and try again.')}</p>
+                  <p style={{ marginTop: 0 }}>{t('The BLS service is temporarily unavailable, and no verified offline history is available for this occupation. No values are shown; try again later.')}</p>
                   <button className="btn" type="button" onClick={() => setHistoryRefresh(value => value + 1)} data-testid="button-retry-occupation-history">
                     {t('Try again')} <RefreshCw size={14} />
                   </button>

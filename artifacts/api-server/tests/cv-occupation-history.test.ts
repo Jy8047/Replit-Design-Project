@@ -29,8 +29,9 @@ async function withApi(
 test("maps an O*NET occupation code to national BLS OEWS annual employment data", async () => {
   let requestBody: Record<string, unknown> | undefined;
   await withApi(async (input, init) => {
-    assert.equal(String(input), "https://api.bls.gov/publicAPI/v2/timeseries/data/");
+    assert.equal(String(input), "https://api.bls.gov/publicAPI/v1/timeseries/data/");
     requestBody = JSON.parse(String(init?.body));
+    assert.equal(JSON.stringify(init?.headers).includes("API-KEY"), false);
     return new Response(JSON.stringify({
       status: "REQUEST_SUCCEEDED",
       Results: { series: [{ seriesID: "OEUN000000000000015125201", data: [
@@ -97,6 +98,14 @@ test("returns an explicit fallback on BLS errors and does not cache failures", a
     assert.equal(second.status, 502);
   });
   assert.equal(calls, 2);
+});
+
+test("handles the BLS v1 busy/503 response as a retryable unavailable state", async () => {
+  await withApi(async () => new Response("BLS website is busy", { status: 503 }), async get => {
+    const response = await get("occupationCode=15-1252.00");
+    assert.equal(response.status, 502);
+    assert.equal(response.body.code, "BLS_HISTORY_UNAVAILABLE");
+  });
 });
 
 test("caches successful BLS history for subsequent requests", async () => {

@@ -5,6 +5,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { createCvExtractionRouter } from "./routes/cv-extraction";
 import { createOccupationHistoryRouter } from "./routes/occupation-history";
+import MarketSignalPanel from "./components/market-signal-panel";
 
 const app: Express = express();
 
